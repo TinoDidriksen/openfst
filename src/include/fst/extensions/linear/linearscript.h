@@ -1,19 +1,39 @@
+// Copyright 2005-2024 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the 'License');
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an 'AS IS' BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
 // See www.openfst.org for extensive documentation on this weighted
 // finite-state transducer library.
 
 #ifndef FST_EXTENSIONS_LINEAR_LINEARSCRIPT_H_
 #define FST_EXTENSIONS_LINEAR_LINEARSCRIPT_H_
 
+#include <cstddef>
 #include <istream>
 #include <sstream>
 #include <string>
+#include <tuple>
 #include <vector>
 
 #include <fst/compat.h>
+#include <fst/log.h>
 #include <fst/extensions/linear/linear-fst-data-builder.h>
+#include <fst/extensions/linear/linear-fst-data.h>
 #include <fst/extensions/linear/linear-fst.h>
 #include <fstream>
+#include <fst/fst.h>
 #include <fst/symbol-table.h>
+#include <fst/util.h>
 #include <fst/script/arg-packs.h>
 #include <fst/script/script-impl.h>
 
@@ -36,17 +56,18 @@ bool ValidateDelimiter();
 bool ValidateEmptySymbol();
 
 // Returns the proper label given the symbol. For symbols other than
-// `FLAGS_start_symbol` or `FLAGS_end_symbol`, looks up the symbol
+// `FST_FLAGS_start_symbol` or `FST_FLAGS_end_symbol`, looks up the symbol
 // table to decide the label. Depending on whether
-// `FLAGS_start_symbol` and `FLAGS_end_symbol` are identical, it
+// `FST_FLAGS_start_symbol` and `FST_FLAGS_end_symbol` are identical, it
 // either returns `kNoLabel` for later processing or decides the label
 // right away.
 template <class Arc>
 inline typename Arc::Label LookUp(const std::string &str, SymbolTable *syms) {
-  if (str == FLAGS_start_symbol) {
-    return str == FLAGS_end_symbol ? kNoLabel
-                                   : LinearFstData<Arc>::kStartOfSentence;
-  } else if (str == FLAGS_end_symbol) {
+  if (str == FST_FLAGS_start_symbol) {
+    return str == FST_FLAGS_end_symbol
+               ? kNoLabel
+               : LinearFstData<Arc>::kStartOfSentence;
+  } else if (str == FST_FLAGS_end_symbol) {
     return LinearFstData<Arc>::kEndOfSentence;
   } else {
     return syms->AddSymbol(str);
@@ -58,7 +79,7 @@ inline typename Arc::Label LookUp(const std::string &str, SymbolTable *syms) {
 template <class Arc>
 void SplitAndPush(const std::string &str, const char delim, SymbolTable *syms,
                   std::vector<typename Arc::Label> *output) {
-  if (str == FLAGS_empty_symbol) return;
+  if (str == FST_FLAGS_empty_symbol) return;
   std::istringstream strm(str);
   std::string buf;
   while (std::getline(strm, buf, delim)) {
@@ -86,7 +107,7 @@ size_t ReplaceCopy(InputIterator first, InputIterator last,
 }
 
 template <class Arc>
-bool GetVocabRecord(const std::string &vocab, std::istream &strm,  // NOLINT
+bool GetVocabRecord(const std::string &vocab, std::istream &strm,
                     SymbolTable *isyms, SymbolTable *fsyms, SymbolTable *osyms,
                     typename Arc::Label *word,
                     std::vector<typename Arc::Label> *feature_labels,
@@ -94,7 +115,7 @@ bool GetVocabRecord(const std::string &vocab, std::istream &strm,  // NOLINT
                     size_t *num_line);
 
 template <class Arc>
-bool GetModelRecord(const std::string &model, std::istream &strm,  // NOLINT
+bool GetModelRecord(const std::string &model, std::istream &strm,
                     SymbolTable *fsyms, SymbolTable *osyms,
                     std::vector<typename Arc::Label> *input_labels,
                     std::vector<typename Arc::Label> *output_labels,
@@ -104,7 +125,7 @@ bool GetModelRecord(const std::string &model, std::istream &strm,  // NOLINT
 //
 //   word <whitespace> features [ <whitespace> possible output ]
 //
-// where features and possible output are `FLAGS_delimiter`-delimited lists of
+// where features and possible output are `FST_FLAGS_delimiter`-delimited lists of
 // tokens
 template <class Arc>
 void AddVocab(const std::string &vocab, SymbolTable *isyms, SymbolTable *fsyms,
@@ -163,9 +184,9 @@ void AddVocab(const std::string &vocab, SymbolTable *isyms, SymbolTable *fsyms,
 //
 //   input sequence <whitespace> output sequence <whitespace> weight
 //
-// input sequence is a `FLAGS_delimiter`-delimited sequence of feature
+// input sequence is a `FST_FLAGS_delimiter`-delimited sequence of feature
 // labels (see `AddVocab()`) . output sequence is a
-// `FLAGS_delimiter`-delimited sequence of output labels where the
+// `FST_FLAGS_delimiter`-delimited sequence of output labels where the
 // last label is the output of the feature position before the history
 // boundary.
 template <class Arc>
@@ -301,7 +322,7 @@ void LinearCompileTpl(LinearCompileArgs *args) {
           << LinearFstData<Arc>::kStartOfSentence;
   VLOG(1) << "end-of-sentence label is " << LinearFstData<Arc>::kEndOfSentence;
 
-  if (FLAGS_classifier) {
+  if (FST_FLAGS_classifier) {
     int num_classes = ScanNumClasses(models, models_length);
     LinearClassifierFstDataBuilder<Arc> builder(num_classes, &isyms, &fsyms,
                                                 &osyms);
@@ -336,7 +357,7 @@ void LinearCompile(const std::string &arc_type,
                    const std::string &save_osymbols);
 
 template <class Arc>
-bool GetVocabRecord(const std::string &vocab, std::istream &strm,  // NOLINT
+bool GetVocabRecord(const std::string &vocab, std::istream &strm,
                     SymbolTable *isyms, SymbolTable *fsyms, SymbolTable *osyms,
                     typename Arc::Label *word,
                     std::vector<typename Arc::Label> *feature_labels,
@@ -358,7 +379,7 @@ bool GetVocabRecord(const std::string &vocab, std::istream &strm,  // NOLINT
 
   *word = LookUp<Arc>(fields[0], isyms);
 
-  const char delim = FLAGS_delimiter[0];
+  const char delim = FST_FLAGS_delimiter[0];
   SplitAndPush<Arc>(fields[1], delim, fsyms, feature_labels);
   SplitAndPush<Arc>(fields[2], delim, osyms, possible_labels);
 
@@ -366,7 +387,7 @@ bool GetVocabRecord(const std::string &vocab, std::istream &strm,  // NOLINT
 }
 
 template <class Arc>
-bool GetModelRecord(const std::string &model, std::istream &strm,  // NOLINT
+bool GetModelRecord(const std::string &model, std::istream &strm,
                     SymbolTable *fsyms, SymbolTable *osyms,
                     std::vector<typename Arc::Label> *input_labels,
                     std::vector<typename Arc::Label> *output_labels,
@@ -385,7 +406,7 @@ bool GetModelRecord(const std::string &model, std::istream &strm,  // NOLINT
   input_labels->clear();
   output_labels->clear();
 
-  const char delim = FLAGS_delimiter[0];
+  const char delim = FST_FLAGS_delimiter[0];
   SplitAndPush<Arc>(fields[0], delim, fsyms, input_labels);
   SplitAndPush<Arc>(fields[1], delim, osyms, output_labels);
 

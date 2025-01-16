@@ -1,8 +1,23 @@
+// Copyright 2005-2024 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the 'License');
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an 'AS IS' BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
 // See www.openfst.org for extensive documentation on this weighted
 // finite-state transducer library.
 //
 // Returns the shortest path in a (bounded-stack) PDT.
 
+#include <cstdint>
 #include <cstring>
 #include <memory>
 #include <string>
@@ -10,10 +25,11 @@
 #include <vector>
 
 #include <fst/flags.h>
-#include <fst/types.h>
 #include <fst/log.h>
 #include <fst/extensions/pdt/pdtscript.h>
+#include <fst/queue.h>
 #include <fst/util.h>
+#include <fst/script/fst-class.h>
 
 DECLARE_bool(keep_parentheses);
 DECLARE_string(queue_type);
@@ -31,7 +47,6 @@ int pdtshortestpath_main(int argc, char **argv) {
   usage += argv[0];
   usage += " in.pdt [out.fst]\n";
 
-  std::set_new_handler(FailedNewHandler);
   SET_FLAGS(usage.c_str(), &argc, &argv, true);
   if (argc > 3) {
     ShowUsage();
@@ -46,32 +61,32 @@ int pdtshortestpath_main(int argc, char **argv) {
   std::unique_ptr<FstClass> ifst(FstClass::Read(in_name));
   if (!ifst) return 1;
 
-  if (FLAGS_pdt_parentheses.empty()) {
+  if (FST_FLAGS_pdt_parentheses.empty()) {
     LOG(ERROR) << argv[0] << ": No PDT parenthesis label pairs provided";
     return 1;
   }
 
-  std::vector<std::pair<int64, int64>> parens;
-  if (!ReadLabelPairs(FLAGS_pdt_parentheses, &parens, false)) return 1;
+  std::vector<std::pair<int64_t, int64_t>> parens;
+  if (!ReadLabelPairs(FST_FLAGS_pdt_parentheses, &parens)) return 1;
 
   VectorFstClass ofst(ifst->ArcType());
 
   QueueType qt;
-  if (FLAGS_queue_type == "fifo") {
+  if (FST_FLAGS_queue_type == "fifo") {
     qt = fst::FIFO_QUEUE;
-  } else if (FLAGS_queue_type == "lifo") {
+  } else if (FST_FLAGS_queue_type == "lifo") {
     qt = fst::LIFO_QUEUE;
-  } else if (FLAGS_queue_type == "state") {
+  } else if (FST_FLAGS_queue_type == "state") {
     qt = fst::STATE_ORDER_QUEUE;
   } else {
-    LOG(ERROR) << "Unknown queue type: " << FLAGS_queue_type;
+    LOG(ERROR) << "Unknown queue type: " << FST_FLAGS_queue_type;
     return 1;
   }
 
-  const s::PdtShortestPathOptions opts(qt, FLAGS_keep_parentheses,
-                                       FLAGS_path_gc);
+  const s::PdtShortestPathOptions opts(
+      qt, FST_FLAGS_keep_parentheses, FST_FLAGS_path_gc);
 
-  s::PdtShortestPath(*ifst, parens, &ofst, opts);
+  s::ShortestPath(*ifst, parens, &ofst, opts);
 
   return !ofst.Write(out_name);
 }

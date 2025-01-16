@@ -1,9 +1,24 @@
+// Copyright 2005-2024 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the 'License');
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an 'AS IS' BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
 // See www.openfst.org for extensive documentation on this weighted
 // finite-state transducer library.
 //
 // Prints out binary FSTs in simple text format used by AT&T.
 
 #include <cstring>
+#include <iostream>
 #include <memory>
 #include <ostream>
 #include <string>
@@ -11,6 +26,8 @@
 #include <fst/flags.h>
 #include <fst/log.h>
 #include <fstream>
+#include <fst/symbol-table.h>
+#include <fst/script/fst-class.h>
 #include <fst/script/print.h>
 
 DECLARE_bool(acceptor);
@@ -21,13 +38,11 @@ DECLARE_bool(numeric);
 DECLARE_string(save_isymbols);
 DECLARE_string(save_osymbols);
 DECLARE_bool(show_weight_one);
-DECLARE_bool(allow_negative_labels);
 DECLARE_string(missing_symbol);
 
 int fstprint_main(int argc, char **argv) {
   namespace s = fst::script;
   using fst::SymbolTable;
-  using fst::SymbolTableTextOptions;
   using fst::script::FstClass;
 
   std::string usage =
@@ -35,7 +50,6 @@ int fstprint_main(int argc, char **argv) {
   usage += argv[0];
   usage += " [binary.fst [text.fst]]\n";
 
-  std::set_new_handler(FailedNewHandler);
   SET_FLAGS(usage.c_str(), &argc, &argv, true);
   if (argc > 3) {
     ShowUsage();
@@ -63,43 +77,48 @@ int fstprint_main(int argc, char **argv) {
   std::ostream &ostrm = fstrm.is_open() ? fstrm : std::cout;
   ostrm.precision(9);
 
-  const SymbolTableTextOptions opts(FLAGS_allow_negative_labels);
-
   std::unique_ptr<const SymbolTable> isyms;
-  if (!FLAGS_isymbols.empty() && !FLAGS_numeric) {
-    isyms.reset(SymbolTable::ReadText(FLAGS_isymbols, opts));
+  if (!FST_FLAGS_isymbols.empty() && !FST_FLAGS_numeric) {
+    isyms.reset(
+        SymbolTable::ReadText(FST_FLAGS_isymbols,
+                              FST_FLAGS_fst_field_separator));
     if (!isyms) return 1;
   }
 
   std::unique_ptr<const SymbolTable> osyms;
-  if (!FLAGS_osymbols.empty() && !FLAGS_numeric) {
-    osyms.reset(SymbolTable::ReadText(FLAGS_osymbols, opts));
+  if (!FST_FLAGS_osymbols.empty() && !FST_FLAGS_numeric) {
+    osyms.reset(
+        SymbolTable::ReadText(FST_FLAGS_osymbols,
+                              FST_FLAGS_fst_field_separator));
     if (!osyms) return 1;
   }
 
   std::unique_ptr<const SymbolTable> ssyms;
-  if (!FLAGS_ssymbols.empty() && !FLAGS_numeric) {
-    ssyms.reset(SymbolTable::ReadText(FLAGS_ssymbols));
+  if (!FST_FLAGS_ssymbols.empty() && !FST_FLAGS_numeric) {
+    ssyms.reset(
+        SymbolTable::ReadText(FST_FLAGS_ssymbols,
+                              FST_FLAGS_fst_field_separator));
     if (!ssyms) return 1;
   }
 
-  if (!isyms && !FLAGS_numeric && fst->InputSymbols()) {
+  if (!isyms && !FST_FLAGS_numeric && fst->InputSymbols()) {
     isyms.reset(fst->InputSymbols()->Copy());
   }
 
-  if (!osyms && !FLAGS_numeric && fst->OutputSymbols()) {
+  if (!osyms && !FST_FLAGS_numeric && fst->OutputSymbols()) {
     osyms.reset(fst->OutputSymbols()->Copy());
   }
 
   s::Print(*fst, ostrm, dest, isyms.get(), osyms.get(), ssyms.get(),
-           FLAGS_acceptor, FLAGS_show_weight_one, FLAGS_missing_symbol);
+           FST_FLAGS_acceptor, FST_FLAGS_show_weight_one,
+           FST_FLAGS_missing_symbol);
 
-  if (isyms && !FLAGS_save_isymbols.empty()) {
-    if (!isyms->WriteText(FLAGS_save_isymbols)) return 1;
+  if (isyms && !FST_FLAGS_save_isymbols.empty()) {
+    if (!isyms->WriteText(FST_FLAGS_save_isymbols)) return 1;
   }
 
-  if (osyms && !FLAGS_save_osymbols.empty()) {
-    if (!osyms->WriteText(FLAGS_save_osymbols)) return 1;
+  if (osyms && !FST_FLAGS_save_osymbols.empty()) {
+    if (!osyms->WriteText(FST_FLAGS_save_osymbols)) return 1;
   }
 
   return 0;

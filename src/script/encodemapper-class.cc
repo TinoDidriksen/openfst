@@ -1,9 +1,35 @@
+// Copyright 2005-2024 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the 'License');
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an 'AS IS' BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
 // See www.openfst.org for extensive documentation on this weighted
 // finite-state transducer library.
 
 #include <fst/script/encodemapper-class.h>
 
-#include <fst/script/script-impl.h>
+#include <cstdint>
+#include <ios>
+#include <iostream>
+#include <istream>
+#include <memory>
+#include <string>
+
+#include <fst/log.h>
+#include <fst/arc.h>
+#include <fst/encode.h>
+#include <fstream>
+#include <fst/util.h>
+#include <string_view>
 
 namespace fst {
 namespace script {
@@ -11,8 +37,8 @@ namespace {
 
 // Helper methods.
 
-EncodeMapperClass *ReadEncodeMapper(std::istream &istrm,
-                                    const std::string &source) {
+std::unique_ptr<EncodeMapperClass> ReadEncodeMapper(
+    std::istream &istrm, const std::string &source) {
   if (!istrm) {
     LOG(ERROR) << "ReadEncodeMapperClass: Can't open file: " << source;
     return nullptr;
@@ -37,8 +63,8 @@ EncodeMapperClass *ReadEncodeMapper(std::istream &istrm,
   return reader(istrm, source);
 }
 
-EncodeMapperImplBase *CreateEncodeMapper(const std::string &arc_type,
-                                         uint8 flags, EncodeType type) {
+std::unique_ptr<EncodeMapperImplBase> CreateEncodeMapper(
+    std::string_view arc_type, uint8_t flags, EncodeType type) {
   static const auto *reg =
       EncodeMapperClassIORegistration::Register::GetRegister();
   auto creator = reg->GetCreator(arc_type);
@@ -51,11 +77,12 @@ EncodeMapperImplBase *CreateEncodeMapper(const std::string &arc_type,
 
 }  // namespace
 
-EncodeMapperClass::EncodeMapperClass(const std::string &arc_type, uint8 flags,
+EncodeMapperClass::EncodeMapperClass(std::string_view arc_type, uint8_t flags,
                                      EncodeType type)
     : impl_(CreateEncodeMapper(arc_type, flags, type)) {}
 
-EncodeMapperClass *EncodeMapperClass::Read(const std::string &source) {
+std::unique_ptr<EncodeMapperClass> EncodeMapperClass::Read(
+    const std::string &source) {
   if (!source.empty()) {
     std::ifstream strm(source, std::ios_base::in | std::ios_base::binary);
     return ReadEncodeMapper(strm, source);
@@ -64,8 +91,8 @@ EncodeMapperClass *EncodeMapperClass::Read(const std::string &source) {
   }
 }
 
-EncodeMapperClass *EncodeMapperClass::Read(std::istream &strm,
-                                           const std::string &source) {
+std::unique_ptr<EncodeMapperClass> EncodeMapperClass::Read(
+    std::istream &strm, const std::string &source) {
   return ReadEncodeMapper(strm, source);
 }
 

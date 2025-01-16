@@ -1,3 +1,17 @@
+// Copyright 2005-2024 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the 'License');
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an 'AS IS' BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
 // See www.openfst.org for extensive documentation on this weighted
 // finite-state transducer library.
 //
@@ -6,21 +20,35 @@
 #ifndef FST_EXTENSIONS_LINEAR_LINEAR_FST_H_
 #define FST_EXTENSIONS_LINEAR_LINEAR_FST_H_
 
+#include <sys/types.h>
+
 #include <algorithm>
+#include <cstddef>
+#include <cstdint>
+#include <functional>
+#include <ios>
 #include <iostream>
+#include <istream>
 #include <memory>
+#include <ostream>
+#include <string>
+#include <utility>
 #include <vector>
 
 #include <fst/compat.h>
 #include <fst/log.h>
 #include <fst/extensions/linear/linear-fst-data.h>
+#include <fst/extensions/linear/trie.h>
 #include <fst/extensions/pdt/collection.h>
 #include <fst/bi-table.h>
 #include <fst/cache.h>
 #include <fstream>
 #include <fst/fst.h>
+#include <fst/impl-to-fst.h>
 #include <fst/matcher.h>
+#include <fst/properties.h>
 #include <fst/symbol-table.h>
+#include <fst/util.h>
 
 namespace fst {
 
@@ -141,8 +169,7 @@ class LinearTaggerFstImpl : public CacheImpl<A> {
   static LinearTaggerFstImpl *Read(std::istream &strm,
                                    const FstReadOptions &opts);
 
-  bool Write(std::ostream &strm,  // NOLINT
-             const FstWriteOptions &opts) const {
+  bool Write(std::ostream &strm, const FstWriteOptions &opts) const {
     FstHeader header;
     header.SetStart(kNoStateId);
     WriteHeader(strm, opts, kFileVersion, &header);
@@ -155,8 +182,8 @@ class LinearTaggerFstImpl : public CacheImpl<A> {
   }
 
  private:
-  static const int kMinFileVersion;
-  static const int kFileVersion;
+  static constexpr int kMinFileVersion = 1;
+  static constexpr int kFileVersion = 1;
 
   // A collection of functions to access parts of the state tuple. A
   // state tuple is a vector of `Label`s with two parts:
@@ -279,12 +306,6 @@ class LinearTaggerFstImpl : public CacheImpl<A> {
 
   LinearTaggerFstImpl &operator=(const LinearTaggerFstImpl &) = delete;
 };
-
-template <class A>
-const int LinearTaggerFstImpl<A>::kMinFileVersion = 1;
-
-template <class A>
-const int LinearTaggerFstImpl<A>::kFileVersion = 1;
 
 template <class A>
 inline typename A::Label LinearTaggerFstImpl<A>::ShiftBuffer(
@@ -428,7 +449,7 @@ void LinearTaggerFstImpl<A>::MatchInput(StateId s, Label ilabel,
 
 template <class A>
 inline LinearTaggerFstImpl<A> *LinearTaggerFstImpl<A>::Read(
-    std::istream &strm, const FstReadOptions &opts) {  // NOLINT
+    std::istream &strm, const FstReadOptions &opts) {
   std::unique_ptr<LinearTaggerFstImpl<A>> impl(new LinearTaggerFstImpl<A>());
   FstHeader header;
   if (!impl->ReadHeader(strm, opts, kMinFileVersion, &header)) {
@@ -449,6 +470,8 @@ inline LinearTaggerFstImpl<A> *LinearTaggerFstImpl<A>::Read(
 // reference counting, delegating most methods to ImplToFst.
 template <class A>
 class LinearTaggerFst : public ImplToFst<internal::LinearTaggerFstImpl<A>> {
+  using Base = ImplToFst<internal::LinearTaggerFstImpl<A>>;
+
  public:
   friend class ArcIterator<LinearTaggerFst<A>>;
   friend class StateIterator<LinearTaggerFst<A>>;
@@ -460,24 +483,23 @@ class LinearTaggerFst : public ImplToFst<internal::LinearTaggerFstImpl<A>> {
   typedef typename A::StateId StateId;
   typedef DefaultCacheStore<A> Store;
   typedef typename Store::State State;
-  using Impl = internal::LinearTaggerFstImpl<A>;
+  using typename Base::Impl;
 
-  LinearTaggerFst() : ImplToFst<Impl>(std::make_shared<Impl>()) {}
+  LinearTaggerFst() : Base(std::make_shared<Impl>()) {}
 
   explicit LinearTaggerFst(LinearFstData<A> *data,
                            const SymbolTable *isyms = nullptr,
                            const SymbolTable *osyms = nullptr,
                            CacheOptions opts = CacheOptions())
-      : ImplToFst<Impl>(std::make_shared<Impl>(data, isyms, osyms, opts)) {}
+      : Base(std::make_shared<Impl>(data, isyms, osyms, opts)) {}
 
-  explicit LinearTaggerFst(const Fst<A> &fst)
-      : ImplToFst<Impl>(std::make_shared<Impl>()) {
+  explicit LinearTaggerFst(const Fst<A> &fst) : Base(std::make_shared<Impl>()) {
     LOG(FATAL) << "LinearTaggerFst: no constructor from arbitrary FST.";
   }
 
   // See Fst<>::Copy() for doc.
   LinearTaggerFst(const LinearTaggerFst<A> &fst, bool safe = false)
-      : ImplToFst<Impl>(fst, safe) {}
+      : Base(fst, safe) {}
 
   // Get a copy of this LinearTaggerFst. See Fst<>::Copy() for further doc.
   LinearTaggerFst<A> *Copy(bool safe = false) const override {
@@ -508,7 +530,7 @@ class LinearTaggerFst : public ImplToFst<internal::LinearTaggerFstImpl<A>> {
     }
   }
 
-  static LinearTaggerFst<A> *Read(std::istream &in,  // NOLINT
+  static LinearTaggerFst<A> *Read(std::istream &in,
                                   const FstReadOptions &opts) {
     auto *impl = Impl::Read(in, opts);
     return impl ? new LinearTaggerFst<A>(std::shared_ptr<Impl>(impl)) : nullptr;
@@ -533,11 +555,10 @@ class LinearTaggerFst : public ImplToFst<internal::LinearTaggerFstImpl<A>> {
   }
 
  private:
-  using ImplToFst<Impl>::GetImpl;
-  using ImplToFst<Impl>::GetMutableImpl;
+  using Base::GetImpl;
+  using Base::GetMutableImpl;
 
-  explicit LinearTaggerFst(std::shared_ptr<Impl> impl)
-      : ImplToFst<Impl>(impl) {}
+  explicit LinearTaggerFst(std::shared_ptr<Impl> impl) : Base(impl) {}
 
   void operator=(const LinearTaggerFst<A> &fst) = delete;
 };
@@ -567,7 +588,7 @@ class ArcIterator<LinearTaggerFst<Arc>>
 template <class Arc>
 inline void LinearTaggerFst<Arc>::InitStateIterator(
     StateIteratorData<Arc> *data) const {
-  data->base = new StateIterator<LinearTaggerFst<Arc>>(*this);
+  data->base = std::make_unique<StateIterator<LinearTaggerFst<Arc>>>(*this);
 }
 
 namespace internal {
@@ -697,8 +718,8 @@ class LinearClassifierFstImpl : public CacheImpl<A> {
   }
 
  private:
-  static const int kMinFileVersion;
-  static const int kFileVersion;
+  static constexpr int kMinFileVersion = 0;
+  static constexpr int kFileVersion = 0;
 
   // A collection of functions to access parts of the state tuple. A
   // state tuple is a vector of `Label`s with two parts:
@@ -709,10 +730,10 @@ class LinearClassifierFstImpl : public CacheImpl<A> {
   //
   // - [internal] is the internal state tuple for `LinearFstData` of
   //   the given class; or kNoTrieNodeId's if in start state.
-  Label &Prediction(std::vector<Label> &state) { return state[0]; }  // NOLINT
+  Label &Prediction(std::vector<Label> &state) { return state[0]; }
   Label Prediction(const std::vector<Label> &state) const { return state[0]; }
 
-  Label &InternalAt(std::vector<Label> &state, int index) {  // NOLINT
+  Label &InternalAt(std::vector<Label> &state, int index) {
     return state[index + 1];
   }
   Label InternalAt(const std::vector<Label> &state, int index) const {
@@ -798,12 +819,6 @@ class LinearClassifierFstImpl : public CacheImpl<A> {
 
   void operator=(const LinearClassifierFstImpl<A> &) = delete;
 };
-
-template <class A>
-const int LinearClassifierFstImpl<A>::kMinFileVersion = 0;
-
-template <class A>
-const int LinearClassifierFstImpl<A>::kFileVersion = 0;
 
 template <class A>
 void LinearClassifierFstImpl<A>::Expand(StateId s) {
@@ -905,6 +920,8 @@ inline LinearClassifierFstImpl<A> *LinearClassifierFstImpl<A>::Read(
 template <class A>
 class LinearClassifierFst
     : public ImplToFst<internal::LinearClassifierFstImpl<A>> {
+  using Base = ImplToFst<internal::LinearClassifierFstImpl<A>>;
+
  public:
   friend class ArcIterator<LinearClassifierFst<A>>;
   friend class StateIterator<LinearClassifierFst<A>>;
@@ -916,25 +933,24 @@ class LinearClassifierFst
   typedef typename A::StateId StateId;
   typedef DefaultCacheStore<A> Store;
   typedef typename Store::State State;
-  using Impl = internal::LinearClassifierFstImpl<A>;
+  using typename Base::Impl;
 
-  LinearClassifierFst() : ImplToFst<Impl>(std::make_shared<Impl>()) {}
+  LinearClassifierFst() : Base(std::make_shared<Impl>()) {}
 
   explicit LinearClassifierFst(LinearFstData<A> *data, size_t num_classes,
                                const SymbolTable *isyms = nullptr,
                                const SymbolTable *osyms = nullptr,
                                CacheOptions opts = CacheOptions())
-      : ImplToFst<Impl>(
-            std::make_shared<Impl>(data, num_classes, isyms, osyms, opts)) {}
+      : Base(std::make_shared<Impl>(data, num_classes, isyms, osyms, opts)) {}
 
   explicit LinearClassifierFst(const Fst<A> &fst)
-      : ImplToFst<Impl>(std::make_shared<Impl>()) {
+      : Base(std::make_shared<Impl>()) {
     LOG(FATAL) << "LinearClassifierFst: no constructor from arbitrary FST.";
   }
 
   // See Fst<>::Copy() for doc.
   LinearClassifierFst(const LinearClassifierFst<A> &fst, bool safe = false)
-      : ImplToFst<Impl>(fst, safe) {}
+      : Base(fst, safe) {}
 
   // Get a copy of this LinearClassifierFst. See Fst<>::Copy() for further doc.
   LinearClassifierFst<A> *Copy(bool safe = false) const override {
@@ -991,11 +1007,10 @@ class LinearClassifierFst
   }
 
  private:
-  using ImplToFst<Impl>::GetImpl;
-  using ImplToFst<Impl>::GetMutableImpl;
+  using Base::GetImpl;
+  using Base::GetMutableImpl;
 
-  explicit LinearClassifierFst(std::shared_ptr<Impl> impl)
-      : ImplToFst<Impl>(impl) {}
+  explicit LinearClassifierFst(std::shared_ptr<Impl> impl) : Base(impl) {}
 
   void operator=(const LinearClassifierFst<A> &fst) = delete;
 };
@@ -1026,7 +1041,7 @@ class ArcIterator<LinearClassifierFst<Arc>>
 template <class Arc>
 inline void LinearClassifierFst<Arc>::InitStateIterator(
     StateIteratorData<Arc> *data) const {
-  data->base = new StateIterator<LinearClassifierFst<Arc>>(*this);
+  data->base = std::make_unique<StateIterator<LinearClassifierFst<Arc>>>(*this);
 }
 
 // Specialized Matcher for LinearFsts. This matcher only supports
@@ -1148,12 +1163,12 @@ class LinearFstMatcherTpl : public MatcherBase<typename F::Arc> {
 
   const FST &GetFst() const override { return fst_; }
 
-  uint64 Properties(uint64 props) const override {
+  uint64_t Properties(uint64_t props) const override {
     if (error_) props |= kError;
     return props;
   }
 
-  uint32 Flags() const override { return kRequireMatch; }
+  uint32_t Flags() const override { return kRequireMatch; }
 
  private:
   std::unique_ptr<const FST> owned_fst_;

@@ -1,3 +1,17 @@
+// Copyright 2005-2024 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the 'License');
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an 'AS IS' BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
 // See www.openfst.org for extensive documentation on this weighted
 // finite-state transducer library.
 //
@@ -6,11 +20,14 @@
 #ifndef FST_EXTENSIONS_PDT_INFO_H_
 #define FST_EXTENSIONS_PDT_INFO_H_
 
-#include <unordered_map>
-#include <unordered_set>
+#include <cstddef>
+#include <cstdint>
+#include <ios>
+#include <iostream>
+#include <string>
+#include <utility>
 #include <vector>
 
-#include <fst/types.h>
 #include <fst/extensions/pdt/pdt.h>
 #include <fst/fst.h>
 #include <unordered_map>
@@ -33,39 +50,40 @@ class PdtInfo {
 
   const std::string &ArcType() const { return Arc::Type(); }
 
-  int64 NumStates() const { return nstates_; }
+  int64_t NumStates() const { return nstates_; }
 
-  int64 NumArcs() const { return narcs_; }
+  int64_t NumArcs() const { return narcs_; }
 
-  int64 NumOpenParens() const { return nopen_parens_; }
+  int64_t NumOpenParens() const { return nopen_parens_; }
 
-  int64 NumCloseParens() const { return nclose_parens_; }
+  int64_t NumCloseParens() const { return nclose_parens_; }
 
-  int64 NumUniqueOpenParens() const { return nuniq_open_parens_; }
+  int64_t NumUniqueOpenParens() const { return nuniq_open_parens_; }
 
-  int64 NumUniqueCloseParens() const { return nuniq_close_parens_; }
+  int64_t NumUniqueCloseParens() const { return nuniq_close_parens_; }
 
-  int64 NumOpenParenStates() const { return nopen_paren_states_; }
+  int64_t NumOpenParenStates() const { return nopen_paren_states_; }
 
-  int64 NumCloseParenStates() const { return nclose_paren_states_; }
+  int64_t NumCloseParenStates() const { return nclose_paren_states_; }
+
+  void Print();
 
  private:
   std::string fst_type_;
-  int64 nstates_;
-  int64 narcs_;
-  int64 nopen_parens_;
-  int64 nclose_parens_;
-  int64 nuniq_open_parens_;
-  int64 nuniq_close_parens_;
-  int64 nopen_paren_states_;
-  int64 nclose_paren_states_;
+  int64_t nstates_;
+  int64_t narcs_;
+  int64_t nopen_parens_;
+  int64_t nclose_parens_;
+  int64_t nuniq_open_parens_;
+  int64_t nuniq_close_parens_;
+  int64_t nopen_paren_states_;
+  int64_t nclose_paren_states_;
 };
 
 template <class Arc>
 PdtInfo<Arc>::PdtInfo(
     const Fst<Arc> &fst,
-    const std::vector<std::pair<typename Arc::Label, typename Arc::Label>>
-        &parens)
+    const std::vector<std::pair<typename Arc::Label, typename Arc::Label>> &        parens)
     : fst_type_(fst.Type()),
       nstates_(0),
       narcs_(0),
@@ -117,32 +135,32 @@ PdtInfo<Arc>::PdtInfo(
 }
 
 template <class Arc>
-void PrintPdtInfo(const PdtInfo<Arc> &info) {
+void PdtInfo<Arc>::Print() {
   const auto old = std::cout.setf(std::ios::left);
   std::cout.width(50);
-  std::cout << "fst type" << info.FstType() << std::endl;
+  std::cout << "fst type" << FstType() << std::endl;
   std::cout.width(50);
-  std::cout << "arc type" << info.ArcType() << std::endl;
+  std::cout << "arc type" << ArcType() << std::endl;
   std::cout.width(50);
-  std::cout << "# of states" << info.NumStates() << std::endl;
+  std::cout << "# of states" << NumStates() << std::endl;
   std::cout.width(50);
-  std::cout << "# of arcs" << info.NumArcs() << std::endl;
+  std::cout << "# of arcs" << NumArcs() << std::endl;
   std::cout.width(50);
-  std::cout << "# of open parentheses" << info.NumOpenParens() << std::endl;
+  std::cout << "# of open parentheses" << NumOpenParens() << std::endl;
   std::cout.width(50);
-  std::cout << "# of close parentheses" << info.NumCloseParens() << std::endl;
+  std::cout << "# of close parentheses" << NumCloseParens() << std::endl;
   std::cout.width(50);
-  std::cout << "# of unique open parentheses" << info.NumUniqueOpenParens()
+  std::cout << "# of unique open parentheses" << NumUniqueOpenParens()
             << std::endl;
   std::cout.width(50);
-  std::cout << "# of unique close parentheses" << info.NumUniqueCloseParens()
+  std::cout << "# of unique close parentheses" << NumUniqueCloseParens()
             << std::endl;
   std::cout.width(50);
-  std::cout << "# of open parenthesis dest. states" << info.NumOpenParenStates()
+  std::cout << "# of open parenthesis dest. states" << NumOpenParenStates()
             << std::endl;
   std::cout.width(50);
-  std::cout << "# of close parenthesis source states"
-            << info.NumCloseParenStates() << std::endl;
+  std::cout << "# of close parenthesis source states" << NumCloseParenStates()
+            << std::endl;
   std::cout.setf(old);
 }
 

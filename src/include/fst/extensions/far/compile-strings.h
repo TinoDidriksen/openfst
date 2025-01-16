@@ -1,3 +1,17 @@
+// Copyright 2005-2024 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the 'License');
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an 'AS IS' BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
 // See www.openfst.org for extensive documentation on this weighted
 // finite-state transducer library.
 
@@ -6,16 +20,30 @@
 
 #include <libgen.h>
 
+#include <cstddef>
+#include <cstdint>
+#include <cstring>
 #include <fstream>
+#include <iostream>
 #include <istream>
+#include <memory>
+#include <sstream>
 #include <string>
 #include <vector>
 
+#include <fst/log.h>
 #include <fst/extensions/far/far.h>
+#include <fst/compact-fst.h>
 #include <fstream>
+#include <fst/fst.h>
 #include <fst/string.h>
+#include <fst/symbol-table.h>
+#include <fst/util.h>
+#include <fst/vector-fst.h>
+#include <string_view>
 
 namespace fst {
+namespace internal {
 
 // Constructs a reader that provides FSTs from a file (stream) either on a
 // line-by-line basis or on a per-stream basis. Note that the freshly
@@ -34,7 +62,7 @@ class StringReader {
 
   StringReader(std::istream &istrm, const std::string &source,
                FarEntryType entry_type, TokenType token_type,
-               bool allow_negative_labels, const SymbolTable *syms = nullptr,
+               const SymbolTable *syms = nullptr,
                Label unknown_label = kNoStateId)
       : nline_(0),
         istrm_(istrm),
@@ -43,7 +71,7 @@ class StringReader {
         token_type_(token_type),
         symbols_(syms),
         done_(false),
-        compiler_(token_type, syms, unknown_label, allow_negative_labels) {
+        compiler_(token_type, syms, unknown_label) {
     Next();  // Initialize the reader to the first input.
   }
 
@@ -118,63 +146,60 @@ class StringReader {
 
 // Computes the minimal length required to encode each line number as a decimal
 // number, or zero if the file is not seekable.
-int KeySize(const char *source);
+int KeySize(std::string_view source);
+
+}  // namespace internal
 
 template <class Arc>
-void FarCompileStrings(const std::vector<std::string> &in_sources,
-                       const std::string &out_source,
-                       const std::string &fst_type, const FarType &far_type,
-                       int32 generate_keys, FarEntryType entry_type,
-                       TokenType token_type, const std::string &symbols_source,
-                       const std::string &unknown_symbol, bool keep_symbols,
-                       bool initial_symbols, bool allow_negative_labels,
-                       const std::string &key_prefix,
-                       const std::string &key_suffix) {
+void CompileStrings(const std::vector<std::string> &sources,
+                    FarWriter<Arc> &writer, std::string_view fst_type,
+                    int32_t generate_keys, FarEntryType entry_type,
+                    TokenType token_type, const std::string &symbols_source,
+                    const std::string &unknown_symbol, bool keep_symbols,
+                    bool initial_symbols, const std::string &key_prefix,
+                    const std::string &key_suffix) {
   bool compact;
   if (fst_type.empty() || (fst_type == "vector")) {
     compact = false;
   } else if (fst_type == "compact") {
     compact = true;
   } else {
-    FSTERROR() << "FarCompileStrings: Unknown FST type: " << fst_type;
+    FSTERROR() << "CompileStrings: Unknown FST type: " << fst_type;
     return;
   }
   std::unique_ptr<const SymbolTable> syms;
   typename Arc::Label unknown_label = kNoLabel;
   if (!symbols_source.empty()) {
-    const SymbolTableTextOptions opts(allow_negative_labels);
-    syms.reset(SymbolTable::ReadText(symbols_source, opts));
+    syms.reset(SymbolTable::ReadText(symbols_source,
+                                     FST_FLAGS_fst_field_separator));
     if (!syms) {
-      LOG(ERROR) << "FarCompileStrings: Error reading symbol table: "
+      LOG(ERROR) << "CompileStrings: Error reading symbol table: "
                  << symbols_source;
       return;
     }
     if (!unknown_symbol.empty()) {
       unknown_label = syms->Find(unknown_symbol);
       if (unknown_label == kNoLabel) {
-        FSTERROR() << "FarCompileStrings: Label \"" << unknown_label
+        FSTERROR() << "CompileStrings: Label \"" << unknown_label
                    << "\" missing from symbol table: " << symbols_source;
         return;
       }
     }
   }
-  std::unique_ptr<FarWriter<Arc>> far_writer(
-      FarWriter<Arc>::Create(out_source, far_type));
-  if (!far_writer) return;
   int n = 0;
-  for (const auto &in_source : in_sources) {
+  for (const auto &in_source : sources) {
     // Don't try to call KeySize("").
     if (generate_keys == 0 && in_source.empty()) {
-      FSTERROR() << "FarCompileStrings: Read from a file instead of stdin or"
+      FSTERROR() << "CompileStrings: Read from a file instead of stdin or"
                  << " set the --generate_keys flag.";
       return;
     }
     const int key_size = generate_keys ? generate_keys
                                        : (entry_type == FarEntryType::FILE
                                               ? 1
-                                              : KeySize(in_source.c_str()));
+                                              : internal::KeySize(in_source));
     if (key_size == 0) {
-      FSTERROR() << "FarCompileStrings: " << in_source << " is not seekable.  "
+      FSTERROR() << "CompileStrings: " << in_source << " is not seekable. "
                  << "Read from a file instead or set the --generate_keys flag.";
       return;
     }
@@ -182,15 +207,15 @@ void FarCompileStrings(const std::vector<std::string> &in_sources,
     if (!in_source.empty()) {
       fstrm.open(in_source);
       if (!fstrm) {
-        FSTERROR() << "FarCompileStrings: Can't open file: " << in_source;
+        FSTERROR() << "CompileStrings: Can't open file: " << in_source;
         return;
       }
     }
     std::istream &istrm = fstrm.is_open() ? fstrm : std::cin;
     bool keep_syms = keep_symbols;
-    for (StringReader<Arc> reader(
+    for (internal::StringReader<Arc> reader(
              istrm, in_source.empty() ? "stdin" : in_source, entry_type,
-             token_type, allow_negative_labels, syms.get(), unknown_label);
+             token_type, syms.get(), unknown_label);
          !reader.Done(); reader.Next()) {
       ++n;
       std::unique_ptr<const Fst<Arc>> fst;
@@ -201,19 +226,14 @@ void FarCompileStrings(const std::vector<std::string> &in_sources,
       }
       if (initial_symbols) keep_syms = false;
       if (!fst) {
-        FSTERROR()
-            << "FarCompileStrings: Compiling string number " << n << " in file "
-            << in_source << " failed with token_type = "
-            << (token_type == TokenType::BYTE
-                    ? "byte"
-                    : (token_type == TokenType::UTF8
-                           ? "utf8"
-                           : (token_type == TokenType::SYMBOL ? "symbol"
-                                                              : "unknown")))
-            << " and entry_type = "
-            << (entry_type == FarEntryType::LINE
-                    ? "line"
-                    : (entry_type == FarEntryType::FILE ? "file" : "unknown"));
+        FSTERROR() << "CompileStrings: Compiling string number " << n
+                   << " in file " << in_source
+                   << " failed with token_type = " << token_type
+                   << " and entry_type = "
+                   << (entry_type == FarEntryType::LINE
+                           ? "line"
+                           : (entry_type == FarEntryType::FILE ? "file"
+                                                               : "unknown"));
         return;
       }
       std::ostringstream keybuf;
@@ -224,16 +244,16 @@ void FarCompileStrings(const std::vector<std::string> &in_sources,
       if (generate_keys > 0) {
         key = keybuf.str();
       } else {
-        auto *source = new char[in_source.size() + 1];
-        strcpy(source, in_source.c_str());  // NOLINT
-        key = basename(source);
+        auto source =
+            fst::make_unique_for_overwrite<char[]>(in_source.size() + 1);
+        strcpy(source.get(), in_source.c_str());  // NOLINT(runtime/printf)
+        key = basename(source.get());
         if (entry_type != FarEntryType::FILE) {
           key += "-";
           key += keybuf.str();
         }
-        delete[] source;
       }
-      far_writer->Add(key_prefix + key + key_suffix, *fst);
+      writer.Add(key_prefix + key + key_suffix, *fst);
     }
     if (generate_keys == 0) n = 0;
   }

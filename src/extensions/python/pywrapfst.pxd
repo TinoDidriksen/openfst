@@ -1,7 +1,25 @@
 #cython: language_level=3
+# Copyright 2005-2024 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the 'License');
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an 'AS IS' BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
 # See www.openfst.org for extensive documentation on this weighted
 # finite-state transducer library.
 
+from libc.stdint cimport int32_t
+from libc.stdint cimport int64_t
+from libc.stdint cimport uint8_t
+from libc.stdint cimport uint64_t
 
 from libcpp cimport bool
 from libcpp.memory cimport shared_ptr
@@ -10,10 +28,6 @@ from libcpp.string cimport string
 from libcpp.utility cimport pair
 from libcpp.vector cimport vector
 
-from cintegral_types cimport int32
-from cintegral_types cimport int64
-from cintegral_types cimport uint8
-from cintegral_types cimport uint64
 from cios cimport ostream
 from cios cimport stringstream
 
@@ -54,7 +68,7 @@ cdef fst.WeightClass _get_WeightClass_or_zero(const string &weight_type,
                                               weight_string) except *
 
 
-cdef class Weight(object):
+cdef class Weight:
 
   cdef unique_ptr[fst.WeightClass] _weight
 
@@ -62,9 +76,9 @@ cdef class Weight(object):
 
   cpdef Weight copy(self)
 
-  cpdef string to_string(self)
-
   cpdef string type(self)
+
+  cpdef string to_string(self)
 
   cpdef bool member(self)
 
@@ -90,7 +104,7 @@ ctypedef fst.SymbolTable * SymbolTable_ptr
 ctypedef const fst.SymbolTable * const_SymbolTable_ptr
 
 
-cdef class SymbolTableView(object):
+cdef class SymbolTableView:
 
   cdef const fst.SymbolTable *_raw(self)
 
@@ -98,13 +112,13 @@ cdef class SymbolTableView(object):
 
   cdef const fst.SymbolTable *_raw_ptr_or_raise(self) except *
 
-  cpdef int64 available_key(self) except *
+  cpdef int64_t available_key(self) except *
 
   cpdef bytes checksum(self)
 
   cpdef SymbolTable copy(self)
 
-  cpdef int64 get_nth_key(self, ssize_t pos) except *
+  cpdef int64_t get_nth_key(self, ssize_t pos) except *
 
   cpdef bytes labeled_checksum(self)
 
@@ -115,8 +129,6 @@ cdef class SymbolTableView(object):
   cpdef size_t num_symbols(self) except *
 
   cpdef void write(self, source) except *
-
-  cpdef void write_text(self, source) except *
 
   cpdef bytes write_to_string(self)
 
@@ -143,7 +155,7 @@ cdef class _MutableSymbolTable(SymbolTableView):
 
   cdef fst.SymbolTable *_mutable_raw_ptr_or_raise(self) except *
 
-  cpdef int64 add_symbol(self, symbol, int64 key=?) except *
+  cpdef int64_t add_symbol(self, symbol, int64_t key=?) except *
 
   cpdef void add_table(self, SymbolTableView syms) except *
 
@@ -167,8 +179,8 @@ cdef _EncodeMapperSymbolTableView _init_EncodeMapperSymbolTableView(
     shared_ptr[fst.EncodeMapperClass] encoder, bool input_side)
 
 
-cdef _FstSymbolTableView _init_FstSymbolTableView(shared_ptr[fst.FstClass] ifst,
-                                                  bool input_side)
+cdef _FstSymbolTableView _init_FstSymbolTableView(
+    shared_ptr[fst.FstClass] ifst, bool input_side)
 
 
 cdef _MutableFstSymbolTableView _init_MutableFstSymbolTableView(
@@ -181,7 +193,7 @@ cdef SymbolTable _init_SymbolTable(unique_ptr[fst.SymbolTable] table)
 cpdef SymbolTable _read_SymbolTable_from_string(string state)
 
 
-cdef class _SymbolTableIterator(object):
+cdef class _SymbolTableIterator:
 
   cdef SymbolTableView _table
   cdef unique_ptr[fst.SymbolTableIterator] _siter
@@ -193,15 +205,13 @@ cdef class _SymbolTableIterator(object):
 ctypedef fst.EncodeMapperClass * EncodeMapperClass_ptr
 
 
-cdef class EncodeMapper(object):
+cdef class EncodeMapper:
 
   cdef shared_ptr[fst.EncodeMapperClass] _mapper
 
   cpdef string arc_type(self)
 
   cpdef string weight_type(self)
-
-  cpdef uint8 flags(self)
 
   cpdef void write(self, source) except *
 
@@ -230,21 +240,16 @@ ctypedef fst.MutableFstClass * MutableFstClass_ptr
 ctypedef fst.VectorFstClass * VectorFstClass_ptr
 
 
-cdef class Fst(object):
+cdef class Fst:
 
   cdef shared_ptr[fst.FstClass] _fst
-
-  # Google-only...
-  @staticmethod
-  cdef string _server_render_svg(const string &)
-  # ...Google-only.
 
   @staticmethod
   cdef string _local_render_svg(const string &)
 
   cpdef string arc_type(self)
 
-  cpdef ArcIterator arcs(self, int64 state)
+  cpdef _ArcIterator arcs(self, int64_t state)
 
   cpdef Fst copy(self)
 
@@ -261,22 +266,22 @@ cdef class Fst(object):
                   bool vertical=?,
                   double ranksep=?,
                   double nodesep=?,
-                  int32 fontsize=?,
-                  int32 precision=?,
+                  int32_t fontsize=?,
+                  int32_t precision=?,
                   float_format=?,
                   bool show_weight_one=?) except *
 
-  cpdef Weight final(self, int64 state)
+  cpdef Weight final(self, int64_t state)
 
   cpdef string fst_type(self)
 
   cpdef _FstSymbolTableView input_symbols(self)
 
-  cpdef size_t num_arcs(self, int64 state) except *
+  cpdef size_t num_arcs(self, int64_t state) except *
 
-  cpdef size_t num_input_epsilons(self, int64 state) except *
+  cpdef size_t num_input_epsilons(self, int64_t state) except *
 
-  cpdef size_t num_output_epsilons(self, int64 state) except *
+  cpdef size_t num_output_epsilons(self, int64_t state) except *
 
   cpdef _FstSymbolTableView output_symbols(self)
 
@@ -288,9 +293,9 @@ cdef class Fst(object):
                     bool show_weight_one=?,
                     missing_sym=?) except *
 
-  cpdef int64 start(self)
+  cpdef int64_t start(self)
 
-  cpdef StateIterator states(self)
+  cpdef _StateIterator states(self)
 
   cpdef bool verify(self)
 
@@ -307,15 +312,15 @@ cdef class MutableFst(Fst):
 
   cdef void _check_mutating_imethod(self) except *
 
-  cdef void _add_arc(self, int64 state, Arc arc) except *
+  cdef void _add_arc(self, int64_t state, Arc arc) except *
 
-  cpdef int64 add_state(self)
+  cpdef int64_t add_state(self)
 
   cpdef void add_states(self, size_t)
 
   cdef void _arcsort(self, sort_type=?) except *
 
-  cdef void _closure(self, bool closure_plus=?)
+  cdef void _closure(self, closure_type=?)
 
   cdef void _concat(self, Fst fst2) except *
 
@@ -323,7 +328,7 @@ cdef class MutableFst(Fst):
 
   cdef void _decode(self, EncodeMapper) except *
 
-  cdef void _delete_arcs(self, int64 state, size_t n=?) except *
+  cdef void _delete_arcs(self, int64_t state, size_t n=?) except *
 
   cdef void _delete_states(self, states=?) except *
 
@@ -333,18 +338,18 @@ cdef class MutableFst(Fst):
 
   cdef void _minimize(self, float delta=?, bool allow_nondet=?) except *
 
-  cpdef MutableArcIterator mutable_arcs(self, int64 state)
+  cpdef _MutableArcIterator mutable_arcs(self, int64_t state)
 
-  cpdef int64 num_states(self)
+  cpdef int64_t num_states(self)
 
   cdef void _project(self, project_type) except *
 
-  cdef void _prune(self, float delta=?, int64 nstate=?, weight=?) except *
+  cdef void _prune(self, float delta=?, int64_t nstate=?, weight=?) except *
 
   cdef void _push(self,
                   float delta=?,
                   bool remove_total_weight=?,
-                  bool to_final=?)
+                  reweight_type=?)
 
   cdef void _relabel_pairs(self, ipairs=?, opairs=?) except *
 
@@ -358,22 +363,22 @@ cdef class MutableFst(Fst):
                             unknown_osymbol=?,
                             bool attach_new_osymbols=?) except *
 
-  cdef void _reserve_arcs(self, int64 state, size_t n) except *
+  cdef void _reserve_arcs(self, int64_t state, size_t n) except *
 
-  cdef void _reserve_states(self, int64 n)
+  cdef void _reserve_states(self, int64_t n)
 
-  cdef void _reweight(self, potentials, bool to_final=?) except *
+  cdef void _reweight(self, potentials, reweight_type=?) except *
 
   cdef void _rmepsilon(self,
                        queue_type=?,
                        bool connect=?,
                        weight=?,
-                       int64 nstate=?,
+                       int64_t nstate=?,
                        float delta=?) except *
 
-  cdef void _set_final(self, int64 state, weight=?) except *
+  cdef void _set_final(self, int64_t state, weight=?) except *
 
-  cdef void _set_start(self, int64 state) except *
+  cdef void _set_start(self, int64_t state) except *
 
   cdef void _set_input_symbols(self, SymbolTableView syms) except *
 
@@ -404,7 +409,7 @@ cpdef Fst _read_Fst_from_string(string state)
 # Iterators.
 
 
-cdef class Arc(object):
+cdef class Arc:
 
   cdef unique_ptr[fst.ArcClass] _arc
 
@@ -414,15 +419,13 @@ cdef class Arc(object):
 cdef Arc _init_Arc(const fst.ArcClass &arc)
 
 
-cdef class ArcIterator(object):
+cdef class _ArcIterator:
 
   cdef shared_ptr[fst.FstClass] _fst
   cdef unique_ptr[fst.ArcIteratorClass] _aiter
 
   cpdef bool done(self)
 
-  cpdef uint8 flags(self)
-
   cpdef void next(self)
 
   cpdef size_t position(self)
@@ -431,20 +434,18 @@ cdef class ArcIterator(object):
 
   cpdef void seek(self, size_t a)
 
-  cpdef void set_flags(self, uint8 flags, uint8 mask)
+  cpdef void set_flags(self, uint8_t flags, uint8_t mask)
 
-  cpdef object value(self)
+  cdef Arc _value(self)
 
 
-cdef class MutableArcIterator(object):
+cdef class _MutableArcIterator:
 
   cdef shared_ptr[fst.MutableFstClass] _mfst
   cdef unique_ptr[fst.MutableArcIteratorClass] _aiter
 
   cpdef bool done(self)
 
-  cpdef uint8 flags(self)
-
   cpdef void next(self)
 
   cpdef size_t position(self)
@@ -453,14 +454,14 @@ cdef class MutableArcIterator(object):
 
   cpdef void seek(self, size_t a)
 
-  cpdef void set_flags(self, uint8 flags, uint8 mask)
+  cpdef void set_flags(self, uint8_t flags, uint8_t mask)
 
-  cpdef void set_value(self, Arc arc)
+  cdef void _set_value(self, Arc arc)
 
-  cpdef object value(self)
+  cdef Arc _value(self)
 
 
-cdef class StateIterator(object):
+cdef class _StateIterator:
 
   cdef shared_ptr[fst.FstClass] _fst
   cdef unique_ptr[fst.StateIteratorClass] _siter
@@ -471,7 +472,9 @@ cdef class StateIterator(object):
 
   cpdef void reset(self)
 
-  cpdef int64 value(self)
+  cdef int64_t _value(self)
+
+  cpdef int64_t value(self) except *
 
 
 # Constructive operations on Fst.
@@ -491,8 +494,8 @@ cpdef Fst convert(Fst ifst, fst_type=?)
 cpdef MutableFst determinize(Fst ifst,
                              float delta=?,
                              det_type=?,
-                             int64 nstate=?,
-                             int64 subsequential_label=?,
+                             int64_t nstate=?,
+                             int64_t subsequential_label=?,
                              weight=?,
                              bool increment_subsequential_label=?)
 
@@ -503,11 +506,11 @@ cpdef MutableFst difference(Fst ifst1,
 
 cpdef MutableFst disambiguate(Fst ifst,
                               float delta=?,
-                              int64 nstate=?,
-                              int64 subsequential_label=?,
+                              int64_t nstate=?,
+                              int64_t subsequential_label=?,
                               weight=?)
 
-cpdef MutableFst epsnormalize(Fst ifst, bool eps_norm_output=?)
+cpdef MutableFst epsnormalize(Fst ifst, eps_norm_type=?)
 
 cpdef bool equal(Fst ifst1, Fst ifst2, float delta=?)
 
@@ -522,7 +525,7 @@ cpdef bool isomorphic(Fst ifst1, Fst ifst2, float delta=?)
 
 cpdef MutableFst prune(Fst ifst,
                        float delta=?,
-                       int64 nstate=?,
+                       int64_t nstate=?,
                        weight=?)
 
 cpdef MutableFst push(Fst ifst,
@@ -531,43 +534,43 @@ cpdef MutableFst push(Fst ifst,
                       bool push_labels=?,
                       bool remove_common_affix=?,
                       bool remove_total_weight=?,
-                      bool to_final=?)
+                      reweight_type=?)
 
 cpdef bool randequivalent(Fst ifst1,
                           Fst ifst2,
-                          int32 npath=?,
+                          int32_t npath=?,
                           float delta=?,
                           select=?,
-                          int32 max_length=?,
-                          uint64 seed=?) except *
+                          int32_t max_length=?,
+                          uint64_t seed=?) except *
 
 cpdef MutableFst randgen(Fst ifst,
-                         int32 npath=?,
+                         int32_t npath=?,
                          select=?,
-                         int32 max_length=?,
+                         int32_t max_length=?,
                          bool remove_total_weight=?,
                          bool weighted=?,
-                         uint64 seed=?)
+                         uint64_t seed=?)
 
 cpdef MutableFst replace(pairs,
                          call_arc_labeling=?,
                          return_arc_labeling=?,
                          bool epsilon_on_replace=?,
-                         int64 return_label=?)
+                         int64_t return_label=?)
 
 cpdef MutableFst reverse(Fst ifst, bool require_superinitial=?)
 
 cdef void _shortestdistance(Fst ifst,
                             vector[fst.WeightClass] *,
                             float delta=?,
-                            int64 nstate=?,
+                            int64_t nstate=?,
                             queue_type=?,
                             bool reverse=?) except *
 
 cpdef MutableFst shortestpath(Fst ifst,
                               float delta=?,
-                              int32 nshortest=?,
-                              int64 nstate=?,
+                              int32_t nshortest=?,
+                              int64_t nstate=?,
                               queue_type=?,
                               bool unique=?,
                               weight=?)
@@ -580,7 +583,7 @@ cpdef MutableFst synchronize(Fst ifst)
 # Compiler.
 
 
-cdef class Compiler(object):
+cdef class Compiler:
 
   cdef unique_ptr[stringstream] _sstrm
   cdef string _fst_type
@@ -592,7 +595,6 @@ cdef class Compiler(object):
   cdef bool _keep_isymbols
   cdef bool _keep_osymbols
   cdef bool _keep_state_numbering
-  cdef bool _allow_negative_labels
 
   cpdef Fst compile(self)
 
@@ -601,7 +603,7 @@ cdef class Compiler(object):
 
 # FarReader.
 
-cdef class FarReader(object):
+cdef class FarReader:
 
   cdef unique_ptr[fst.FarReaderClass] _reader
 
@@ -626,7 +628,7 @@ cdef class FarReader(object):
 
 # FarWriter.
 
-cdef class FarWriter(object):
+cdef class FarWriter:
 
   cdef unique_ptr[fst.FarWriterClass] _writer
 

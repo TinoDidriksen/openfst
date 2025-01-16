@@ -1,3 +1,17 @@
+// Copyright 2005-2024 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the 'License');
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an 'AS IS' BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
 // See www.openfst.org for extensive documentation on this weighted
 // finite-state transducer library.
 //
@@ -7,38 +21,49 @@
 #define FST_EXTENSIONS_COMPRESS_COMPRESS_H_
 
 #include <algorithm>
+#include <cstdint>
 #include <cstdio>
+#include <ios>
 #include <iostream>
+#include <istream>
 #include <map>
 #include <memory>
+#include <ostream>
 #include <queue>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <fst/compat.h>
-#include <fst/types.h>
 #include <fst/log.h>
 #include <fst/extensions/compress/elias.h>
+#include <fst/arc-map.h>
+#include <fst/arcfilter.h>
 #include <fst/encode.h>
+#include <fst/expanded-fst.h>
 #include <fstream>
 #include <fst/fst.h>
 #include <fst/mutable-fst.h>
+#include <fst/properties.h>
 #include <fst/queue.h>
 #include <fst/statesort.h>
+#include <fst/util.h>
+#include <fst/vector-fst.h>
 #include <fst/visit.h>
+#include <string_view>
 
 namespace fst {
 
 // Identifies stream data as a vanilla compressed FST.
-static const int32 kCompressMagicNumber = 1858869554;
+inline constexpr int32_t kCompressMagicNumber = 1858869554;
 
 namespace internal {
 
 // Expands a Lempel Ziv code and returns the set of code words where
 // expanded_code[i] is the i^th Lempel Ziv codeword.
 template <class Var, class Edge>
-bool ExpandLZCode(const std::vector<std::pair<Var, Edge>> &code,
-                  std::vector<std::vector<Edge>> *expanded_code) {
+[[nodiscard]] bool ExpandLZCode(const std::vector<std::pair<Var, Edge>> &code,
+                                std::vector<std::vector<Edge>> *expanded_code) {
   expanded_code->resize(code.size());
   for (int i = 0; i < code.size(); ++i) {
     if (code[i].first > i) {
@@ -78,12 +103,12 @@ class LempelZiv {
 
   // Decodes codedvector to output, returning false if the index exceeds the
   // size.
-  bool BatchDecode(const std::vector<std::pair<Var, Edge>> &input,
-                   std::vector<Edge> *output);
+  [[nodiscard]] bool BatchDecode(const std::vector<std::pair<Var, Edge>> &input,
+                                 std::vector<Edge> *output);
 
   // Decodes a single dictionary element, returning false if the index exceeds
   // the size.
-  bool SingleDecode(const Var &index, Edge *output) {
+  [[nodiscard]] bool SingleDecode(const Var &index, Edge *output) {
     if (index >= decode_vector_.size()) {
       LOG(ERROR) << "LempelZiv::SingleDecode: "
                  << "Index exceeded the dictionary size";
@@ -94,27 +119,12 @@ class LempelZiv {
     }
   }
 
-  ~LempelZiv() {
-    for (auto it = root_.next_number.begin(); it != root_.next_number.end();
-         ++it) {
-      CleanUp(it->second);
-    }
-  }
-
  private:
   struct Node {
     Var current_number;
     Edge current_edge;
-    std::map<Edge, Node *, EdgeLessThan> next_number;
+    std::map<Edge, std::unique_ptr<Node>, EdgeLessThan> next_number;
   };
-
-  void CleanUp(Node *temp) {
-    for (auto it = temp->next_number.begin(); it != temp->next_number.end();
-         ++it) {
-      CleanUp(it->second);
-    }
-    delete temp;
-  }
 
   Node root_;
   Var dict_number_;
@@ -130,7 +140,7 @@ void LempelZiv<Var, Edge, EdgeLessThan, EdgeEquals>::BatchEncode(
     while (it != input.cend()) {
       auto next = temp_node->next_number.find(*it);
       if (next != temp_node->next_number.cend()) {
-        temp_node = next->second;
+        temp_node = next->second.get();
         ++it;
       } else {
         break;
@@ -140,26 +150,26 @@ void LempelZiv<Var, Edge, EdgeLessThan, EdgeEquals>::BatchEncode(
       output->emplace_back(temp_node->current_number, default_edge_);
     } else if (it != input.cend()) {
       output->emplace_back(temp_node->current_number, *it);
-      auto *new_node = new Node();
+      auto new_node = std::make_unique<Node>();
       new_node->current_number = dict_number_++;
       new_node->current_edge = *it;
-      temp_node->next_number[*it] = new_node;
+      temp_node->next_number[*it] = std::move(new_node);
     }
     if (it == input.cend()) break;
   }
 }
 
 template <class Var, class Edge, class EdgeLessThan, class EdgeEquals>
-bool LempelZiv<Var, Edge, EdgeLessThan, EdgeEquals>::BatchDecode(
+[[nodiscard]] bool LempelZiv<Var, Edge, EdgeLessThan, EdgeEquals>::BatchDecode(
     const std::vector<std::pair<Var, Edge>> &input, std::vector<Edge> *output) {
-  for (auto it = input.cbegin(); it != input.cend(); ++it) {
+  for (const auto &[var, edge] : input) {
     std::vector<Edge> temp_output;
     EdgeEquals InstEdgeEquals;
-    if (InstEdgeEquals(it->second, default_edge_) != 1) {
-      decode_vector_.push_back(*it);
-      temp_output.push_back(it->second);
+    if (InstEdgeEquals(edge, default_edge_) != 1) {
+      decode_vector_.emplace_back(var, edge);
+      temp_output.push_back(edge);
     }
-    auto temp_integer = it->first;
+    auto temp_integer = var;
     if (temp_integer >= decode_vector_.size()) {
       LOG(ERROR) << "LempelZiv::BatchDecode: "
                  << "Index exceeded the dictionary size";
@@ -169,8 +179,7 @@ bool LempelZiv<Var, Edge, EdgeLessThan, EdgeEquals>::BatchDecode(
         temp_output.push_back(decode_vector_[temp_integer].second);
         temp_integer = decode_vector_[temp_integer].first;
       }
-      std::reverse(temp_output.begin(), temp_output.end());
-      output->insert(output->cend(), temp_output.begin(), temp_output.end());
+      output->insert(output->cend(), temp_output.rbegin(), temp_output.rend());
     }
   }
   return true;
@@ -186,11 +195,11 @@ class Compressor {
   Compressor() = default;
 
   // Compresses an FST into a boolean vector code, returning true on success.
-  bool Compress(const Fst<Arc> &fst, std::ostream &strm);
+  [[nodiscard]] bool Compress(const Fst<Arc> &fst, std::ostream &strm);
 
   // Decompresses the boolean vector into an FST, returning true on success.
-  bool Decompress(std::istream &strm, const std::string &source,
-                  MutableFst<Arc> *fst);
+  [[nodiscard]] bool Decompress(std::istream &strm, std::string_view source,
+                                MutableFst<Arc> *fst);
 
   // Computes the BFS order of a FST.
   void BfsOrder(const ExpandedFst<Arc> &fst, std::vector<StateId> *order);
@@ -458,7 +467,7 @@ void Compressor<Arc>::EncodeProcessedFst(const ExpandedFst<Arc> &fst,
     }
   }
   WriteToStream(strm);
-  const uint8 unweighted = fst.Properties(kUnweighted, true) == kUnweighted;
+  const uint8_t unweighted = fst.Properties(kUnweighted, true) == kUnweighted;
   WriteType(strm, unweighted);
   if (unweighted == 0) {
     WriteWeight(arc_weight_, strm);
@@ -512,7 +521,11 @@ void Compressor<Arc>::DecodeProcessedFst(const std::vector<StateId> &input,
       temp_new_dict_element.second = temp_label;
       current_new_input.push_back(temp_new_dict_element);
     }
-    dict_new.BatchDecode(current_new_input, &current_new_output);
+    if (!dict_new.BatchDecode(current_new_input, &current_new_output)) {
+      FSTERROR() << "Compressor::Decode: failed";
+      fst->SetProperties(kError, kError);
+      return;
+    }
     for (const auto &label : current_new_output) {
       if (!unweighted) {
         fst->AddArc(current_state,
@@ -645,20 +658,21 @@ void Compressor<Arc>::DecodeProcessedFst(const std::vector<StateId> &input,
 template <class Arc>
 void Compressor<Arc>::ReadWeight(std::istream &strm,
                                  std::vector<Weight> *output) {
-  int64 size;
+  int64_t size;
   Weight weight;
   ReadType(strm, &size);
-  for (int64 i = 0; i < size; ++i) {
+  for (int64_t i = 0; i < size; ++i) {
     weight.Read(strm);
     output->push_back(weight);
   }
 }
 
 template <class Arc>
-bool Compressor<Arc>::Decompress(std::istream &strm, const std::string &source,
-                                 MutableFst<Arc> *fst) {
+[[nodiscard]] bool Compressor<Arc>::Decompress(std::istream &strm,
+                                               std::string_view source,
+                                               MutableFst<Arc> *fst) {
   fst->DeleteStates();
-  int32 magic_number = 0;
+  int32_t magic_number = 0;
   ReadType(strm, &magic_number);
   if (magic_number != kCompressMagicNumber) {
     LOG(ERROR) << "Decompress: Bad compressed Fst: " << source;
@@ -666,15 +680,16 @@ bool Compressor<Arc>::Decompress(std::istream &strm, const std::string &source,
   }
   std::unique_ptr<EncodeMapper<Arc>> encoder(
       EncodeMapper<Arc>::Read(strm, "Decoding", DECODE));
+  if (encoder == nullptr) return false;
   std::vector<bool> bool_code;
-  uint8 block;
-  uint8 msb = 128;
-  int64 data_size;
+  uint8_t block;
+  uint8_t msb = 128;
+  int64_t data_size;
   ReadType(strm, &data_size);
-  for (int64 i = 0; i < data_size; ++i) {
+  for (int64_t i = 0; i < data_size; ++i) {
     ReadType(strm, &block);
     for (int j = 0; j < 8; ++j) {
-      uint8 temp = msb & block;
+      uint8_t temp = msb & block;
       bool_code.push_back(temp == 128);
       block = block << 1;
     }
@@ -682,7 +697,7 @@ bool Compressor<Arc>::Decompress(std::istream &strm, const std::string &source,
   std::vector<StateId> int_code;
   Elias<StateId>::BatchDecode(bool_code, &int_code);
   bool_code.clear();
-  uint8 unweighted;
+  uint8_t unweighted;
   ReadType(strm, &unweighted);
   if (unweighted == 0) {
     ReadWeight(strm, &arc_weight_);
@@ -696,7 +711,7 @@ bool Compressor<Arc>::Decompress(std::istream &strm, const std::string &source,
 template <class Arc>
 void Compressor<Arc>::WriteWeight(const std::vector<Weight> &input,
                                   std::ostream &strm) {
-  int64 size = input.size();
+  int64_t size = input.size();
   WriteType(strm, size);
   for (auto it = input.begin(); it != input.end(); ++it) {
     it->Write(strm);
@@ -706,10 +721,10 @@ void Compressor<Arc>::WriteWeight(const std::vector<Weight> &input,
 template <class Arc>
 void Compressor<Arc>::WriteToStream(std::ostream &strm) {
   while (buffer_code_.size() % 8 != 0) buffer_code_.push_back(true);
-  int64 data_size = buffer_code_.size() / 8;
+  int64_t data_size = buffer_code_.size() / 8;
   WriteType(strm, data_size);
-  int64 i = 0;
-  uint8 block;
+  int64_t i = 0;
+  uint8_t block;
   for (auto it = buffer_code_.begin(); it != buffer_code_.end(); ++it) {
     if (i % 8 == 0) {
       if (i > 0) WriteType(strm, block);
@@ -724,7 +739,8 @@ void Compressor<Arc>::WriteToStream(std::ostream &strm) {
 }
 
 template <class Arc>
-bool Compressor<Arc>::Compress(const Fst<Arc> &fst, std::ostream &strm) {
+[[nodiscard]] bool Compressor<Arc>::Compress(const Fst<Arc> &fst,
+                                             std::ostream &strm) {
   VectorFst<Arc> processedfst;
   EncodeMapper<Arc> encoder(kEncodeLabels, ENCODE);
   Preprocess(fst, &processedfst, &encoder);
@@ -737,13 +753,13 @@ bool Compressor<Arc>::Compress(const Fst<Arc> &fst, std::ostream &strm) {
 // Convenience functions that call the compressor and decompressor.
 
 template <class Arc>
-void Compress(const Fst<Arc> &fst, std::ostream &strm) {
+[[nodiscard]] bool Compress(const Fst<Arc> &fst, std::ostream &strm) {
   Compressor<Arc> comp;
-  comp.Compress(fst, strm);
+  return comp.Compress(fst, strm);
 }
 
 template <class Arc>
-bool Compress(const Fst<Arc> &fst, const std::string &source) {
+[[nodiscard]] bool Compress(const Fst<Arc> &fst, const std::string &source) {
   std::ofstream fstrm;
   if (!source.empty()) {
     fstrm.open(source, std::ios_base::out | std::ios_base::binary);
@@ -753,31 +769,32 @@ bool Compress(const Fst<Arc> &fst, const std::string &source) {
     }
   }
   std::ostream &ostrm = fstrm.is_open() ? fstrm : std::cout;
-  Compress(fst, ostrm);
+  if (!Compress(fst, ostrm)) return false;
   return !!ostrm;
 }
 
 template <class Arc>
-bool Decompress(std::istream &strm, const std::string &source,
-                MutableFst<Arc> *fst) {
+[[nodiscard]] bool Decompress(std::istream &strm, std::string_view source,
+                              MutableFst<Arc> *fst) {
   Compressor<Arc> comp;
-  comp.Decompress(strm, source, fst);
-  return true;
+  return comp.Decompress(strm, source, fst);
 }
 
 // Returns true on success.
 template <class Arc>
-bool Decompress(const std::string &source, MutableFst<Arc> *fst) {
+[[nodiscard]] bool Decompress(std::string_view source, MutableFst<Arc> *fst) {
   std::ifstream fstrm;
   if (!source.empty()) {
-    fstrm.open(source, std::ios_base::in | std::ios_base::binary);
+    fstrm.open(std::string(source), std::ios_base::in | std::ios_base::binary);
     if (!fstrm) {
       LOG(ERROR) << "Decompress: Can't open file: " << source;
       return false;
     }
   }
   std::istream &istrm = fstrm.is_open() ? fstrm : std::cin;
-  Decompress(istrm, source.empty() ? "standard input" : source, fst);
+  if (!Decompress(istrm, source.empty() ? "standard input" : source, fst)) {
+    return false;
+  }
   return !!istrm;
 }
 

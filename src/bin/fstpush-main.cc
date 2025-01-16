@@ -1,3 +1,17 @@
+// Copyright 2005-2024 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the 'License');
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an 'AS IS' BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
 // See www.openfst.org for extensive documentation on this weighted
 // finite-state transducer library.
 //
@@ -9,7 +23,9 @@
 #include <string>
 
 #include <fst/flags.h>
-#include <fst/types.h>
+#include <fst/log.h>
+#include <fst/reweight.h>
+#include <fst/script/fst-class.h>
 #include <fst/script/getters.h>
 #include <fst/script/push.h>
 
@@ -18,10 +34,11 @@ DECLARE_bool(push_weights);
 DECLARE_bool(push_labels);
 DECLARE_bool(remove_total_weight);
 DECLARE_bool(remove_common_affix);
-DECLARE_bool(to_final);
+DECLARE_string(reweight_type);
 
 int fstpush_main(int argc, char **argv) {
   namespace s = fst::script;
+  using fst::ReweightType;
   using fst::script::FstClass;
   using fst::script::VectorFstClass;
 
@@ -29,7 +46,6 @@ int fstpush_main(int argc, char **argv) {
   usage += argv[0];
   usage += " [in.fst [out.fst]]\n";
 
-  std::set_new_handler(FailedNewHandler);
   SET_FLAGS(usage.c_str(), &argc, &argv, true);
   if (argc > 3) {
     ShowUsage();
@@ -44,13 +60,21 @@ int fstpush_main(int argc, char **argv) {
   std::unique_ptr<FstClass> ifst(FstClass::Read(in_name));
   if (!ifst) return 1;
 
-  const auto flags =
-      s::GetPushFlags(FLAGS_push_weights, FLAGS_push_labels,
-                      FLAGS_remove_total_weight, FLAGS_remove_common_affix);
+  const auto flags = s::GetPushFlags(FST_FLAGS_push_weights,
+                                     FST_FLAGS_push_labels,
+                                     FST_FLAGS_remove_total_weight,
+                                     FST_FLAGS_remove_common_affix);
 
   VectorFstClass ofst(ifst->ArcType());
 
-  s::Push(*ifst, &ofst, flags, s::GetReweightType(FLAGS_to_final), FLAGS_delta);
+  ReweightType reweight_type;
+  if (!s::GetReweightType(FST_FLAGS_reweight_type, &reweight_type)) {
+    LOG(ERROR) << argv[0] << ": Unknown or unsupported reweight type: "
+               << FST_FLAGS_reweight_type;
+    return 1;
+  }
+
+  s::Push(*ifst, &ofst, flags, reweight_type, FST_FLAGS_delta);
 
   return !ofst.Write(out_name);
 }

@@ -1,3 +1,17 @@
+// Copyright 2005-2024 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the 'License');
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an 'AS IS' BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
 // See www.openfst.org for extensive documentation on this weighted
 // finite-state transducer library.
 //
@@ -6,16 +20,19 @@
 #ifndef FST_PRUNE_H_
 #define FST_PRUNE_H_
 
+#include <cstddef>
+#include <cstdlib>
 #include <type_traits>
 #include <utility>
 #include <vector>
 
 #include <fst/log.h>
-
 #include <fst/arcfilter.h>
+#include <fst/fst.h>
 #include <fst/heap.h>
+#include <fst/mutable-fst.h>
 #include <fst/shortest-distance.h>
-
+#include <fst/weight.h>
 
 namespace fst {
 namespace internal {
@@ -93,13 +110,12 @@ struct PruneOptions {
 // have the path property. The weight of any cycle needs to be bounded; i.e.,
 //
 //   Plus(weight, Weight::One()) == Weight::One()
-template <class Arc, class ArcFilter,
-          typename std::enable_if<(Arc::Weight::Properties() & kPath) ==
-                                  kPath>::type * = nullptr>
+template <class Arc, class ArcFilter>
 void Prune(MutableFst<Arc> *fst, const PruneOptions<Arc, ArcFilter> &opts =
                                      PruneOptions<Arc, ArcFilter>()) {
   using StateId = typename Arc::StateId;
   using Weight = typename Arc::Weight;
+  static_assert(IsPath<Weight>::value, "Weight must have path property.");
   using StateHeap = Heap<StateId, internal::PruneCompare<StateId, Weight>>;
   auto ns = fst->NumStates();
   if (ns < 1) return;
@@ -176,16 +192,6 @@ void Prune(MutableFst<Arc> *fst, const PruneOptions<Arc, ArcFilter> &opts =
   fst->DeleteStates(dead);
 }
 
-template <class Arc, class ArcFilter,
-          typename std::enable_if<(Arc::Weight::Properties() & kPath) !=
-                                  kPath>::type * = nullptr>
-void Prune(MutableFst<Arc> *fst, const PruneOptions<Arc, ArcFilter> &opts =
-                                     PruneOptions<Arc, ArcFilter>()) {
-  FSTERROR() << "Prune: Weight needs to have the path property: "
-             << Arc::Weight::Type();
-  fst->SetProperties(kError, kError);
-}
-
 // Pruning algorithm: this version modifies its input and takes the
 // pruning threshold as an argument. It deletes states and arcs in the
 // FST that do not belong to a successful path whose weight is more
@@ -212,18 +218,17 @@ void Prune(MutableFst<Arc> *fst, typename Arc::Weight weight_threshold,
 // shortest path Times() the provided weight threshold. When the state
 // threshold is not kNoStateId, the output FST is further restricted
 // to have no more than the number of states in
-// opts.state_threshold. Weights have the path property.  The weight
+// opts.state_threshold. Weights have the path property. The weight
 // of any cycle needs to be bounded; i.e.,
 //
 //   Plus(weight, Weight::One()) == Weight::One()
-template <class Arc, class ArcFilter,
-          typename std::enable_if<IsPath<typename Arc::Weight>::value>::type * =
-              nullptr>
+template <class Arc, class ArcFilter>
 void Prune(
     const Fst<Arc> &ifst, MutableFst<Arc> *ofst,
     const PruneOptions<Arc, ArcFilter> &opts = PruneOptions<Arc, ArcFilter>()) {
   using StateId = typename Arc::StateId;
   using Weight = typename Arc::Weight;
+  static_assert(IsPath<Weight>::value, "Weight must have path property.");
   using StateHeap = Heap<StateId, internal::PruneCompare<StateId, Weight>>;
   ofst->DeleteStates();
   ofst->SetInputSymbols(ifst.InputSymbols());
@@ -305,16 +310,6 @@ void Prune(
       }
     }
   }
-}
-
-template <class Arc, class ArcFilter,
-          typename std::enable_if<!IsPath<typename Arc::Weight>::value>::type
-              * = nullptr>
-void Prune(const Fst<Arc> &, MutableFst<Arc> *ofst,
-           const PruneOptions<Arc, ArcFilter> &) {
-  FSTERROR() << "Prune: Weight needs to have the path property: "
-             << Arc::Weight::Type();
-  ofst->SetProperties(kError, kError);
 }
 
 // Pruning algorithm: this version writes the pruned input FST to an

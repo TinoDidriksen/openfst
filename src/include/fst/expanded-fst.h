@@ -1,3 +1,17 @@
+// Copyright 2005-2024 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the 'License');
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an 'AS IS' BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
 // See www.openfst.org for extensive documentation on this weighted
 // finite-state transducer library.
 //
@@ -8,16 +22,22 @@
 
 #include <sys/types.h>
 
+#include <cstddef>
+#include <ios>
+#include <iostream>
 #include <istream>
 #include <memory>
+#include <optional>
 #include <string>
 #include <vector>
 
 #include <fst/log.h>
+#include <fst/arc.h>
 #include <fstream>
-
 #include <fst/fst.h>
-
+#include <fst/impl-to-fst.h>
+#include <fst/properties.h>
+#include <fst/register.h>
 
 namespace fst {
 
@@ -29,6 +49,10 @@ class ExpandedFst : public Fst<A> {
   using StateId = typename Arc::StateId;
 
   virtual StateId NumStates() const = 0;  // State count
+
+  std::optional<StateId> NumStatesIfKnown() const override {
+    return NumStates();
+  }
 
   // Get a copy of this ExpandedFst. See Fst<>::Copy() for further doc.
   ExpandedFst *Copy(bool safe = false) const override = 0;
@@ -56,14 +80,14 @@ class ExpandedFst : public Fst<A> {
     }
     auto *fst = reader(strm, ropts);
     if (!fst) return nullptr;
-    return static_cast<ExpandedFst *>(fst);
+    return down_cast<ExpandedFst *>(fst);
   }
 
   // Read an ExpandedFst from a file; return NULL on error.
   // Empty source reads from standard input.
-  static ExpandedFst *Read(const std::string &source) {
+  static ExpandedFst *Read(std::string_view source) {
     if (!source.empty()) {
-      std::ifstream strm(source,
+      std::ifstream strm(std::string(source),
                               std::ios_base::in | std::ios_base::binary);
       if (!strm) {
         LOG(ERROR) << "ExpandedFst::Read: Can't open file: " << source;
@@ -110,9 +134,12 @@ using StdExpandedFst = ExpandedFst<StdArc>;
 // This is a helper class template useful for attaching an ExpandedFst
 // interface to its implementation, handling reference counting. It
 // delegates to ImplToFst the handling of the Fst interface methods.
-template <class Impl, class FST = ExpandedFst<typename Impl::Arc>>
-class ImplToExpandedFst : public ImplToFst<Impl, FST> {
+template <class I, class FST = ExpandedFst<typename I::Arc>>
+class ImplToExpandedFst : public ImplToFst<I, FST> {
+  using Base = ImplToFst<I, FST>;
+
  public:
+  using Impl = I;
   using Arc = typename FST::Arc;
   using StateId = typename Arc::StateId;
   using Weight = typename Arc::Weight;
@@ -120,13 +147,12 @@ class ImplToExpandedFst : public ImplToFst<Impl, FST> {
   StateId NumStates() const override { return GetImpl()->NumStates(); }
 
  protected:
-  using ImplToFst<Impl, FST>::GetImpl;
+  using Base::GetImpl;
 
-  explicit ImplToExpandedFst(std::shared_ptr<Impl> impl)
-      : ImplToFst<Impl, FST>(impl) {}
+  explicit ImplToExpandedFst(std::shared_ptr<Impl> impl) : Base(impl) {}
 
   ImplToExpandedFst(const ImplToExpandedFst &fst, bool safe)
-      : ImplToFst<Impl, FST>(fst, safe) {}
+      : Base(fst, safe) {}
 
   static Impl *Read(std::istream &strm, const FstReadOptions &opts) {
     return Impl::Read(strm, opts);
@@ -134,9 +160,9 @@ class ImplToExpandedFst : public ImplToFst<Impl, FST> {
 
   // Read FST implementation from a file; return NULL on error.
   // Empty source reads from standard input.
-  static Impl *Read(const std::string &source) {
+  static Impl *Read(std::string_view source) {
     if (!source.empty()) {
-      std::ifstream strm(source,
+      std::ifstream strm(std::string(source),
                               std::ios_base::in | std::ios_base::binary);
       if (!strm) {
         LOG(ERROR) << "ExpandedFst::Read: Can't open file: " << source;
@@ -153,9 +179,9 @@ class ImplToExpandedFst : public ImplToFst<Impl, FST> {
 // if necessary.
 template <class Arc>
 typename Arc::StateId CountStates(const Fst<Arc> &fst) {
-  if (fst.Properties(kExpanded, false)) {
-    const auto *efst = static_cast<const ExpandedFst<Arc> *>(&fst);
-    return efst->NumStates();
+  if (std::optional<typename Arc::StateId> num_states =
+          fst.NumStatesIfKnown()) {
+    return *num_states;
   } else {
     typename Arc::StateId nstates = 0;
     for (StateIterator<Fst<Arc>> siter(fst); !siter.Done(); siter.Next()) {

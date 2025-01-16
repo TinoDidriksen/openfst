@@ -1,3 +1,17 @@
+// Copyright 2005-2024 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the 'License');
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an 'AS IS' BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
 // See www.openfst.org for extensive documentation on this weighted
 // finite-state transducer library.
 //
@@ -7,37 +21,42 @@
 #define FST_FACTOR_WEIGHT_H_
 
 #include <algorithm>
+#include <cstddef>
+#include <cstdint>
+#include <memory>
 #include <string>
-#include <unordered_map>
 #include <utility>
 #include <vector>
 
-#include <fst/types.h>
 #include <fst/log.h>
-
 #include <fst/cache.h>
-#include <fst/test-properties.h>
-
+#include <fst/fst.h>
+#include <fst/impl-to-fst.h>
+#include <fst/properties.h>
+#include <fst/string-weight.h>
+#include <fst/union-weight.h>
+#include <fst/weight.h>
+#include <unordered_map>
 
 namespace fst {
 
-constexpr uint8 kFactorFinalWeights = 0x01;
-constexpr uint8 kFactorArcWeights = 0x02;
+inline constexpr uint8_t kFactorFinalWeights = 0x01;
+inline constexpr uint8_t kFactorArcWeights = 0x02;
 
 template <class Arc>
 struct FactorWeightOptions : CacheOptions {
   using Label = typename Arc::Label;
 
   float delta;
-  uint8 mode;          // Factor arc weights and/or final weights.
+  uint8_t mode;        // Factor arc weights and/or final weights.
   Label final_ilabel;  // Input label of arc when factoring final weights.
   Label final_olabel;  // Output label of arc when factoring final weights.
   bool increment_final_ilabel;  // When factoring final w' results in > 1 arcs
   bool increment_final_olabel;  // at state, increment labels to make distinct?
 
   explicit FactorWeightOptions(const CacheOptions &opts, float delta = kDelta,
-                               uint8 mode = kFactorArcWeights |
-                                            kFactorFinalWeights,
+                               uint8_t mode = kFactorArcWeights |
+                                              kFactorFinalWeights,
                                Label final_ilabel = 0, Label final_olabel = 0,
                                bool increment_final_ilabel = false,
                                bool increment_final_olabel = false)
@@ -50,8 +69,8 @@ struct FactorWeightOptions : CacheOptions {
         increment_final_olabel(increment_final_olabel) {}
 
   explicit FactorWeightOptions(float delta = kDelta,
-                               uint8 mode = kFactorArcWeights |
-                                            kFactorFinalWeights,
+                               uint8_t mode = kFactorArcWeights |
+                                              kFactorFinalWeights,
                                Label final_ilabel = 0, Label final_olabel = 0,
                                bool increment_final_ilabel = false,
                                bool increment_final_olabel = false)
@@ -227,7 +246,7 @@ class FactorWeightFstImpl : public CacheImpl<Arc> {
   using CacheBaseImpl<CacheState<Arc>>::SetStart;
 
   struct Element {
-    Element() {}
+    Element() = default;
 
     Element(StateId s, Weight weight_) : state(s), weight(std::move(weight_)) {}
 
@@ -311,10 +330,10 @@ class FactorWeightFstImpl : public CacheImpl<Arc> {
     return CacheImpl<Arc>::NumOutputEpsilons(s);
   }
 
-  uint64 Properties() const override { return Properties(kFstProperties); }
+  uint64_t Properties() const override { return Properties(kFstProperties); }
 
   // Sets error if found, and returns other FST impl properties.
-  uint64 Properties(uint64 mask) const override {
+  uint64_t Properties(uint64_t mask) const override {
     if ((mask & kError) && fst_->Properties(kError, false)) {
       SetProperties(kError, kError);
     }
@@ -415,7 +434,7 @@ class FactorWeightFstImpl : public CacheImpl<Arc> {
 
   std::unique_ptr<const Fst<Arc>> fst_;
   float delta_;
-  uint8 mode_;          // Factoring arc and/or final weights.
+  uint8_t mode_;        // Factoring arc and/or final weights.
   Label final_ilabel_;  // ilabel of arc created when factoring final weights.
   Label final_olabel_;  // olabel of arc created when factoring final weights.
   bool increment_final_ilabel_;    // When factoring final weights results in
@@ -441,6 +460,8 @@ class FactorWeightFstImpl : public CacheImpl<Arc> {
 template <class A, class FactorIterator>
 class FactorWeightFst
     : public ImplToFst<internal::FactorWeightFstImpl<A, FactorIterator>> {
+  using Base = ImplToFst<internal::FactorWeightFstImpl<A, FactorIterator>>;
+
  public:
   using Arc = A;
   using StateId = typename Arc::StateId;
@@ -448,21 +469,19 @@ class FactorWeightFst
 
   using Store = DefaultCacheStore<Arc>;
   using State = typename Store::State;
-  using Impl = internal::FactorWeightFstImpl<Arc, FactorIterator>;
+  using typename Base::Impl;
 
   friend class ArcIterator<FactorWeightFst<Arc, FactorIterator>>;
   friend class StateIterator<FactorWeightFst<Arc, FactorIterator>>;
 
   explicit FactorWeightFst(const Fst<Arc> &fst)
-      : ImplToFst<Impl>(
-            std::make_shared<Impl>(fst, FactorWeightOptions<Arc>())) {}
+      : Base(std::make_shared<Impl>(fst, FactorWeightOptions<Arc>())) {}
 
   FactorWeightFst(const Fst<Arc> &fst, const FactorWeightOptions<Arc> &opts)
-      : ImplToFst<Impl>(std::make_shared<Impl>(fst, opts)) {}
+      : Base(std::make_shared<Impl>(fst, opts)) {}
 
   // See Fst<>::Copy() for doc.
-  FactorWeightFst(const FactorWeightFst &fst, bool copy)
-      : ImplToFst<Impl>(fst, copy) {}
+  FactorWeightFst(const FactorWeightFst &fst, bool copy) : Base(fst, copy) {}
 
   // Get a copy of this FactorWeightFst. See Fst<>::Copy() for further doc.
   FactorWeightFst *Copy(bool copy = false) const override {
@@ -476,8 +495,8 @@ class FactorWeightFst
   }
 
  private:
-  using ImplToFst<Impl>::GetImpl;
-  using ImplToFst<Impl>::GetMutableImpl;
+  using Base::GetImpl;
+  using Base::GetMutableImpl;
 
   FactorWeightFst &operator=(const FactorWeightFst &) = delete;
 };
@@ -509,7 +528,9 @@ class ArcIterator<FactorWeightFst<Arc, FactorIterator>>
 template <class Arc, class FactorIterator>
 inline void FactorWeightFst<Arc, FactorIterator>::InitStateIterator(
     StateIteratorData<Arc> *data) const {
-  data->base = new StateIterator<FactorWeightFst<Arc, FactorIterator>>(*this);
+  data->base =
+      std::make_unique<StateIterator<FactorWeightFst<Arc, FactorIterator>>>(
+          *this);
 }
 
 }  // namespace fst

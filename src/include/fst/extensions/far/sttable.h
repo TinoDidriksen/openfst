@@ -1,3 +1,17 @@
+// Copyright 2005-2024 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the 'License');
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an 'AS IS' BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
 // See www.openfst.org for extensive documentation on this weighted
 // finite-state transducer library.
 //
@@ -11,16 +25,23 @@
 #define FST_EXTENSIONS_FAR_STTABLE_H_
 
 #include <algorithm>
+#include <cstddef>
+#include <cstdint>
+#include <ios>
 #include <istream>
 #include <memory>
+#include <string>
+#include <vector>
 
+#include <fst/log.h>
 #include <fstream>
 #include <fst/util.h>
+#include <string_view>
 
 namespace fst {
 
-static constexpr int32 kSTTableMagicNumber = 2125656924;
-static constexpr int32 kSTTableFileVersion = 1;
+inline constexpr int32_t kSTTableMagicNumber = 2125656924;
+inline constexpr int32_t kSTTableFileVersion = 1;
 
 // String-type table writing class for an object of type T using a functor
 // Writer. The Writer functor must provide at least the following interface:
@@ -31,8 +52,9 @@ static constexpr int32 kSTTableFileVersion = 1;
 template <class T, class Writer>
 class STTableWriter {
  public:
-  explicit STTableWriter(const std::string &source)
-      : stream_(source, std::ios_base::out | std::ios_base::binary),
+  explicit STTableWriter(std::string_view source)
+      : stream_(std::string(source),
+                std::ios_base::out | std::ios_base::binary),
         error_(false) {
     WriteType(stream_, kSTTableMagicNumber);
     WriteType(stream_, kSTTableFileVersion);
@@ -43,7 +65,7 @@ class STTableWriter {
     }
   }
 
-  static STTableWriter<T, Writer> *Create(const std::string &source) {
+  static STTableWriter<T, Writer> *Create(std::string_view source) {
     if (source.empty()) {
       LOG(ERROR) << "STTableWriter: Writing to standard out unsupported.";
       return nullptr;
@@ -51,7 +73,7 @@ class STTableWriter {
     return new STTableWriter<T, Writer>(source);
   }
 
-  void Add(const std::string &key, const T &t) {
+  void Add(std::string_view key, const T &t) {
     if (key.empty()) {
       FSTERROR() << "STTableWriter::Add: Key empty: " << key;
       error_ = true;
@@ -60,7 +82,7 @@ class STTableWriter {
       error_ = true;
     }
     if (error_) return;
-    last_key_ = key;
+    last_key_.assign(key.data(), key.size());
     positions_.push_back(stream_.tellp());
     WriteType(stream_, key);
     entry_writer_(stream_, t);
@@ -70,13 +92,13 @@ class STTableWriter {
 
   ~STTableWriter() {
     WriteType(stream_, positions_);
-    WriteType(stream_, static_cast<int64>(positions_.size()));
+    WriteType(stream_, static_cast<int64_t>(positions_.size()));
   }
 
  private:
   Writer entry_writer_;
   std::ofstream stream_;
-  std::vector<int64> positions_;  // Position in file of each key-entry pair.
+  std::vector<int64_t> positions_;  // Position in file of each key-entry pair.
   std::string last_key_;          // Last key.
   bool error_;
 
@@ -109,9 +131,9 @@ class STTableReader {
         error_ = true;
         return;
       }
-      int32 magic_number = 0;
+      int32_t magic_number = 0;
       ReadType(*streams_[i], &magic_number);
-      int32 file_version = 0;
+      int32_t file_version = 0;
       ReadType(*streams_[i], &file_version);
       if (magic_number != kSTTableMagicNumber) {
         FSTERROR() << "STTableReader::STTableReader: Wrong file type: "
@@ -125,12 +147,14 @@ class STTableReader {
         error_ = true;
         return;
       }
-      int64 num_entries;
-      streams_[i]->seekg(-static_cast<int>(sizeof(int64)), std::ios_base::end);
+      int64_t num_entries;
+      streams_[i]->seekg(-static_cast<int>(sizeof(int64_t)),
+                         std::ios_base::end);
       ReadType(*streams_[i], &num_entries);
       if (num_entries > 0) {
-        streams_[i]->seekg(-static_cast<int>(sizeof(int64)) * (num_entries + 1),
-                           std::ios_base::end);
+        streams_[i]->seekg(
+            -static_cast<int>(sizeof(int64_t)) * (num_entries + 1),
+            std::ios_base::end);
         positions_[i].resize(num_entries);
         for (size_t j = 0; (j < num_entries) && (!streams_[i]->fail()); ++j) {
           ReadType(*streams_[i], &(positions_[i][j]));
@@ -151,13 +175,13 @@ class STTableReader {
     for (auto &stream : streams_) delete stream;
   }
 
-  static STTableReader<T, Reader> *Open(const std::string &source) {
+  static STTableReader<T, Reader> *Open(std::string_view source) {
     if (source.empty()) {
       LOG(ERROR) << "STTableReader: Operation not supported on standard input";
       return nullptr;
     }
     std::vector<std::string> sources;
-    sources.push_back(source);
+    sources.push_back(std::string(source));
     return new STTableReader<T, Reader>(sources);
   }
 
@@ -168,12 +192,15 @@ class STTableReader {
 
   void Reset() {
     if (error_) return;
-    for (size_t i = 0; i < streams_.size(); ++i)
-      streams_[i]->seekg(positions_[i].front());
+    for (size_t i = 0; i < streams_.size(); ++i) {
+      if (!positions_[i].empty()) {
+        streams_[i]->seekg(positions_[i].front());
+      }
+    }
     MakeHeap();
   }
 
-  bool Find(const std::string &key) {
+  bool Find(std::string_view key) {
     if (error_) return false;
     for (size_t i = 0; i < streams_.size(); ++i) LowerBound(i, key);
     MakeHeap();
@@ -221,7 +248,7 @@ class STTableReader {
 
   // Positions the stream at the position corresponding to the lower bound for
   // the specified key.
-  void LowerBound(size_t id, const std::string &find_key) {
+  void LowerBound(size_t id, std::string_view find_key) {
     auto *strm = streams_[id];
     const auto &positions = positions_[id];
     if (positions.empty()) return;
@@ -288,10 +315,11 @@ class STTableReader {
   Reader entry_reader_;
   std::vector<std::istream *> streams_;        // Input streams.
   std::vector<std::string> sources_;           // Corresponding file names.
-  std::vector<std::vector<int64>> positions_;  // Index of positions.
+  std::vector<std::vector<int64_t>> positions_;  // Index of positions.
   std::vector<std::string> keys_;  // Lowest unread key for each stream.
-  std::vector<int64> heap_;  // Heap containing ID of streams with unread keys.
-  int64 current_;            // ID of current stream to be read.
+  std::vector<int64_t>
+      heap_;         // Heap containing ID of streams with unread keys.
+  int64_t current_;  // ID of current stream to be read.
   std::unique_ptr<Compare> compare_;  // Functor comparing stream IDs.
   mutable std::unique_ptr<T> entry_;  // The currently read entry.
   bool error_;
@@ -314,9 +342,9 @@ bool ReadSTTableHeader(const std::string &source, Header *header) {
     LOG(ERROR) << "ReadSTTableHeader: Could not open file: " << source;
     return false;
   }
-  int32 magic_number = 0;
+  int32_t magic_number = 0;
   ReadType(strm, &magic_number);
-  int32 file_version = 0;
+  int32_t file_version = 0;
   ReadType(strm, &file_version);
   if (magic_number != kSTTableMagicNumber) {
     LOG(ERROR) << "ReadSTTableHeader: Wrong file type: " << source;
@@ -326,20 +354,23 @@ bool ReadSTTableHeader(const std::string &source, Header *header) {
     LOG(ERROR) << "ReadSTTableHeader: Wrong file version: " << source;
     return false;
   }
-  int64 i = -1;
-  strm.seekg(-static_cast<int>(sizeof(int64)), std::ios_base::end);
+  int64_t i = -1;
+  strm.seekg(-static_cast<int>(sizeof(int64_t)), std::ios_base::end);
   ReadType(strm, &i);  // Reads number of entries
   if (strm.fail()) {
     LOG(ERROR) << "ReadSTTableHeader: Error reading file: " << source;
     return false;
   }
   if (i == 0) return true;  // No entry header to read.
-  strm.seekg(-2 * static_cast<int>(sizeof(int64)), std::ios_base::end);
+  strm.seekg(-2 * static_cast<int>(sizeof(int64_t)), std::ios_base::end);
   ReadType(strm, &i);  // Reads position for last entry in file.
   strm.seekg(i);
   std::string key;
   ReadType(strm, &key);
-  header->Read(strm, source + ":" + key);
+  if (!header->Read(strm, source + ":" + key)) {
+    LOG(ERROR) << "ReadSTTableHeader: Error reading FstHeader: " << source;
+    return false;
+  }
   if (strm.fail()) {
     LOG(ERROR) << "ReadSTTableHeader: Error reading file: " << source;
     return false;
@@ -347,7 +378,7 @@ bool ReadSTTableHeader(const std::string &source, Header *header) {
   return true;
 }
 
-bool IsSTTable(const std::string &source);
+bool IsSTTable(std::string_view source);
 
 }  // namespace fst
 

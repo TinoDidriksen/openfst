@@ -1,3 +1,17 @@
+// Copyright 2005-2024 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the 'License');
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an 'AS IS' BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
 // See www.openfst.org for extensive documentation on this weighted
 // finite-state transducer library.
 //
@@ -7,17 +21,20 @@
 #ifndef FST_PUSH_H_
 #define FST_PUSH_H_
 
+#include <cstdint>
 #include <vector>
 
-#include <fst/types.h>
 #include <fst/log.h>
-
 #include <fst/arc-map.h>
+#include <fst/arc.h>
 #include <fst/factor-weight.h>
 #include <fst/fst.h>
+#include <fst/mutable-fst.h>
 #include <fst/reweight.h>
 #include <fst/shortest-distance.h>
-
+#include <fst/string-weight.h>
+#include <fst/vector-fst.h>
+#include <fst/weight.h>
 
 namespace fst {
 
@@ -89,10 +106,10 @@ void Push(MutableFst<Arc> *fst, ReweightType type = REWEIGHT_TO_INITIAL,
   }
 }
 
-constexpr uint8 kPushWeights = 0x01;
-constexpr uint8 kPushLabels = 0x02;
-constexpr uint8 kPushRemoveTotalWeight = 0x04;
-constexpr uint8 kPushRemoveCommonAffix = 0x08;
+inline constexpr uint8_t kPushWeights = 0x01;
+inline constexpr uint8_t kPushLabels = 0x02;
+inline constexpr uint8_t kPushRemoveTotalWeight = 0x04;
+inline constexpr uint8_t kPushRemoveCommonAffix = 0x08;
 
 // Pushes the weights and/or labels of the input FST into the output mutable FST
 // by pushing weights and/or labels (as determined by the ptype argument)
@@ -101,7 +118,7 @@ constexpr uint8 kPushRemoveCommonAffix = 0x08;
 // weights towards the initial state, and right distribution when pushing
 // weights towards the final states.
 template <class Arc, ReweightType rtype>
-void Push(const Fst<Arc> &ifst, MutableFst<Arc> *ofst, uint8 ptype,
+void Push(const Fst<Arc> &ifst, MutableFst<Arc> *ofst, uint8_t ptype,
           float delta = kShortestDelta) {
   using Label = typename Arc::Label;
   using Weight = typename Arc::Weight;
@@ -118,8 +135,8 @@ void Push(const Fst<Arc> &ifst, MutableFst<Arc> *ofst, uint8 ptype,
     if (ptype & kPushWeights) {
       ShortestDistance(gfst, &gdistance, rtype == REWEIGHT_TO_INITIAL, delta);
     } else {
-      auto uwfst = MakeArcMapFst(ifst, RmWeightMapper<Arc>());
-      auto guwfst = MakeArcMapFst(uwfst, ToGallicMapper<Arc, gtype>());
+      ArcMapFst uwfst(ifst, RmWeightMapper<Arc>());
+      ArcMapFst guwfst(uwfst, ToGallicMapper<Arc, gtype>());
       ShortestDistance(guwfst, &gdistance, rtype == REWEIGHT_TO_INITIAL, delta);
     }
     auto total_weight = GallicWeight::One();

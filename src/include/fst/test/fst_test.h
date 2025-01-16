@@ -1,3 +1,17 @@
+// Copyright 2005-2024 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the 'License');
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an 'AS IS' BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
 // See www.openfst.org for extensive documentation on this weighted
 // finite-state transducer library.
 //
@@ -6,13 +20,20 @@
 #ifndef FST_TEST_FST_TEST_H_
 #define FST_TEST_FST_TEST_H_
 
+#include <cstddef>
+#include <memory>
+#include <string>
+
+#include <fst/log.h>
 #include <fst/equal.h>
+#include <fst/expanded-fst.h>
 #include <fstream>
+#include <fst/fst.h>
 #include <fst/matcher.h>
+#include <fst/mutable-fst.h>
+#include <fst/properties.h>
 #include <fst/vector-fst.h>
 #include <fst/verify.h>
-
-DECLARE_string(tmpdir);
 
 namespace fst {
 
@@ -35,10 +56,8 @@ class FstTester {
       : num_states_(num_states), weighted_(weighted) {
     VectorFst<Arc> vfst;
     InitFst(&vfst, num_states);
-    testfst_ = new F(vfst);
+    testfst_ = std::make_unique<F>(vfst);
   }
-
-  ~FstTester() { delete testfst_; }
 
   // This verifies the contents described in InitFst() using
   // methods defined in a generic Fst.
@@ -134,12 +153,13 @@ class FstTester {
       }
     }
 
-    G *cfst1 = fst->Copy();
-    cfst1->DeleteStates();
-    CHECK_EQ(cfst1->NumStates(), 0);
-    delete cfst1;
+    {
+      std::unique_ptr<G> cfst1(fst->Copy());
+      cfst1->DeleteStates();
+      CHECK_EQ(cfst1->NumStates(), 0);
+    }
 
-    G *cfst2 = fst->Copy();
+    std::unique_ptr<G> cfst2(fst->Copy());
     for (StateIterator<G> siter(*cfst2); !siter.Done(); siter.Next()) {
       StateId s = siter.Value();
       cfst2->DeleteArcs(s);
@@ -147,10 +167,9 @@ class FstTester {
       CHECK_EQ(cfst2->NumInputEpsilons(s), 0);
       CHECK_EQ(cfst2->NumOutputEpsilons(s), 0);
     }
-    delete cfst2;
   }
 
-  void TestMutable() { TestMutable(testfst_); }
+  void TestMutable() { TestMutable(testfst_.get()); }
 
   // This verifies operator=
   template <class G>
@@ -184,9 +203,8 @@ class FstTester {
     TestBase(c2fst);
 
     // Copy from self
-    const G *c3fst = fst.Copy();
+    std::unique_ptr<const G> c3fst(fst.Copy());
     TestBase(*c3fst);
-    delete c3fst;
   }
 
   void TestCopy() const { TestCopy(*testfst_); }
@@ -194,31 +212,28 @@ class FstTester {
   // This verifies the read/write methods.
   template <class G>
   void TestIO(const G &fst) const {
-    const std::string filename = FLAGS_tmpdir + "/test.fst";
-    const std::string aligned = FLAGS_tmpdir + "/aligned.fst";
+    const std::string filename = FST_FLAGS_tmpdir + "/test.fst";
+    const std::string aligned = FST_FLAGS_tmpdir + "/aligned.fst";
     {
       // write/read
       CHECK(fst.Write(filename));
-      G *ffst = G::Read(filename);
+      auto ffst = fst::WrapUnique(G::Read(filename));
       CHECK(ffst);
       TestBase(*ffst);
-      delete ffst;
     }
 
     {
       // generic read/cast/test
-      Fst<Arc> *gfst = Fst<Arc>::Read(filename);
+      auto gfst = fst::WrapUnique(Fst<Arc>::Read(filename));
       CHECK(gfst);
-      G *dfst = static_cast<G *>(gfst);
+      G *dfst = down_cast<G *>(gfst.get());
       TestBase(*dfst);
 
       // generic write/read/test
       CHECK(gfst->Write(filename));
-      Fst<Arc> *hfst = Fst<Arc>::Read(filename);
+      auto hfst = fst::WrapUnique(Fst<Arc>::Read(filename));
       CHECK(hfst);
       TestBase(*hfst);
-      delete gfst;
-      delete hfst;
     }
 
     {
@@ -234,10 +249,9 @@ class FstTester {
       FstReadOptions opts;
       opts.mode = FstReadOptions::ReadMode("map");
       opts.source = aligned;
-      G *gfst = G::Read(istr, opts);
+      auto gfst = fst::WrapUnique(G::Read(istr, opts));
       CHECK(gfst);
       TestBase(*gfst);
-      delete gfst;
     }
 
     // check mmaping of unaligned files to make sure it does not fail.
@@ -253,29 +267,26 @@ class FstTester {
       FstReadOptions opts;
       opts.mode = FstReadOptions::ReadMode("map");
       opts.source = aligned;
-      G *gfst = G::Read(istr, opts);
+      auto gfst = fst::WrapUnique(G::Read(istr, opts));
       CHECK(gfst);
       TestBase(*gfst);
-      delete gfst;
     }
 
     // expanded write/read/test
     if (fst.Properties(kExpanded, false)) {
-      ExpandedFst<Arc> *efst = ExpandedFst<Arc>::Read(filename);
+      auto efst = fst::WrapUnique(ExpandedFst<Arc>::Read(filename));
       CHECK(efst);
       TestBase(*efst);
       TestExpanded(*efst);
-      delete efst;
     }
 
     // mutable write/read/test
     if (fst.Properties(kMutable, false)) {
-      MutableFst<Arc> *mfst = MutableFst<Arc>::Read(filename);
+      auto mfst = fst::WrapUnique(MutableFst<Arc>::Read(filename));
       CHECK(mfst);
       TestBase(*mfst);
       TestExpanded(*mfst);
-      TestMutable(mfst);
-      delete mfst;
+      TestMutable(mfst.get());
     }
   }
 
@@ -328,7 +339,7 @@ class FstTester {
 
   size_t num_states_ = 0;
   bool weighted_ = true;
-  F *testfst_;  // what we're testing
+  std::unique_ptr<F> testfst_;  // what we're testing
 };
 
 }  // namespace fst

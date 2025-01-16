@@ -1,3 +1,17 @@
+// Copyright 2005-2024 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the 'License');
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an 'AS IS' BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
 // See www.openfst.org for extensive documentation on this weighted
 // finite-state transducer library.
 //
@@ -6,20 +20,23 @@
 #ifndef FST_EXTENSIONS_PDT_PAREN_H_
 #define FST_EXTENSIONS_PDT_PAREN_H_
 
+#include <sys/types.h>
+
 #include <algorithm>
+#include <cstddef>
+#include <cstdint>
 #include <set>
-#include <unordered_map>
+#include <utility>
 #include <vector>
 
 #include <fst/log.h>
-
 #include <fst/extensions/pdt/collection.h>
 #include <fst/extensions/pdt/pdt.h>
 #include <fst/dfs-visit.h>
 #include <fst/fst.h>
+#include <fst/util.h>
 #include <unordered_map>
 #include <unordered_set>
-
 
 namespace fst {
 namespace internal {
@@ -55,28 +72,26 @@ struct ParenState {
   };
 };
 
-// Creates an FST-style const iterator from an STL-style map.
-template <class Map>
-class MapIterator {
+// Creates an FST-style const iterator from range of contiguous values
+// in memory.
+template <class V>
+class SpanIterator {
  public:
-  using StlIterator = typename Map::const_iterator;
-  using ValueType = typename Map::mapped_type;
+  using ValueType = const V;
 
-  MapIterator(const Map &map, StlIterator it)
-      : begin_(it), end_(map.end()), it_(it) {}
+  SpanIterator() = default;
+  explicit SpanIterator(ValueType *begin, ValueType *end)
+      : begin_(begin), end_(end), it_(begin) {}
 
-  bool Done() const { return it_ == end_ || it_->first != begin_->first; }
-
-  ValueType Value() const { return it_->second; }
-
+  bool Done() const { return it_ == end_; }
+  ValueType Value() const { return *it_; }
   void Next() { ++it_; }
-
   void Reset() { it_ = begin_; }
 
  private:
-  const StlIterator begin_;
-  const StlIterator end_;
-  StlIterator it_;
+  ValueType *const begin_ = nullptr;
+  ValueType *const end_ = nullptr;
+  ValueType *it_ = nullptr;
 };
 
 // PdtParenReachable: Provides various parenthesis reachability information.
@@ -91,18 +106,21 @@ class PdtParenReachable {
   using StateHash = typename State::Hash;
 
   // Maps from state ID to reachable paren IDs from (to) that state.
-  using ParenMultimap = std::unordered_multimap<StateId, Label>;
+  using ParenMultimap = std::unordered_map<StateId, std::vector<Label>>;
 
   // Maps from paren ID and state ID to reachable state set ID.
   using StateSetMap = std::unordered_map<State, ssize_t, StateHash>;
 
   // Maps from paren ID and state ID to arcs exiting that state with that
   // Label.
-  using ParenArcMultimap = std::unordered_map<State, Arc, StateHash>;
+  using ParenArcMultimap =
+      std::unordered_map<State, std::vector<Arc>, StateHash>;
 
-  using ParenIterator = MapIterator<ParenMultimap>;
+  using ParenIterator =
+      SpanIterator<typename ParenMultimap::mapped_type::value_type>;
 
-  using ParenArcIterator = MapIterator<ParenArcMultimap>;
+  using ParenArcIterator =
+      SpanIterator<typename ParenArcMultimap::mapped_type::value_type>;
 
   using SetIterator = typename Collection<ssize_t, StateId>::SetIterator;
 
@@ -136,7 +154,16 @@ class PdtParenReachable {
   // Given a state ID, returns an iterator over paren IDs for close (open)
   // parens reachable from that state along balanced paths.
   ParenIterator FindParens(StateId s) const {
-    return ParenIterator(paren_multimap_, paren_multimap_.find(s));
+    const auto parens = paren_multimap_.find(s);
+    if (parens != paren_multimap_.end()) {
+      // Cannot dereference iterators if the vector is empty, but that never
+      // happens. ComputeStateSet always adds something to the vector,
+      // and never leaves an empty vector.
+      DCHECK(!parens->second.empty());
+      return ParenIterator(&*parens->second.begin(), &*parens->second.end());
+    } else {
+      return ParenIterator();
+    }
   }
 
   // Given a paren ID and a state ID s, returns an iterator over states that can
@@ -157,8 +184,17 @@ class PdtParenReachable {
   // paren ID.
   ParenArcIterator FindParenArcs(Label paren_id, StateId s) const {
     const State paren_state(paren_id, s);
-    return ParenArcIterator(paren_arc_multimap_,
-                            paren_arc_multimap_.find(paren_state));
+    const auto paren_arcs = paren_arc_multimap_.find(paren_state);
+    if (paren_arcs != paren_arc_multimap_.end()) {
+      // Cannot dereference iterators if the vector is empty, but that never
+      // happens. ComputeStateSet always adds something to the vector,
+      // and never leaves an empty vector.
+      DCHECK(!paren_arcs->second.empty());
+      return ParenArcIterator(&*paren_arcs->second.begin(),
+                              &*paren_arcs->second.end());
+    } else {
+      return ParenArcIterator();
+    }
   }
 
  private:
@@ -185,7 +221,7 @@ class PdtParenReachable {
   // Paren arcs.
   ParenArcMultimap paren_arc_multimap_;
   // DFS states.
-  std::vector<uint8> state_color_;
+  std::vector<uint8_t> state_color_;
   // Reachable states to IDs.
   mutable Collection<ssize_t, StateId> state_sets_;
   // IDs to reachable states.
@@ -199,9 +235,9 @@ class PdtParenReachable {
 // Gathers paren and state set information.
 template <class Arc>
 bool PdtParenReachable<Arc>::DFSearch(StateId s) {
-  static constexpr uint8 kWhiteState = 0x01;  // Undiscovered.
-  static constexpr uint8 kGreyState = 0x02;   // Discovered & unfinished.
-  static constexpr uint8 kBlackState = 0x04;  // Finished.
+  static constexpr uint8_t kWhiteState = 0x01;  // Undiscovered.
+  static constexpr uint8_t kGreyState = 0x02;   // Discovered & unfinished.
+  static constexpr uint8_t kBlackState = 0x04;  // Finished.
   if (s >= state_color_.size()) state_color_.resize(s + 1, kWhiteState);
   if (state_color_[s] == kBlackState) return true;
   if (state_color_[s] == kGreyState) return false;
@@ -215,11 +251,17 @@ bool PdtParenReachable<Arc>::DFSearch(StateId s) {
         if (!DFSearch(arc.nextstate)) return false;
         for (auto set_iter = FindStates(paren_id, arc.nextstate);
              !set_iter.Done(); set_iter.Next()) {
+          // Recursive DFSearch call may modify paren_arc_multimap_ via
+          // ComputeStateSet, so save the paren arcs to avoid issues
+          // with iterator invalidation.
+          std::vector<StateId> cp_nextstates;
           for (auto paren_arc_iter =
                    FindParenArcs(paren_id, set_iter.Element());
                !paren_arc_iter.Done(); paren_arc_iter.Next()) {
-            const auto &cparc = paren_arc_iter.Value();
-            if (!DFSearch(cparc.nextstate)) return false;
+            cp_nextstates.push_back(paren_arc_iter.Value().nextstate);
+          }
+          for (const StateId cp_nextstate : cp_nextstates) {
+            if (!DFSearch(cp_nextstate)) return false;
           }
         }
       }
@@ -256,24 +298,21 @@ void PdtParenReachable<Arc>::ComputeStateSet(StateId s) {
         paren_set.insert(paren_id);
         state_sets[paren_id].insert(s);
         const State paren_state(paren_id, s);
-        paren_arc_multimap_.insert(std::make_pair(paren_state, arc));
+        paren_arc_multimap_[paren_state].push_back(arc);
       }
     } else {  // Non-paren.
       UpdateStateSet(arc.nextstate, &paren_set, &state_sets);
     }
   }
-  std::vector<StateId> state_set;
-  for (auto paren_iter = paren_set.begin(); paren_iter != paren_set.end();
-       ++paren_iter) {
-    state_set.clear();
-    const auto paren_id = *paren_iter;
-    paren_multimap_.insert(std::make_pair(s, paren_id));
-    for (auto state_iter = state_sets[paren_id].begin();
-         state_iter != state_sets[paren_id].end(); ++state_iter) {
-      state_set.push_back(*state_iter);
-    }
+  std::vector<StateId> state_vec;
+  for (const Label paren_id : paren_set) {
+    paren_multimap_[s].push_back(paren_id);
+
+    const std::set<StateId> &state_set = state_sets[paren_id];
+    state_vec.assign(state_set.begin(), state_set.end());
+
     const State paren_state(paren_id, s);
-    set_map_[paren_state] = state_sets_.FindId(state_set);
+    set_map_[paren_state] = state_sets_.FindId(state_vec);
   }
 }
 
@@ -319,7 +358,7 @@ class PdtBalanceData {
 
   using SetIterator = typename Collection<ssize_t, StateId>::SetIterator;
 
-  PdtBalanceData() {}
+  PdtBalanceData() = default;
 
   void Clear() {
     open_paren_map_.clear();
@@ -408,7 +447,7 @@ class PdtBalanceData {
 template <class Arc>
 PdtBalanceData<Arc> *PdtBalanceData<Arc>::Reverse(
     StateId num_states, StateId num_split, StateId state_id_shift) const {
-  auto *bd = new PdtBalanceData<Arc>;
+  auto bd = fst::make_unique_for_overwrite<PdtBalanceData<Arc>>();
   std::unordered_set<StateId> close_sources;
   const auto split_size = num_states / num_split;
   for (StateId i = 0; i < num_states; i += split_size) {
@@ -432,7 +471,7 @@ PdtBalanceData<Arc> *PdtBalanceData<Arc>::Reverse(
       bd->FinishInsert(*it);
     }
   }
-  return bd;
+  return bd.release();
 }
 
 }  // namespace internal

@@ -1,3 +1,17 @@
+// Copyright 2005-2024 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the 'License');
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an 'AS IS' BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
 // See www.openfst.org for extensive documentation on this weighted
 // finite-state transducer library.
 //
@@ -81,22 +95,24 @@
 // This file contains general-purpose templates which are used in the
 // implementation of the operations.
 
+#include <cstdint>
+#include <memory>
 #include <string>
 #include <utility>
+#include <vector>
 
-#include <fst/types.h>
 #include <fst/log.h>
+#include <fst/arc.h>
 #include <fst/generic-register.h>
+#include <fst/util.h>
 #include <fst/script/fst-class.h>
+#include <fst/script/weight-class.h>
+#include <string_view>
 
 namespace fst {
 namespace script {
 
-enum RandArcSelection {
-  UNIFORM_ARC_SELECTOR,
-  LOG_PROB_ARC_SELECTOR,
-  FAST_LOG_PROB_ARC_SELECTOR
-};
+enum class RandArcSelection : uint8_t { UNIFORM, LOG_PROB, FAST_LOG_PROB };
 
 // A generic register for operations with various kinds of signatures.
 // Needed since every function signature requires a new registration class.
@@ -105,22 +121,23 @@ enum RandArcSelection {
 // signature.
 template <class OperationSignature>
 class GenericOperationRegister
-    : public GenericRegister<std::pair<std::string, std::string>,
+    : public GenericRegister<std::pair<std::string_view, std::string_view>,
                              OperationSignature,
                              GenericOperationRegister<OperationSignature>> {
  public:
-  OperationSignature GetOperation(const std::string &operation_name,
-                                  const std::string &arc_type) {
+  OperationSignature GetOperation(std::string_view operation_name,
+                                  std::string_view arc_type) {
     return this->GetEntry(std::make_pair(operation_name, arc_type));
   }
 
  protected:
   std::string ConvertKeyToSoFilename(
-      const std::pair<std::string, std::string> &key) const final {
+      const std::pair<std::string_view, std::string_view> &key) const final {
     // Uses the old-style FST for now.
     std::string legal_type(key.second);  // The arc type.
     ConvertToLegalCSymbol(&legal_type);
-    return legal_type + "-arc.so";
+    legal_type.append("-arc.so");
+    return legal_type;
   }
 };
 
@@ -207,6 +224,18 @@ void CopyWeights(const std::vector<Weight> &typed_weights,
 }
 
 }  // namespace internal
+
+// Used for Replace operations.
+inline std::vector<std::pair<int64_t, const FstClass *>> BorrowPairs(
+    const std::vector<std::pair<int64_t, std::unique_ptr<const FstClass>>> &        pairs) {
+  std::vector<std::pair<int64_t, const FstClass *>> borrowed_pairs;
+  borrowed_pairs.reserve(pairs.size());
+  for (const auto &pair : pairs) {
+    borrowed_pairs.emplace_back(pair.first, pair.second.get());
+  }
+  return borrowed_pairs;
+}
+
 }  // namespace script
 }  // namespace fst
 

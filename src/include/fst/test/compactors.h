@@ -1,3 +1,17 @@
+// Copyright 2005-2024 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the 'License');
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an 'AS IS' BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
 #ifndef FST_TEST_COMPACTORS_H_
 #define FST_TEST_COMPACTORS_H_
 
@@ -6,11 +20,21 @@
 //
 // Compactors for use in tests.  See compact-fst.h.
 
+#include <sys/types.h>
+
+#include <cstddef>
+#include <cstdint>
+#include <istream>
+#include <memory>
+#include <ostream>
+#include <string>
 #include <type_traits>
 
-#include <fst/types.h>
 #include <fst/arc.h>
+#include <fst/expanded-fst.h>
 #include <fst/fst.h>
+#include <fst/properties.h>
+#include <fst/util.h>
 #include <fst/vector-fst.h>
 
 namespace fst {
@@ -25,23 +49,23 @@ class TrivialArcCompactor {
   using StateId = typename A::StateId;
   using Weight = typename A::Weight;
   // We use ArcTpl, which is trivially copyable if Weight is.
-  static_assert(std::is_trivially_copyable<Weight>::value,
+  static_assert(std::is_trivially_copyable_v<Weight>,
                 "Weight must be trivially copyable.");
   using Element = ArcTpl<Weight>;
-  static_assert(std::is_trivially_copyable<Element>::value,
+  static_assert(std::is_trivially_copyable_v<Element>,
                 "ArcTpl should be trivially copyable; someone broke it.");
 
   Element Compact(StateId s, const A &arc) const {
     return Element(arc.ilabel, arc.olabel, arc.weight, arc.nextstate);
   }
 
-  Arc Expand(StateId s, const Element &e, uint32 f = kArcValueFlags) const {
+  Arc Expand(StateId s, const Element &e, uint32_t f = kArcValueFlags) const {
     return Arc(e.ilabel, e.olabel, e.weight, e.nextstate);
   }
 
   ssize_t Size() const { return -1; }
 
-  uint64 Properties() const { return 0ULL; }
+  uint64_t Properties() const { return 0ULL; }
 
   bool Compatible(const Fst<A> &fst) const { return true; }
 
@@ -67,7 +91,8 @@ class TrivialCompactor {
   using StateId = typename Arc::StateId;
   using Weight = typename Arc::Weight;
 
-  TrivialCompactor() { CHECK(false); }
+  // Any empty FST is OK.
+  TrivialCompactor() : fst_(new VectorFst<Arc>) {}
 
   // Constructor from the Fst to be compacted.  If compactor is present,
   // only optional state should be copied from it.
@@ -91,11 +116,11 @@ class TrivialCompactor {
     State(const TrivialCompactor *c, StateId s)
         : c_(c),
           s_(s),
-          i_(fst::make_unique<ArcIterator<Fst<Arc>>>(*c->fst_, s)) {}
+          i_(std::make_unique<ArcIterator<Fst<Arc>>>(*c->fst_, s)) {}
     StateId GetStateId() const { return s_; }
     Weight Final() const { return c_->fst_->Final(s_); }
     size_t NumArcs() const { return c_->fst_->NumArcs(s_); }
-    Arc GetArc(size_t i, uint32 f) const {
+    Arc GetArc(size_t i, uint32_t f) const {
       i_->Seek(i);
       return i_->Value();
     }
@@ -110,10 +135,10 @@ class TrivialCompactor {
 
   template <typename Arc>
   bool IsCompatible(const Fst<Arc> &fst) const {
-    return std::is_same<Arc, A>::value;
+    return std::is_same_v<Arc, A>;
   }
 
-  uint64 Properties(uint64 props) const { return props; }
+  uint64_t Properties(uint64_t props) const { return props; }
 
   static const std::string &Type() {
     static const std::string *const type =

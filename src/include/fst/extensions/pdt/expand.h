@@ -1,3 +1,17 @@
+// Copyright 2005-2024 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the 'License');
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an 'AS IS' BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
 // See www.openfst.org for extensive documentation on this weighted
 // finite-state transducer library.
 //
@@ -6,20 +20,32 @@
 #ifndef FST_EXTENSIONS_PDT_EXPAND_H_
 #define FST_EXTENSIONS_PDT_EXPAND_H_
 
+#include <sys/types.h>
+
+#include <cstddef>
+#include <cstdint>
 #include <forward_list>
+#include <memory>
+#include <unordered_map>
+#include <utility>
 #include <vector>
 
-#include <fst/types.h>
 #include <fst/log.h>
 #include <fst/extensions/pdt/paren.h>
 #include <fst/extensions/pdt/pdt.h>
 #include <fst/extensions/pdt/reverse.h>
 #include <fst/extensions/pdt/shortest-path.h>
 #include <fst/cache.h>
+#include <fst/connect.h>
+#include <fst/fst.h>
+#include <fst/impl-to-fst.h>
 #include <fst/mutable-fst.h>
+#include <fst/properties.h>
 #include <fst/queue.h>
 #include <fst/state-table.h>
-#include <fst/test-properties.h>
+#include <fst/util.h>
+#include <fst/vector-fst.h>
+#include <fst/weight.h>
 #include <unordered_map>
 
 namespace fst {
@@ -178,7 +204,7 @@ class PdtExpandFstImpl : public CacheImpl<Arc> {
 
  private:
   // Properties for an expanded PDT.
-  inline uint64 PdtExpandProperties(uint64 inprops) {
+  inline uint64_t PdtExpandProperties(uint64_t inprops) {
     return inprops & (kAcceptor | kAcyclic | kInitialAcyclic | kUnweighted);
   }
 
@@ -203,6 +229,8 @@ class PdtExpandFstImpl : public CacheImpl<Arc> {
 // counting, delegating most methods to ImplToFst.
 template <class A>
 class PdtExpandFst : public ImplToFst<internal::PdtExpandFstImpl<A>> {
+  using Base = ImplToFst<internal::PdtExpandFstImpl<A>>;
+
  public:
   using Arc = A;
 
@@ -213,24 +241,23 @@ class PdtExpandFst : public ImplToFst<internal::PdtExpandFstImpl<A>> {
   using StackId = StateId;
   using Store = DefaultCacheStore<Arc>;
   using State = typename Store::State;
-  using Impl = internal::PdtExpandFstImpl<Arc>;
+  using typename Base::Impl;
 
   friend class ArcIterator<PdtExpandFst<Arc>>;
   friend class StateIterator<PdtExpandFst<Arc>>;
 
   PdtExpandFst(const Fst<Arc> &fst,
                const std::vector<std::pair<Label, Label>> &parens)
-      : ImplToFst<Impl>(
-            std::make_shared<Impl>(fst, parens, PdtExpandFstOptions<A>())) {}
+      : Base(std::make_shared<Impl>(fst, parens, PdtExpandFstOptions<A>())) {}
 
   PdtExpandFst(const Fst<Arc> &fst,
                const std::vector<std::pair<Label, Label>> &parens,
                const PdtExpandFstOptions<Arc> &opts)
-      : ImplToFst<Impl>(std::make_shared<Impl>(fst, parens, opts)) {}
+      : Base(std::make_shared<Impl>(fst, parens, opts)) {}
 
   // See Fst<>::Copy() for doc.
   PdtExpandFst(const PdtExpandFst<Arc> &fst, bool safe = false)
-      : ImplToFst<Impl>(fst, safe) {}
+      : Base(fst, safe) {}
 
   // Gets a copy of this ExpandFst. See Fst<>::Copy() for further doc.
   PdtExpandFst<Arc> *Copy(bool safe = false) const override {
@@ -252,8 +279,8 @@ class PdtExpandFst : public ImplToFst<internal::PdtExpandFstImpl<A>> {
   }
 
  private:
-  using ImplToFst<Impl>::GetImpl;
-  using ImplToFst<Impl>::GetMutableImpl;
+  using Base::GetImpl;
+  using Base::GetMutableImpl;
 
   void operator=(const PdtExpandFst &) = delete;
 };
@@ -283,7 +310,7 @@ class ArcIterator<PdtExpandFst<Arc>>
 template <class Arc>
 inline void PdtExpandFst<Arc>::InitStateIterator(
     StateIteratorData<Arc> *data) const {
-  data->base = new StateIterator<PdtExpandFst<Arc>>(*this);
+  data->base = std::make_unique<StateIterator<PdtExpandFst<Arc>>>(*this);
 }
 
 // PrunedExpand prunes the delayed expansion of a pushdown transducer (PDT)
@@ -296,6 +323,7 @@ inline void PdtExpandFst<Arc>::InitStateIterator(
 // The algorithm works by visiting the delayed ExpandFst using a shortest-stack
 // first queue discipline and relies on the shortest-distance information
 // computed using a reverse shortest-path call to perform the pruning.
+// Requires Arc::Weight is idempotent.
 //
 // The algorithm maintains the same state ordering between the ExpandFst being
 // visited (efst_) and the result of pruning written into the MutableFst (ofst_)
@@ -306,6 +334,7 @@ class PdtPrunedExpand {
   using Label = typename Arc::Label;
   using StateId = typename Arc::StateId;
   using Weight = typename Arc::Weight;
+  static_assert(IsIdempotent<Weight>::value, "Weight must be idempotent.");
 
   using StackId = StateId;
   using Stack = PdtStack<StackId, Label>;
@@ -346,9 +375,9 @@ class PdtPrunedExpand {
   void Expand(MutableFst<Arc> *ofst, const Weight &threshold);
 
  private:
-  static constexpr uint8 kEnqueued = 0x01;
-  static constexpr uint8 kExpanded = 0x02;
-  static constexpr uint8 kSourceState = 0x04;
+  static constexpr uint8_t kEnqueued = 0x01;
+  static constexpr uint8_t kExpanded = 0x02;
+  static constexpr uint8_t kSourceState = 0x04;
 
   // Comparison functor used by the queue:
   //
@@ -365,7 +394,8 @@ class PdtPrunedExpand {
           stack_(stack),
           stack_length_(stack_length),
           distance_(distance),
-          fdistance_(fdistance) {}
+          fdistance_(fdistance),
+          less_() {}
 
     bool operator()(StateId s1, StateId s2) const {
       auto si1 = state_table_.Tuple(s1).stack_id;
@@ -399,6 +429,7 @@ class PdtPrunedExpand {
     const NaturalLess<Weight> less_;
   };
 
+  // Requires Weight is idempotent.
   class ShortestStackFirstQueue
       : public ShortestFirstQueue<StateId, StackCompare> {
    public:
@@ -411,14 +442,13 @@ class PdtPrunedExpand {
               state_table, stack, stack_length, distance, fdistance)) {}
   };
 
-  void InitCloseParenMultimap(
-      const std::vector<std::pair<Label, Label>> &parens);
+  void InitCloseParenMultimap(const std::vector<std::pair<Label, Label>> &parens);
 
   Weight DistanceToDest(StateId source, StateId dest) const;
 
-  uint8 Flags(StateId s) const;
+  uint8_t Flags(StateId s) const;
 
-  void SetFlags(StateId s, uint8 flags, uint8 mask);
+  void SetFlags(StateId s, uint8_t flags, uint8_t mask);
 
   Weight Distance(StateId s) const;
 
@@ -473,7 +503,7 @@ class PdtPrunedExpand {
   // Construction time failure?
   bool error_;
   // Status flags for states in efst_/ofst.
-  std::vector<uint8> flags_;
+  std::vector<uint8_t> flags_;
   // PDT source state for each expanded state.
   std::vector<StateId> sources_;
   // Shortest path for rfst_.
@@ -545,13 +575,13 @@ typename Arc::Weight PdtPrunedExpand<Arc>::DistanceToDest(StateId source,
 
 // Returns the flags for state s in ofst_.
 template <class Arc>
-uint8 PdtPrunedExpand<Arc>::Flags(StateId s) const {
+uint8_t PdtPrunedExpand<Arc>::Flags(StateId s) const {
   return s < flags_.size() ? flags_[s] : 0;
 }
 
 // Modifies the flags for state s in ofst_.
 template <class Arc>
-void PdtPrunedExpand<Arc>::SetFlags(StateId s, uint8 flags, uint8 mask) {
+void PdtPrunedExpand<Arc>::SetFlags(StateId s, uint8_t flags, uint8_t mask) {
   while (flags_.size() <= s) flags_.push_back(0);
   flags_[s] &= ~mask;
   flags_[s] |= flags & mask;
@@ -773,7 +803,7 @@ bool PdtPrunedExpand<Arc>::ProcOpenParen(StateId s, const Arc &arc, StackId si,
     const auto nd = Times(Distance(s), arc.weight);
     if (less_(nd, Distance(arc.nextstate))) SetDistance(arc.nextstate, nd);
     // FinalDistance not necessary for source state since pruning decided using
-    // meta-arcs above.  But this is a problem with A*, hence the following.
+    // meta-arcs above. But this is a problem with A*, hence the following.
     if (less_(fd, FinalDistance(arc.nextstate)))
       SetFinalDistance(arc.nextstate, fd);
     SetFlags(arc.nextstate, kSourceState, kSourceState);
@@ -902,14 +932,19 @@ void Expand(
     const std::vector<std::pair<typename Arc::Label, typename Arc::Label>>
         &parens,
     MutableFst<Arc> *ofst, const PdtExpandOptions<Arc> &opts) {
+  using Weight = typename Arc::Weight;
   PdtExpandFstOptions<Arc> eopts;
   eopts.gc_limit = 0;
   if (opts.weight_threshold == Arc::Weight::Zero()) {
     eopts.keep_parentheses = opts.keep_parentheses;
     *ofst = PdtExpandFst<Arc>(ifst, parens, eopts);
-  } else {
+  } else if constexpr (IsIdempotent<Weight>::value) {
     PdtPrunedExpand<Arc> pruned_expand(ifst, parens, opts.keep_parentheses);
     pruned_expand.Expand(ofst, opts.weight_threshold);
+  } else {
+    FSTERROR() << "Expand: non-Zero weight_threshold with non-idempotent"
+               << " Weight " << Weight::Type();
+    ofst->SetProperties(kError, kError);
   }
   if (opts.connect) Connect(ofst);
 }

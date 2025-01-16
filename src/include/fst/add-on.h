@@ -1,3 +1,17 @@
+// Copyright 2005-2024 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the 'License');
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an 'AS IS' BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
 // See www.openfst.org for extensive documentation on this weighted
 // finite-state transducer library.
 //
@@ -8,26 +22,29 @@
 #ifndef FST_ADD_ON_H_
 #define FST_ADD_ON_H_
 
-#include <stddef.h>
-
+#include <cstddef>
+#include <cstdint>
+#include <istream>
 #include <memory>
+#include <ostream>
 #include <string>
 #include <utility>
 
-#include <fst/types.h>
 #include <fst/log.h>
-
 #include <fst/fst.h>
+#include <fst/properties.h>
+#include <fst/util.h>
+#include <string_view>
 
 namespace fst {
 
 // Identifies stream data as an add-on FST.
-static constexpr int32 kAddOnMagicNumber = 446681434;
+inline constexpr int32_t kAddOnMagicNumber = 446681434;
 
 // Nothing to save.
 class NullAddOn {
  public:
-  NullAddOn() {}
+  NullAddOn() = default;
 
   static NullAddOn *Read(std::istream &strm, const FstReadOptions &opts) {
     return new NullAddOn();
@@ -108,7 +125,7 @@ class AddOnImpl : public FstImpl<typename FST::Arc> {
 
   // We make a thread-safe copy of the FST by default since an FST
   // implementation is expected to not share mutable data between objects.
-  AddOnImpl(const FST &fst, const std::string &type,
+  AddOnImpl(const FST &fst, std::string_view type,
             std::shared_ptr<T> t = nullptr)
       : fst_(fst, true), t_(std::move(t)) {
     SetType(type);
@@ -119,7 +136,7 @@ class AddOnImpl : public FstImpl<typename FST::Arc> {
 
   // Conversion from const Fst<Arc> & to F always copies the underlying
   // implementation.
-  AddOnImpl(const Fst<Arc> &fst, const std::string &type,
+  AddOnImpl(const Fst<Arc> &fst, std::string_view type,
             std::shared_ptr<T> t = nullptr)
       : fst_(fst), t_(std::move(t)) {
     SetType(type);
@@ -158,10 +175,11 @@ class AddOnImpl : public FstImpl<typename FST::Arc> {
       hdr.Read(strm, nopts.source);
       nopts.header = &hdr;
     }
-    std::unique_ptr<AddOnImpl> impl(new AddOnImpl(nopts.header->FstType()));
+    // Using `new` to access private constructor for `AddOnImpl`.
+    auto impl = fst::WrapUnique(new AddOnImpl(nopts.header->FstType()));
     if (!impl->ReadHeader(strm, nopts, kMinFileVersion, &hdr)) return nullptr;
     impl.reset();
-    int32 magic_number = 0;
+    int32_t magic_number = 0;
     ReadType(strm, &magic_number);  // Ensures this is an add-on FST.
     if (magic_number != kAddOnMagicNumber) {
       LOG(ERROR) << "AddOnImpl::Read: Bad add-on header: " << nopts.source;
@@ -217,7 +235,7 @@ class AddOnImpl : public FstImpl<typename FST::Arc> {
   void SetAddOn(std::shared_ptr<T> t) { t_ = t; }
 
  private:
-  explicit AddOnImpl(const std::string &type) : t_() {
+  explicit AddOnImpl(std::string_view type) : t_() {
     SetType(type);
     SetProperties(kExpanded);
   }
@@ -232,12 +250,6 @@ class AddOnImpl : public FstImpl<typename FST::Arc> {
 
   AddOnImpl &operator=(const AddOnImpl &) = delete;
 };
-
-template <class FST, class T>
-constexpr int AddOnImpl<FST, T>::kFileVersion;
-
-template <class FST, class T>
-constexpr int AddOnImpl<FST, T>::kMinFileVersion;
 
 }  // namespace internal
 }  // namespace fst

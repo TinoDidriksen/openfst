@@ -1,3 +1,17 @@
+// Copyright 2005-2024 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the 'License');
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an 'AS IS' BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
 // See www.openfst.org for extensive documentation on this weighted
 // finite-state transducer library.
 //
@@ -5,13 +19,24 @@
 
 #include <fst/test/fst_test.h>
 
-#include <fst/flags.h>
-#include <fst/types.h>
+#include <cstddef>
+#include <cstdint>
+#include <iostream>
+#include <ostream>
+#include <string>
+
 #include <fst/log.h>
+#include <fst/arc.h>
 #include <fst/compact-fst.h>
 #include <fst/const-fst.h>
 #include <fst/edit-fst.h>
+#include <fst/float-weight.h>
+#include <fst/fst-decl.h>
 #include <fst/matcher-fst.h>
+#include <fst/product-weight.h>
+#include <fst/register.h>
+#include <fst/test-properties.h>
+#include <fst/vector-fst.h>
 #include <fst/test/compactors.h>
 
 namespace fst {
@@ -19,13 +44,13 @@ namespace {
 
 // A user-defined arc type.
 struct CustomArc {
-  using Label = int16;
+  using Label = int16_t;
   using Weight = ProductWeight<TropicalWeight, LogWeight>;
-  using StateId = int64;
+  using StateId = int64_t;
 
   CustomArc(Label i, Label o, Weight w, StateId s)
       : ilabel(i), olabel(o), weight(w), nextstate(s) {}
-  CustomArc() {}
+  CustomArc() = default;
 
   static const std::string &Type() {  // Arc type name
     static const std::string *const type = new std::string("my");
@@ -46,10 +71,10 @@ static fst::FstRegisterer<
 static fst::FstRegisterer<
     CompactArcFst<CustomArc, TrivialArcCompactor<CustomArc>>>
     CompactFst_CustomArc_TrivialCompactor_registerer;
-static fst::FstRegisterer<ConstFst<StdArc, uint16>>
+static fst::FstRegisterer<ConstFst<StdArc, uint16_t>>
     ConstFst_StdArc_uint16_registerer;
 static fst::FstRegisterer<
-    CompactArcFst<StdArc, TrivialArcCompactor<StdArc>, uint16>>
+    CompactArcFst<StdArc, TrivialArcCompactor<StdArc>, uint16_t>>
     CompactFst_StdArc_TrivialCompactor_uint16_registerer;
 static fst::FstRegisterer<CompactFst<StdArc, TrivialCompactor<StdArc>>>
     CompactFst_StdArc_CustomCompactor_registerer;
@@ -66,7 +91,6 @@ using fst::ConstFst;
 using fst::CustomArc;
 using fst::EditFst;
 using fst::FstTester;
-using fst::MatcherFst;
 using fst::StdArc;
 using fst::StdArcLookAheadFst;
 using fst::TrivialArcCompactor;
@@ -74,11 +98,10 @@ using fst::TrivialCompactor;
 using fst::VectorFst;
 
 int main(int argc, char **argv) {
-  FLAGS_fst_verify_properties = true;
-  std::set_new_handler(FailedNewHandler);
+  SetFlag(&FST_FLAGS_fst_verify_properties, true);
   SET_FLAGS(argv[0], &argc, &argv, true);
 
-  // VectorFst<StdArc> tests
+  LOG(INFO) << "Testing VectorFst<StdArc>.";
   {
     for (const size_t num_states : {0, 1, 2, 3, 128}) {
       FstTester<VectorFst<StdArc>> std_vector_tester(num_states);
@@ -90,7 +113,7 @@ int main(int argc, char **argv) {
       std_vector_tester.TestMutable();
     }
 
-    // Test with a default-constructed Fst, not a copied Fst.
+    LOG(INFO) << "Testing empty StdVectorFst.";
     FstTester<VectorFst<StdArc>> empty_tester(/*num_states=*/0);
     {
       const VectorFst<StdArc> empty_fst;
@@ -106,7 +129,7 @@ int main(int argc, char **argv) {
     }
   }
 
-  // ConstFst<StdArc> tests
+  LOG(INFO) << "Testing ConstFst<StdArc>.";
   {
     FstTester<ConstFst<StdArc>> std_const_tester;
     std_const_tester.TestBase();
@@ -115,7 +138,7 @@ int main(int argc, char **argv) {
     std_const_tester.TestIO();
   }
 
-  // CompactArcFst<StdArc, TrivialArcCompactor<StdArc>>
+  LOG(INFO) << "Testing CompactArcFst<StdArc, TrivialArcCompactor<StdArc>>.";
   {
     FstTester<CompactArcFst<StdArc, TrivialArcCompactor<StdArc>>>
         std_compact_tester;
@@ -125,7 +148,7 @@ int main(int argc, char **argv) {
     std_compact_tester.TestIO();
   }
 
-  // CompactFst<StdArc, TrivialArcCompactor<StdArc>>
+  LOG(INFO) << "Testing CompactFst<StdArc, TrivialArcCompactor<StdArc>>.";
   {
     for (const size_t num_states : {0, 1, 2, 3, 128}) {
       FstTester<CompactFst<StdArc, TrivialCompactor<StdArc>>>
@@ -136,7 +159,16 @@ int main(int argc, char **argv) {
       std_compact_tester.TestIO();
     }
 
-    // TODO(jrosenstock): Add tests on default-constructed Fst.
+    LOG(INFO) << "Testing empty CompactFst.";
+    FstTester<CompactFst<StdArc, TrivialCompactor<StdArc>>> empty_tester(
+        /*num_states=*/0);
+    {
+      const CompactFst<StdArc, TrivialCompactor<StdArc>> empty_fst;
+      empty_tester.TestBase(empty_fst);
+      empty_tester.TestExpanded(empty_fst);
+      empty_tester.TestCopy(empty_fst);
+      empty_tester.TestIO(empty_fst);
+    }
   }
 
   // VectorFst<CustomArc> tests
@@ -197,18 +229,18 @@ int main(int argc, char **argv) {
     // TODO(jrosenstock): Add tests on default-constructed Fst.
   }
 
-  // ConstFst<StdArc, uint16> tests
+  // ConstFst<StdArc, uint16_t> tests
   {
-    FstTester<ConstFst<StdArc, uint16>> std_const_tester;
+    FstTester<ConstFst<StdArc, uint16_t>> std_const_tester;
     std_const_tester.TestBase();
     std_const_tester.TestExpanded();
     std_const_tester.TestCopy();
     std_const_tester.TestIO();
   }
 
-  // CompactArcFst<StdArc, TrivialArcCompactor<StdArc>, uint16>
+  // CompactArcFst<StdArc, TrivialArcCompactor<StdArc>, uint16_t>
   {
-    FstTester<CompactArcFst<StdArc, TrivialArcCompactor<StdArc>, uint16>>
+    FstTester<CompactArcFst<StdArc, TrivialArcCompactor<StdArc>, uint16_t>>
         std_compact_tester;
     std_compact_tester.TestBase();
     std_compact_tester.TestExpanded();

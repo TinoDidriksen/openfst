@@ -1,3 +1,17 @@
+// Copyright 2005-2024 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the 'License');
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an 'AS IS' BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
 // See www.openfst.org for extensive documentation on this weighted
 // finite-state transducer library.
 //
@@ -9,20 +23,35 @@
 #include <algorithm>
 #include <climits>
 #include <cmath>
+#include <cstddef>
+#include <cstdint>
+#include <cstdlib>
 #include <cstring>
+#include <ios>
+#include <istream>
 #include <limits>
+#include <ostream>
 #include <random>
 #include <sstream>
 #include <string>
 #include <type_traits>
 
-#include <fst/types.h>
-
+#include <fst/log.h>
 #include <fst/util.h>
 #include <fst/weight.h>
-
+#include <fst/compat.h>
+#include <string_view>
 
 namespace fst {
+
+namespace internal {
+// `std::isnan` is not `constexpr` until C++23.
+// TODO(wolfsonkin): Replace with `std::isnan` when C++23 can be used.
+template <class T>
+inline constexpr bool IsNan(T value) {
+  return value != value;
+}
+}  // namespace internal
 
 // Numeric limits class.
 template <class T>
@@ -43,16 +72,9 @@ class FloatWeightTpl {
  public:
   using ValueType = T;
 
-  FloatWeightTpl() noexcept {}
+  FloatWeightTpl() noexcept = default;
 
   constexpr FloatWeightTpl(T f) : value_(f) {}  // NOLINT
-
-  // TODO(mjansche): Leave implicit once Android NDK r18 is the default.
-  FloatWeightTpl(const FloatWeightTpl &) = default;
-  FloatWeightTpl(FloatWeightTpl &&) noexcept = default;
-
-  FloatWeightTpl &operator=(const FloatWeightTpl &) = default;
-  FloatWeightTpl &operator=(FloatWeightTpl &&) noexcept = default;
 
   std::istream &Read(std::istream &strm) { return ReadType(strm, &value_); }
 
@@ -75,13 +97,12 @@ class FloatWeightTpl {
  protected:
   void SetValue(const T &f) { value_ = f; }
 
-  static constexpr const char *GetPrecisionString() {
-    return sizeof(T) == 4
-               ? ""
-               : sizeof(T) == 1
-                     ? "8"
-                     : sizeof(T) == 2 ? "16"
-                                      : sizeof(T) == 8 ? "64" : "unknown";
+  static constexpr std::string_view GetPrecisionString() {
+    return sizeof(T) == 4   ? ""
+           : sizeof(T) == 1 ? "8"
+           : sizeof(T) == 2 ? "16"
+           : sizeof(T) == 8 ? "64"
+                            : "unknown";
   }
 
  private:
@@ -97,7 +118,7 @@ constexpr bool operator==(const FloatWeightTpl<T> &w1,
 #if (defined(__i386__) || defined(__x86_64__)) && !defined(__SSE2_MATH__)
 // With i387 instructions, excess precision on a weight in an 80-bit
 // register may cause it to compare unequal to that same weight when
-// stored to memory.  This breaks =='s reflexivity, in turn breaking
+// stored to memory. This breaks =='s reflexivity, in turn breaking
 // NaturalLess.
 #error "Please compile with -msse -mfpmath=sse, or equivalent."
 #endif
@@ -105,7 +126,7 @@ constexpr bool operator==(const FloatWeightTpl<T> &w1,
 }
 
 // These seemingly unnecessary overloads are actually needed to make
-// comparisons like FloatWeightTpl<float> == float compile.  If only the
+// comparisons like FloatWeightTpl<float> == float compile. If only the
 // templated version exists, the FloatWeightTpl<float>(float) conversion
 // won't be found.
 constexpr bool operator==(const FloatWeightTpl<float> &w1,
@@ -152,7 +173,7 @@ inline std::ostream &operator<<(std::ostream &strm,
     return strm << "Infinity";
   } else if (w.Value() == FloatLimits<T>::NegInfinity()) {
     return strm << "-Infinity";
-  } else if (w.Value() != w.Value()) {  // Fails for IEEE NaN.
+  } else if (internal::IsNan(w.Value())) {
     return strm << "BadNumber";
   } else {
     return strm << w.Value();
@@ -202,7 +223,7 @@ class TropicalWeightTpl : public FloatWeightTpl<T> {
 
   static const std::string &Type() {
     static const std::string *const type = new std::string(
-        std::string("tropical") + FloatWeightTpl<T>::GetPrecisionString());
+        fst::StrCat("tropical", FloatWeightTpl<T>::GetPrecisionString()));
     return *type;
   }
 
@@ -237,7 +258,7 @@ class TropicalWeightTpl : public FloatWeightTpl<T> {
 
   constexpr TropicalWeightTpl<T> Reverse() const { return *this; }
 
-  static constexpr uint64 Properties() {
+  static constexpr uint64_t Properties() {
     return kLeftSemiring | kRightSemiring | kCommutative | kPath | kIdempotent;
   }
 };
@@ -249,7 +270,8 @@ template <class T>
 constexpr TropicalWeightTpl<T> Plus(const TropicalWeightTpl<T> &w1,
                                     const TropicalWeightTpl<T> &w2) {
   return (!w1.Member() || !w2.Member()) ? TropicalWeightTpl<T>::NoWeight()
-                                        : w1.Value() < w2.Value() ? w1 : w2;
+         : w1.Value() < w2.Value()      ? w1
+                                        : w2;
 }
 
 // See comment at operator==(FloatWeightTpl<float>, FloatWeightTpl<float>)
@@ -373,14 +395,13 @@ constexpr TropicalWeightTpl<double> Divide(const TropicalWeightTpl<double> &w1,
 // of Power<T, V> is made conditionally available only to that template
 // specialization.
 
-template <class T, class V, bool Enable = !std::is_same<V, size_t>::value,
-          typename std::enable_if<Enable>::type * = nullptr>
+template <class T, class V, bool Enable = !std::is_same_v<V, size_t>,
+          typename std::enable_if_t<Enable> * = nullptr>
 constexpr TropicalWeightTpl<T> Power(const TropicalWeightTpl<T> &w, V n) {
   using Weight = TropicalWeightTpl<T>;
-  return (!w.Member() || n != n)
-             ? Weight::NoWeight()
-             : (n == 0 || w == Weight::One()) ? Weight::One()
-                                              : Weight(w.Value() * n);
+  return (!w.Member() || internal::IsNan(n)) ? Weight::NoWeight()
+         : (n == 0 || w == Weight::One())    ? Weight::One()
+                                             : Weight(w.Value() * n);
 }
 
 // Specializes the library-wide template to use the above implementation; rules
@@ -419,7 +440,7 @@ class LogWeightTpl : public FloatWeightTpl<T> {
 
   static const std::string &Type() {
     static const std::string *const type = new std::string(
-        std::string("log") + FloatWeightTpl<T>::GetPrecisionString());
+        fst::StrCat("log", FloatWeightTpl<T>::GetPrecisionString()));
     return *type;
   }
 
@@ -438,7 +459,7 @@ class LogWeightTpl : public FloatWeightTpl<T> {
 
   constexpr LogWeightTpl<T> Reverse() const { return *this; }
 
-  static constexpr uint64 Properties() {
+  static constexpr uint64_t Properties() {
     return kLeftSemiring | kRightSemiring | kCommutative;
   }
 };
@@ -451,15 +472,15 @@ using Log64Weight = LogWeightTpl<double>;
 
 namespace internal {
 
-// -log(e^-x + e^-y) = x - LogPosExp(y - x), assuming x >= 0.0.
+// -log(e^-x + e^-y) = x - LogPosExp(y - x), assuming y >= x.
 inline double LogPosExp(double x) {
   DCHECK(!(x < 0));  // NB: NaN values are allowed.
   return log1p(exp(-x));
 }
 
-// -log(e^-x - e^-y) = x - LogNegExp(y - x), assuming x > 0.0.
+// -log(e^-x - e^-y) = x - LogNegExp(y - x), assuming y >= x.
 inline double LogNegExp(double x) {
-  DCHECK_GT(x, 0);
+  DCHECK(!(x < 0));  // NB: NaN values are allowed.
   return log1p(-exp(-x));
 }
 
@@ -516,6 +537,30 @@ inline LogWeightTpl<double> Plus(const LogWeightTpl<double> &w1,
   return Plus<double>(w1, w2);
 }
 
+// Returns NoWeight if w1 < w2 (w1.Value() > w2.Value()).
+template <class T>
+inline LogWeightTpl<T> Minus(const LogWeightTpl<T> &w1,
+                             const LogWeightTpl<T> &w2) {
+  using Limits = FloatLimits<T>;
+  const T f1 = w1.Value();
+  const T f2 = w2.Value();
+  if (f1 > f2) return LogWeightTpl<T>::NoWeight();
+  if (f2 == Limits::PosInfinity()) return f1;
+  const T d = f2 - f1;
+  if (d == Limits::PosInfinity()) return f1;
+  return f1 - internal::LogNegExp(d);
+}
+
+inline LogWeightTpl<float> Minus(const LogWeightTpl<float> &w1,
+                                 const LogWeightTpl<float> &w2) {
+  return Minus<float>(w1, w2);
+}
+
+inline LogWeightTpl<double> Minus(const LogWeightTpl<double> &w1,
+                                  const LogWeightTpl<double> &w2) {
+  return Minus<double>(w1, w2);
+}
+
 template <class T>
 constexpr LogWeightTpl<T> Times(const LogWeightTpl<T> &w1,
                                 const LogWeightTpl<T> &w2) {
@@ -556,14 +601,13 @@ constexpr LogWeightTpl<double> Divide(const LogWeightTpl<double> &w1,
 
 // The comments for Power<>(Tropical...) above apply here unchanged.
 
-template <class T, class V, bool Enable = !std::is_same<V, size_t>::value,
-          typename std::enable_if<Enable>::type * = nullptr>
+template <class T, class V, bool Enable = !std::is_same_v<V, size_t>,
+          typename std::enable_if_t<Enable> * = nullptr>
 constexpr LogWeightTpl<T> Power(const LogWeightTpl<T> &w, V n) {
   using Weight = LogWeightTpl<T>;
-  return (!w.Member() || n != n)
-             ? Weight::NoWeight()
-             : (n == 0 || w == Weight::One()) ? Weight::One()
-                                              : Weight(w.Value() * n);
+  return (!w.Member() || internal::IsNan(n)) ? Weight::NoWeight()
+         : (n == 0 || w == Weight::One())    ? Weight::One()
+                                             : Weight(w.Value() * n);
 }
 
 // Specializes the library-wide template to use the above implementation; rules
@@ -638,7 +682,7 @@ class RealWeightTpl : public FloatWeightTpl<T> {
 
   static const std::string &Type() {
     static const std::string *const type = new std::string(
-        std::string("real") + FloatWeightTpl<T>::GetPrecisionString());
+        fst::StrCat("real", FloatWeightTpl<T>::GetPrecisionString()));
     return *type;
   }
 
@@ -657,7 +701,7 @@ class RealWeightTpl : public FloatWeightTpl<T> {
 
   constexpr RealWeightTpl<T> Reverse() const { return *this; }
 
-  static constexpr uint64 Properties() {
+  static constexpr uint64_t Properties() {
     return kLeftSemiring | kRightSemiring | kCommutative;
   }
 };
@@ -759,14 +803,13 @@ constexpr RealWeightTpl<double> Divide(const RealWeightTpl<double> &w1,
 
 // The comments for Power<>(Tropical...) above apply here unchanged.
 
-template <class T, class V, bool Enable = !std::is_same<V, size_t>::value,
-          typename std::enable_if<Enable>::type * = nullptr>
+template <class T, class V, bool Enable = !std::is_same_v<V, size_t>,
+          typename std::enable_if_t<Enable> * = nullptr>
 constexpr RealWeightTpl<T> Power(const RealWeightTpl<T> &w, V n) {
   using Weight = RealWeightTpl<T>;
-  return (!w.Member() || n != n)
-             ? Weight::NoWeight()
-             : (n == 0 || w == Weight::One()) ? Weight::One()
-                                              : Weight(pow(w.Value(), n));
+  return (!w.Member() || internal::IsNan(n)) ? Weight::NoWeight()
+         : (n == 0 || w == Weight::One())    ? Weight::One()
+                                             : Weight(pow(w.Value(), n));
 }
 
 // Specializes the library-wide template to use the above implementation; rules
@@ -838,12 +881,12 @@ class MinMaxWeightTpl : public FloatWeightTpl<T> {
 
   static const std::string &Type() {
     static const std::string *const type = new std::string(
-        std::string("minmax") + FloatWeightTpl<T>::GetPrecisionString());
+        fst::StrCat("minmax", FloatWeightTpl<T>::GetPrecisionString()));
     return *type;
   }
 
   // Fails for IEEE NaN.
-  constexpr bool Member() const { return Value() == Value(); }
+  constexpr bool Member() const { return !internal::IsNan(Value()); }
 
   MinMaxWeightTpl<T> Quantize(float delta = kDelta) const {
     // If one of infinities, or a NaN.
@@ -857,7 +900,7 @@ class MinMaxWeightTpl : public FloatWeightTpl<T> {
 
   constexpr MinMaxWeightTpl<T> Reverse() const { return *this; }
 
-  static constexpr uint64 Properties() {
+  static constexpr uint64_t Properties() {
     return kLeftSemiring | kRightSemiring | kCommutative | kIdempotent | kPath;
   }
 };
@@ -870,7 +913,8 @@ template <class T>
 constexpr MinMaxWeightTpl<T> Plus(const MinMaxWeightTpl<T> &w1,
                                   const MinMaxWeightTpl<T> &w2) {
   return (!w1.Member() || !w2.Member()) ? MinMaxWeightTpl<T>::NoWeight()
-                                        : w1.Value() < w2.Value() ? w1 : w2;
+         : w1.Value() < w2.Value()      ? w1
+                                        : w2;
 }
 
 constexpr MinMaxWeightTpl<float> Plus(const MinMaxWeightTpl<float> &w1,
@@ -888,7 +932,8 @@ template <class T>
 constexpr MinMaxWeightTpl<T> Times(const MinMaxWeightTpl<T> &w1,
                                    const MinMaxWeightTpl<T> &w2) {
   return (!w1.Member() || !w2.Member()) ? MinMaxWeightTpl<T>::NoWeight()
-                                        : w1.Value() >= w2.Value() ? w1 : w2;
+         : w1.Value() >= w2.Value()     ? w1
+                                        : w2;
 }
 
 constexpr MinMaxWeightTpl<float> Times(const MinMaxWeightTpl<float> &w1,
@@ -1034,7 +1079,7 @@ template <class Weight>
 class FloatWeightGenerate {
  public:
   explicit FloatWeightGenerate(
-      uint64 seed = std::random_device()(), bool allow_zero = true,
+      uint64_t seed = std::random_device()(), bool allow_zero = true,
       const size_t num_random_weights = kNumRandomWeights)
       : rand_(seed),
         allow_zero_(allow_zero),
@@ -1060,7 +1105,7 @@ class WeightGenerate<TropicalWeightTpl<T>>
   using Weight = TropicalWeightTpl<T>;
   using Generate = FloatWeightGenerate<Weight>;
 
-  explicit WeightGenerate(uint64 seed = std::random_device()(),
+  explicit WeightGenerate(uint64_t seed = std::random_device()(),
                           bool allow_zero = true,
                           size_t num_random_weights = kNumRandomWeights)
       : Generate(seed, allow_zero, num_random_weights) {}
@@ -1075,7 +1120,7 @@ class WeightGenerate<LogWeightTpl<T>>
   using Weight = LogWeightTpl<T>;
   using Generate = FloatWeightGenerate<Weight>;
 
-  explicit WeightGenerate(uint64 seed = std::random_device()(),
+  explicit WeightGenerate(uint64_t seed = std::random_device()(),
                           bool allow_zero = true,
                           size_t num_random_weights = kNumRandomWeights)
       : Generate(seed, allow_zero, num_random_weights) {}
@@ -1090,7 +1135,7 @@ class WeightGenerate<RealWeightTpl<T>>
   using Weight = RealWeightTpl<T>;
   using Generate = FloatWeightGenerate<Weight>;
 
-  explicit WeightGenerate(uint64 seed = std::random_device()(),
+  explicit WeightGenerate(uint64_t seed = std::random_device()(),
                           bool allow_zero = true,
                           size_t num_random_weights = kNumRandomWeights)
       : Generate(seed, allow_zero, num_random_weights) {}
@@ -1107,7 +1152,7 @@ class WeightGenerate<MinMaxWeightTpl<T>> {
  public:
   using Weight = MinMaxWeightTpl<T>;
 
-  explicit WeightGenerate(uint64 seed = std::random_device()(),
+  explicit WeightGenerate(uint64_t seed = std::random_device()(),
                           bool allow_zero = true,
                           size_t num_random_weights = kNumRandomWeights)
       : rand_(seed),

@@ -1,12 +1,26 @@
+// Copyright 2005-2024 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the 'License');
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an 'AS IS' BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
 // See www.openfst.org for extensive documentation on this weighted
 // finite-state transducer library.
 
 #ifndef FST_MAPPED_FILE_H_
 #define FST_MAPPED_FILE_H_
 
+#include <fst/compat.h>
 #ifdef _WIN32
 #include <windows.h>
-#include <fst/compat.h>
 #endif
 
 #include <cstddef>
@@ -47,14 +61,16 @@ class MappedFile {
   // bool is advisory, and Map will default to allocating and reading. The
   // source argument needs to contain the filename that was used to open the
   // input stream.
-  static MappedFile *Map(std::istream *istrm, bool memorymap,
-                         const std::string &source, size_t size);
+  static MappedFile * Map(std::istream &istrm, bool memorymap,
+                                          const std::string &source,
+                                          size_t size);
 
   // Returns a MappedFile object that contains the contents of the file referred
   // to by the file descriptor starting from pos with size bytes. If the
   // memory mapping fails, nullptr is returned. In contrast to Map(), this
   // factory function does not backoff to allocating and reading.
-  static MappedFile *MapFromFileDescriptor(int fd, size_t pos, size_t size);
+  static MappedFile * MapFromFileDescriptor(int fd, size_t pos,
+                                                            size_t size);
 
   // Creates a MappedFile object with a new'ed block of memory of size. The
   // align argument can be used to specify a desired block alignment.

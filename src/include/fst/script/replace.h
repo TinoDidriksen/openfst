@@ -1,42 +1,62 @@
+// Copyright 2005-2024 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the 'License');
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an 'AS IS' BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
 // See www.openfst.org for extensive documentation on this weighted
 // finite-state transducer library.
 
 #ifndef FST_SCRIPT_REPLACE_H_
 #define FST_SCRIPT_REPLACE_H_
 
+#include <cstdint>
 #include <tuple>
 #include <utility>
 #include <vector>
 
-#include <fst/types.h>
+#include <fst/log.h>
+#include <fst/fst.h>
+#include <fst/mutable-fst.h>
+#include <fst/properties.h>
+#include <fst/replace-util.h>
 #include <fst/replace.h>
+#include <fst/util.h>
 #include <fst/script/fst-class.h>
 
 namespace fst {
 namespace script {
 
 struct ReplaceOptions {
-  const int64 root;                          // Root rule for expansion.
+  const int64_t root;                        // Root rule for expansion.
   const ReplaceLabelType call_label_type;    // How to label call arc.
   const ReplaceLabelType return_label_type;  // How to label return arc.
-  const int64 return_label;                  // Specifies return arc label.
+  const int64_t return_label;                // Specifies return arc label.
 
   explicit ReplaceOptions(
-      int64 root, ReplaceLabelType call_label_type = REPLACE_LABEL_INPUT,
+      int64_t root, ReplaceLabelType call_label_type = REPLACE_LABEL_INPUT,
       ReplaceLabelType return_label_type = REPLACE_LABEL_NEITHER,
-      int64 return_label = 0)
+      int64_t return_label = 0)
       : root(root),
         call_label_type(call_label_type),
         return_label_type(return_label_type),
         return_label(return_label) {}
 };
 
-using ReplaceArgs =
-    std::tuple<const std::vector<std::pair<int64, const FstClass *>> &,
+using FstReplaceArgs =
+    std::tuple<const std::vector<std::pair<int64_t, const FstClass *>> &,
                MutableFstClass *, const ReplaceOptions &>;
 
 template <class Arc>
-void Replace(ReplaceArgs *args) {
+void Replace(FstReplaceArgs *args) {
   // Now that we know the arc type, we construct a vector of
   // std::pair<real label, real fst> that the real Replace will use.
   const auto &untyped_pairs = std::get<0>(*args);
@@ -62,7 +82,7 @@ void Replace(ReplaceArgs *args) {
   *ofst = rfst;
 }
 
-void Replace(const std::vector<std::pair<int64, const FstClass *>> &pairs,
+void Replace(const std::vector<std::pair<int64_t, const FstClass *>> &pairs,
              MutableFstClass *ofst, const ReplaceOptions &opts);
 
 }  // namespace script

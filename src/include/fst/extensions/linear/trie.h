@@ -1,25 +1,44 @@
+// Copyright 2005-2024 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the 'License');
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an 'AS IS' BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
 // See www.openfst.org for extensive documentation on this weighted
 // finite-state transducer library.
 
 #ifndef FST_EXTENSIONS_LINEAR_TRIE_H_
 #define FST_EXTENSIONS_LINEAR_TRIE_H_
 
-#include <unordered_map>
+#include <cstddef>
+#include <istream>
+#include <iterator>
+#include <memory>
+#include <ostream>
 #include <utility>
 #include <vector>
 
 #include <fst/compat.h>
 #include <fst/util.h>
+#include <unordered_map>
 
 namespace fst {
 
-const int kNoTrieNodeId = -1;
+inline constexpr int kNoTrieNodeId = -1;
 
+template <class L, class H>
+class FlatTrieTopology;
 // Forward declarations of all available trie topologies.
 template <class L, class H>
 class NestedTrieTopology;
-template <class L, class H>
-class FlatTrieTopology;
 
 // A pair of parent node id and label, part of a trie edge
 template <class L>
@@ -27,20 +46,20 @@ struct ParentLabel {
   int parent;
   L label;
 
-  ParentLabel() {}
+  ParentLabel() = default;
   ParentLabel(int p, L l) : parent(p), label(l) {}
 
   bool operator==(const ParentLabel &that) const {
     return parent == that.parent && label == that.label;
   }
 
-  std::istream &Read(std::istream &strm) {  // NOLINT
+  std::istream &Read(std::istream &strm) {
     ReadType(strm, &parent);
     ReadType(strm, &label);
     return strm;
   }
 
-  std::ostream &Write(std::ostream &strm) const {  // NOLINT
+  std::ostream &Write(std::ostream &strm) const {
     WriteType(strm, parent);
     WriteType(strm, label);
     return strm;
@@ -85,7 +104,7 @@ class NestedTrieTopology {
     }
 
     const_iterator &operator++();
-    const_iterator &operator++(int);  // NOLINT
+    const_iterator &operator++(int);
 
     bool operator==(const const_iterator &that) const {
       return ptr_ == that.ptr_ && cur_node_ == that.cur_node_ &&
@@ -121,7 +140,7 @@ class NestedTrieTopology {
 
   NestedTrieTopology();
   NestedTrieTopology(const NestedTrieTopology &that);
-  ~NestedTrieTopology();
+  ~NestedTrieTopology() = default;
   void swap(NestedTrieTopology &that);
   NestedTrieTopology &operator=(const NestedTrieTopology &that);
   bool operator==(const NestedTrieTopology &that) const;
@@ -133,36 +152,27 @@ class NestedTrieTopology {
   int Find(int parent, const L &label) const;
   const NextMap &ChildrenOf(int parent) const { return *nodes_[parent]; }
 
-  std::istream &Read(std::istream &strm);         // NOLINT
-  std::ostream &Write(std::ostream &strm) const;  // NOLINT
+  std::istream &Read(std::istream &strm);
+  std::ostream &Write(std::ostream &strm) const;
 
   const_iterator begin() const { return const_iterator(this, 0); }
   const_iterator end() const { return const_iterator(this, NumNodes()); }
 
  private:
-  std::vector<NextMap *> nodes_;  // Use pointers to avoid copying the maps when
-                                  // the vector grows
+  // Use pointers to avoid copying the maps when the vector grows
+  std::vector<std::unique_ptr<NextMap>> nodes_;
 };
 
 template <class L, class H>
 NestedTrieTopology<L, H>::NestedTrieTopology() {
-  nodes_.push_back(new NextMap);
+  nodes_.push_back(std::make_unique<NextMap>());
 }
 
 template <class L, class H>
 NestedTrieTopology<L, H>::NestedTrieTopology(const NestedTrieTopology &that) {
   nodes_.reserve(that.nodes_.size());
-  for (size_t i = 0; i < that.nodes_.size(); ++i) {
-    NextMap *node = that.nodes_[i];
-    nodes_.push_back(new NextMap(*node));
-  }
-}
-
-template <class L, class H>
-NestedTrieTopology<L, H>::~NestedTrieTopology() {
-  for (size_t i = 0; i < nodes_.size(); ++i) {
-    NextMap *node = nodes_[i];
-    delete node;
+  for (const auto &node : that.nodes_) {
+    nodes_.push_back(std::make_unique<NextMap>(*node));
   }
 }
 
@@ -201,7 +211,7 @@ inline int NestedTrieTopology<L, H>::Insert(int parent, const L &label) {
   if (ret == kNoTrieNodeId) {
     ret = NumNodes();
     (*nodes_[parent])[label] = ret;
-    nodes_.push_back(new NextMap);
+    nodes_.push_back(std::make_unique<NextMap>());
   }
   return ret;
 }
@@ -213,20 +223,22 @@ inline int NestedTrieTopology<L, H>::Find(int parent, const L &label) const {
 }
 
 template <class L, class H>
-inline std::istream &NestedTrieTopology<L, H>::Read(
-    std::istream &strm) {  // NOLINT
+inline std::istream &NestedTrieTopology<L, H>::Read(std::istream &strm) {
   NestedTrieTopology new_trie;
   size_t num_nodes;
   if (!ReadType(strm, &num_nodes)) return strm;
-  for (size_t i = 1; i < num_nodes; ++i) new_trie.nodes_.push_back(new NextMap);
-  for (size_t i = 0; i < num_nodes; ++i) ReadType(strm, new_trie.nodes_[i]);
+  for (size_t i = 1; i < num_nodes; ++i) {
+    new_trie.nodes_.push_back(std::make_unique<NextMap>());
+  }
+  for (size_t i = 0; i < num_nodes; ++i) {
+    ReadType(strm, new_trie.nodes_[i].get());
+  }
   if (strm) swap(new_trie);
   return strm;
 }
 
 template <class L, class H>
-inline std::ostream &NestedTrieTopology<L, H>::Write(
-    std::ostream &strm) const {  // NOLINT
+inline std::ostream &NestedTrieTopology<L, H>::Write(std::ostream &strm) const {
   WriteType(strm, NumNodes());
   for (size_t i = 0; i < NumNodes(); ++i) WriteType(strm, *nodes_[i]);
   return strm;
@@ -267,7 +279,7 @@ class FlatTrieTopology {
   typedef L Label;
   typedef H Hash;
 
-  FlatTrieTopology() {}
+  FlatTrieTopology() = default;
   FlatTrieTopology(const FlatTrieTopology &that) : next_(that.next_) {}
   template <class T>
   explicit FlatTrieTopology(const T &that);
@@ -287,10 +299,8 @@ class FlatTrieTopology {
   int Insert(int parent, const L &label);
   int Find(int parent, const L &label) const;
 
-  std::istream &Read(std::istream &strm) {  // NOLINT
-    return ReadType(strm, &next_);
-  }
-  std::ostream &Write(std::ostream &strm) const {  // NOLINT
+  std::istream &Read(std::istream &strm) { return ReadType(strm, &next_); }
+  std::ostream &Write(std::ostream &strm) const {
     return WriteType(strm, next_);
   }
 
@@ -377,7 +387,7 @@ class MutableTrie {
   typedef T Topology;
 
   // Constructs a trie with only the root node.
-  MutableTrie() {}
+  MutableTrie() = default;
 
   // Conversion from another trie of a possiblly different
   // topology. The underlying topology must supported conversion.
@@ -422,12 +432,12 @@ class MutableTrie {
 
   bool operator!=(const MutableTrie &that) const { return !(*this == that); }
 
-  std::istream &Read(std::istream &strm) {  // NOLINT
+  std::istream &Read(std::istream &strm) {
     ReadType(strm, &topology_);
     ReadType(strm, &values_);
     return strm;
   }
-  std::ostream &Write(std::ostream &strm) const {  // NOLINT
+  std::ostream &Write(std::ostream &strm) const {
     WriteType(strm, topology_);
     WriteType(strm, values_);
     return strm;

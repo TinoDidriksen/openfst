@@ -1,3 +1,17 @@
+// Copyright 2005-2024 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the 'License');
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an 'AS IS' BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
 // See www.openfst.org for extensive documentation on this weighted
 // finite-state transducer library.
 //
@@ -6,15 +20,25 @@
 #ifndef FST_MATCHER_H_
 #define FST_MATCHER_H_
 
+#include <sys/types.h>
+
 #include <algorithm>
+#include <cstddef>
+#include <cstdint>
+#include <map>
 #include <memory>
+#include <optional>
+#include <tuple>
 #include <unordered_map>
 #include <utility>
 
-#include <fst/types.h>
 #include <fst/log.h>
-
+#include <fst/fst.h>
 #include <fst/mutable-fst.h>  // for all internal FST accessors.
+#include <fst/properties.h>
+#include <fst/util.h>
+#include <unordered_map>
+#include <optional>
 
 namespace fst {
 
@@ -89,10 +113,10 @@ namespace fst {
 //
 //   // This specifies the known FST properties as viewed from this matcher. It
 //   // takes as argument the input FST's known properties.
-//   uint64 Properties(uint64 props) const override;
+//   uint64_t Properties(uint64_t props) const override;
 //
 //   // Returns matcher flags.
-//   uint32 Flags() const override;
+//   uint32_t Flags() const override;
 //
 //   // Returns matcher FST.
 //   const FST &GetFst() const override;
@@ -102,13 +126,13 @@ namespace fst {
 
 // Matcher needs to be used as the matching side in composition for
 // at least one state (has kRequirePriority).
-constexpr uint32 kRequireMatch = 0x00000001;
+inline constexpr uint32_t kRequireMatch = 0x00000001;
 
 // Flags used for basic matchers (see also lookahead.h).
-constexpr uint32 kMatcherFlags = kRequireMatch;
+inline constexpr uint32_t kMatcherFlags = kRequireMatch;
 
 // Matcher priority that is mandatory.
-constexpr ssize_t kRequirePriority = -1;
+inline constexpr ssize_t kRequirePriority = -1;
 
 // Matcher interface, templated on the Arc definition; used for matcher
 // specializations that are returned by the InitMatcher FST method.
@@ -120,7 +144,7 @@ class MatcherBase {
   using StateId = typename Arc::StateId;
   using Weight = typename Arc::Weight;
 
-  virtual ~MatcherBase() {}
+  virtual ~MatcherBase() = default;
 
   // Virtual interface.
 
@@ -132,11 +156,11 @@ class MatcherBase {
   virtual const Arc &Value() const = 0;
   virtual void Next() = 0;
   virtual const Fst<Arc> &GetFst() const = 0;
-  virtual uint64 Properties(uint64) const = 0;
+  virtual uint64_t Properties(uint64_t) const = 0;
 
   // Trivial implementations that can be used by derived classes. Full
   // devirtualization is expected for any derived class marked final.
-  virtual uint32 Flags() const { return 0; }
+  virtual uint32_t Flags() const { return 0; }
 
   virtual Weight Final(StateId s) const { return internal::Final(GetFst(), s); }
 
@@ -174,14 +198,13 @@ class SortedMatcher : public MatcherBase<typename F::Arc> {
   SortedMatcher(const FST *fst, MatchType match_type, Label binary_label = 1)
       : fst_(*fst),
         state_(kNoStateId),
-        aiter_(nullptr),
+        aiter_(std::nullopt),
         match_type_(match_type),
         binary_label_(binary_label),
         match_label_(kNoLabel),
         narcs_(0),
         loop_(kNoLabel, 0, Weight::One(), kNoStateId),
-        error_(false),
-        aiter_pool_(1) {
+        error_(false) {
     switch (match_type_) {
       case MATCH_INPUT:
       case MATCH_NONE:
@@ -201,16 +224,15 @@ class SortedMatcher : public MatcherBase<typename F::Arc> {
       : owned_fst_(matcher.fst_.Copy(safe)),
         fst_(*owned_fst_),
         state_(kNoStateId),
-        aiter_(nullptr),
+        aiter_(std::nullopt),
         match_type_(matcher.match_type_),
         binary_label_(matcher.binary_label_),
         match_label_(kNoLabel),
         narcs_(0),
         loop_(matcher.loop_),
-        error_(matcher.error_),
-        aiter_pool_(1) {}
+        error_(matcher.error_) {}
 
-  ~SortedMatcher() override { Destroy(aiter_, &aiter_pool_); }
+  ~SortedMatcher() override = default;
 
   SortedMatcher *Copy(bool safe = false) const override {
     return new SortedMatcher(*this, safe);
@@ -239,8 +261,7 @@ class SortedMatcher : public MatcherBase<typename F::Arc> {
       FSTERROR() << "SortedMatcher: Bad match type";
       error_ = true;
     }
-    Destroy(aiter_, &aiter_pool_);
-    aiter_ = new (&aiter_pool_) ArcIterator<FST>(fst_, s);
+    aiter_.emplace(fst_, s);
     aiter_->SetFlags(kArcNoCache, kArcNoCache);
     narcs_ = internal::NumArcs(fst_, s);
     loop_.nextstate = s;
@@ -307,7 +328,7 @@ class SortedMatcher : public MatcherBase<typename F::Arc> {
 
   const FST &GetFst() const override { return fst_; }
 
-  uint64 Properties(uint64 inprops) const override {
+  uint64_t Properties(uint64_t inprops) const override {
     return inprops | (error_ ? kError : 0);
   }
 
@@ -326,16 +347,16 @@ class SortedMatcher : public MatcherBase<typename F::Arc> {
   std::unique_ptr<const FST> owned_fst_;  // FST ptr if owned.
   const FST &fst_;                        // FST for matching.
   StateId state_;                         // Matcher state.
-  ArcIterator<FST> *aiter_;               // Iterator for current state.
-  MatchType match_type_;                  // Type of match to perform.
-  Label binary_label_;                    // Least label for binary search.
-  Label match_label_;                     // Current label to be matched.
-  size_t narcs_;                          // Current state arc count.
-  Arc loop_;                              // For non-consuming symbols.
-  bool current_loop_;                     // Current arc is the implicit loop.
-  bool exact_match_;                      // Exact match or lower bound?
-  bool error_;                            // Error encountered?
-  MemoryPool<ArcIterator<FST>> aiter_pool_;  // Pool of arc iterators.
+  mutable std::optional<ArcIterator<FST>>
+      aiter_;             // Iterator for current state.
+  MatchType match_type_;  // Type of match to perform.
+  Label binary_label_;    // Least label for binary search.
+  Label match_label_;     // Current label to be matched.
+  size_t narcs_;          // Current state arc count.
+  Arc loop_;              // For non-consuming symbols.
+  bool current_loop_;     // Current arc is the implicit loop.
+  bool exact_match_;      // Exact match or lower bound?
+  bool error_;            // Error encountered?
 };
 
 // Returns true iff match to match_label_. The arc iterator is positioned at the
@@ -491,7 +512,7 @@ class HashMatcher : public MatcherBase<typename F::Arc> {
 
   const FST &GetFst() const override { return fst_; }
 
-  uint64 Properties(uint64 inprops) const override {
+  uint64_t Properties(uint64_t inprops) const override {
     return inprops | (error_ ? kError : 0);
   }
 
@@ -526,18 +547,18 @@ void HashMatcher<FST>::SetState(typename FST::Arc::StateId s) {
   // Resets everything for the state.
   state_ = s;
   loop_.nextstate = state_;
-  aiter_ = fst::make_unique<ArcIterator<FST>>(fst_, state_);
+  aiter_ = std::make_unique<ArcIterator<FST>>(fst_, state_);
   if (match_type_ == MATCH_NONE) {
     FSTERROR() << "HashMatcher: Bad match type";
     error_ = true;
   }
   // Attempts to insert a new label table.
-  auto it_and_success = state_table_->emplace(
-      state_, std::unique_ptr<LabelTable>(new LabelTable()));
+  const auto &[it, success] =
+      state_table_->emplace(state_, std::make_unique<LabelTable>());
   // Sets instance's pointer to the label table for this state.
-  label_table_ = it_and_success.first->second.get();
+  label_table_ = it->second.get();
   // If it already exists, no additional work is done and we simply return.
-  if (!it_and_success.second) return;
+  if (!success) return;
   // Otherwise, populate this new table.
   // Populates the label table.
   label_table_->reserve(internal::NumArcs(fst_, state_));
@@ -553,9 +574,7 @@ void HashMatcher<FST>::SetState(typename FST::Arc::StateId s) {
 
 template <class FST>
 inline bool HashMatcher<FST>::Search(typename FST::Arc::Label match_label) {
-  auto range = label_table_->equal_range(match_label);
-  label_it_ = range.first;
-  label_end_ = range.second;
+  std::tie(label_it_, label_end_) = label_table_->equal_range(match_label);
   if (label_it_ == label_end_) return false;
   aiter_->Seek(label_it_->second);
   return true;
@@ -571,14 +590,14 @@ enum MatcherRewriteMode {
 // For any requested label that doesn't match at a state, this matcher
 // considers the *unique* transition that matches the label 'phi_label'
 // (phi = 'fail'), and recursively looks for a match at its
-// destination.  When 'phi_loop' is true, if no match is found but a
+// destination. When 'phi_loop' is true, if no match is found but a
 // phi self-loop is found, then the phi transition found is returned
 // with the phi_label rewritten as the requested label (both sides if
 // an acceptor, or if 'rewrite_both' is true and both input and output
-// labels of the found transition are 'phi_label').  If 'phi_label' is
-// kNoLabel, this special matching is not done.  PhiMatcher is
+// labels of the found transition are 'phi_label'). If 'phi_label' is
+// kNoLabel, this special matching is not done. PhiMatcher is
 // templated itself on a matcher, which is used to perform the
-// underlying matching.  By default, the underlying matcher is
+// underlying matching. By default, the underlying matcher is
 // constructed by PhiMatcher. The user can instead pass in this
 // object; in that case, PhiMatcher takes its ownership.
 // Phi non-determinism not supported. No non-consuming symbols other
@@ -712,9 +731,9 @@ class PhiMatcher : public MatcherBase<typename M::Arc> {
 
   const FST &GetFst() const override { return matcher_->GetFst(); }
 
-  uint64 Properties(uint64 props) const override;
+  uint64_t Properties(uint64_t props) const override;
 
-  uint32 Flags() const override {
+  uint32_t Flags() const override {
     if (phi_label_ == kNoLabel || match_type_ == MATCH_NONE) {
       return matcher_->Flags();
     }
@@ -789,7 +808,7 @@ inline bool PhiMatcher<M>::Find(Label label) {
 }
 
 template <class M>
-inline uint64 PhiMatcher<M>::Properties(uint64 inprops) const {
+inline uint64_t PhiMatcher<M>::Properties(uint64_t inprops) const {
   auto outprops = matcher_->Properties(inprops);
   if (error_) outprops |= kError;
   if (match_type_ == MATCH_NONE) {
@@ -831,14 +850,14 @@ inline uint64 PhiMatcher<M>::Properties(uint64 inprops) const {
 
 // For any requested label that doesn't match at a state, this matcher
 // considers all transitions that match the label 'rho_label' (rho =
-// 'rest').  Each such rho transition found is returned with the
+// 'rest'). Each such rho transition found is returned with the
 // rho_label rewritten as the requested label (both sides if an
 // acceptor, or if 'rewrite_both' is true and both input and output
-// labels of the found transition are 'rho_label').  If 'rho_label' is
-// kNoLabel, this special matching is not done.  RhoMatcher is
+// labels of the found transition are 'rho_label'). If 'rho_label' is
+// kNoLabel, this special matching is not done. RhoMatcher is
 // templated itself on a matcher, which is used to perform the
-// underlying matching.  By default, the underlying matcher is
-// constructed by RhoMatcher.  The user can instead pass in this
+// underlying matching. By default, the underlying matcher is
+// constructed by RhoMatcher. The user can instead pass in this
 // object; in that case, RhoMatcher takes its ownership.
 // No non-consuming symbols other than epsilon supported with
 // the underlying template argument matcher.
@@ -964,9 +983,9 @@ class RhoMatcher : public MatcherBase<typename M::Arc> {
 
   const FST &GetFst() const override { return matcher_->GetFst(); }
 
-  uint64 Properties(uint64 props) const override;
+  uint64_t Properties(uint64_t props) const override;
 
-  uint32 Flags() const override {
+  uint32_t Flags() const override {
     if (rho_label_ == kNoLabel || match_type_ == MATCH_NONE) {
       return matcher_->Flags();
     }
@@ -988,7 +1007,7 @@ class RhoMatcher : public MatcherBase<typename M::Arc> {
 };
 
 template <class M>
-inline uint64 RhoMatcher<M>::Properties(uint64 inprops) const {
+inline uint64_t RhoMatcher<M>::Properties(uint64_t inprops) const {
   auto outprops = matcher_->Properties(inprops);
   if (error_) outprops |= kError;
   if (match_type_ == MATCH_NONE) {
@@ -1020,16 +1039,16 @@ inline uint64 RhoMatcher<M>::Properties(uint64 inprops) const {
 
 // For any requested label, this matcher considers all transitions
 // that match the label 'sigma_label' (sigma = "any"), and this in
-// additions to transitions with the requested label.  Each such sigma
+// additions to transitions with the requested label. Each such sigma
 // transition found is returned with the sigma_label rewritten as the
 // requested label (both sides if an acceptor, or if 'rewrite_both' is
 // true and both input and output labels of the found transition are
-// 'sigma_label').  If 'sigma_label' is kNoLabel, this special
-// matching is not done.  SigmaMatcher is templated itself on a
-// matcher, which is used to perform the underlying matching.  By
+// 'sigma_label'). If 'sigma_label' is kNoLabel, this special
+// matching is not done. SigmaMatcher is templated itself on a
+// matcher, which is used to perform the underlying matching. By
 // default, the underlying matcher is constructed by SigmaMatcher.
 // The user can instead pass in this object; in that case,
-// SigmaMatcher takes its ownership.  No non-consuming symbols other
+// SigmaMatcher takes its ownership. No non-consuming symbols other
 // than epsilon supported with the underlying template argument matcher.
 template <class M>
 class SigmaMatcher : public MatcherBase<typename M::Arc> {
@@ -1160,9 +1179,9 @@ class SigmaMatcher : public MatcherBase<typename M::Arc> {
 
   const FST &GetFst() const override { return matcher_->GetFst(); }
 
-  uint64 Properties(uint64 props) const override;
+  uint64_t Properties(uint64_t props) const override;
 
-  uint32 Flags() const override {
+  uint32_t Flags() const override {
     if (sigma_label_ == kNoLabel || match_type_ == MATCH_NONE) {
       return matcher_->Flags();
     }
@@ -1185,7 +1204,7 @@ class SigmaMatcher : public MatcherBase<typename M::Arc> {
 };
 
 template <class M>
-inline uint64 SigmaMatcher<M>::Properties(uint64 inprops) const {
+inline uint64_t SigmaMatcher<M>::Properties(uint64_t inprops) const {
   auto outprops = matcher_->Properties(inprops);
   if (error_) outprops |= kError;
   if (match_type_ == MATCH_NONE) {
@@ -1212,10 +1231,10 @@ inline uint64 SigmaMatcher<M>::Properties(uint64 inprops) const {
 // Flags for MultiEpsMatcher.
 
 // Return multi-epsilon arcs for Find(kNoLabel).
-const uint32 kMultiEpsList = 0x00000001;
+inline constexpr uint32_t kMultiEpsList = 0x00000001;
 
 // Return a kNolabel loop for Find(multi_eps).
-const uint32 kMultiEpsLoop = 0x00000002;
+inline constexpr uint32_t kMultiEpsLoop = 0x00000002;
 
 // MultiEpsMatcher: allows treating multiple non-0 labels as
 // non-consuming labels in addition to 0 that is always
@@ -1235,7 +1254,7 @@ class MultiEpsMatcher {
 
   // This makes a copy of the FST (w/o 'matcher' arg).
   MultiEpsMatcher(const FST &fst, MatchType match_type,
-                  uint32 flags = (kMultiEpsLoop | kMultiEpsList),
+                  uint32_t flags = (kMultiEpsLoop | kMultiEpsList),
                   M *matcher = nullptr, bool own_matcher = true)
       : matcher_(matcher ? matcher : new M(fst, match_type)),
         flags_(flags),
@@ -1245,7 +1264,7 @@ class MultiEpsMatcher {
 
   // This doesn't copy the FST.
   MultiEpsMatcher(const FST *fst, MatchType match_type,
-                  uint32 flags = (kMultiEpsLoop | kMultiEpsList),
+                  uint32_t flags = (kMultiEpsLoop | kMultiEpsList),
                   M *matcher = nullptr, bool own_matcher = true)
       : matcher_(matcher ? matcher : new M(fst, match_type)),
         flags_(flags),
@@ -1307,13 +1326,15 @@ class MultiEpsMatcher {
 
   const FST &GetFst() const { return matcher_->GetFst(); }
 
-  uint64 Properties(uint64 props) const { return matcher_->Properties(props); }
+  uint64_t Properties(uint64_t props) const {
+    return matcher_->Properties(props);
+  }
 
   const M *GetMatcher() const { return matcher_; }
 
   Weight Final(StateId s) const { return matcher_->Final(s); }
 
-  uint32 Flags() const { return matcher_->Flags(); }
+  uint32_t Flags() const { return matcher_->Flags(); }
 
   ssize_t Priority(StateId s) { return matcher_->Priority(s); }
 
@@ -1349,7 +1370,7 @@ class MultiEpsMatcher {
   }
 
   M *matcher_;
-  uint32 flags_;
+  uint32_t flags_;
   bool own_matcher_;  // Does this class delete the matcher?
 
   // Multi-eps label set.
@@ -1462,13 +1483,13 @@ class ExplicitMatcher : public MatcherBase<typename M::Arc> {
 
   const FST &GetFst() const final { return matcher_->GetFst(); }
 
-  uint64 Properties(uint64 inprops) const override {
+  uint64_t Properties(uint64_t inprops) const override {
     return matcher_->Properties(inprops);
   }
 
   const M *GetMatcher() const { return matcher_.get(); }
 
-  uint32 Flags() const override { return matcher_->Flags(); }
+  uint32_t Flags() const override { return matcher_->Flags(); }
 
  private:
   // Checks current arc if available and explicit. If not available, stops. If
@@ -1511,13 +1532,13 @@ class Matcher {
       : owned_fst_(fst.Copy()), base_(owned_fst_->InitMatcher(match_type)) {
     if (!base_)
       base_ =
-          fst::make_unique<SortedMatcher<FST>>(owned_fst_.get(), match_type);
+          std::make_unique<SortedMatcher<FST>>(owned_fst_.get(), match_type);
   }
 
   // This doesn't copy the FST.
   Matcher(const FST *fst, MatchType match_type)
       : base_(fst->InitMatcher(match_type)) {
-    if (!base_) base_ = fst::make_unique<SortedMatcher<FST>>(fst, match_type);
+    if (!base_) base_ = std::make_unique<SortedMatcher<FST>>(fst, match_type);
   }
 
   // This makes a copy of the FST.
@@ -1541,13 +1562,13 @@ class Matcher {
 
   void Next() { base_->Next(); }
 
-  const FST &GetFst() const { return static_cast<const FST &>(base_->GetFst()); }
+  const FST &GetFst() const { return down_cast<const FST &>(base_->GetFst()); }
 
-  uint64 Properties(uint64 props) const { return base_->Properties(props); }
+  uint64_t Properties(uint64_t props) const { return base_->Properties(props); }
 
   Weight Final(StateId s) const { return base_->Final(s); }
 
-  uint32 Flags() const { return base_->Flags() & kMatcherFlags; }
+  uint32_t Flags() const { return base_->Flags() & kMatcherFlags; }
 
   ssize_t Priority(StateId s) { return base_->Priority(s); }
 

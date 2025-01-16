@@ -1,3 +1,17 @@
+// Copyright 2005-2024 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the 'License');
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an 'AS IS' BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
 // See www.openfst.org for extensive documentation on this weighted
 // finite-state transducer library.
 //
@@ -6,19 +20,25 @@
 #ifndef FST_PROJECT_H_
 #define FST_PROJECT_H_
 
-#include <fst/types.h>
+#include <cstdint>
 
 #include <fst/arc-map.h>
+#include <fst/arc.h>
+#include <fst/cache.h>
+#include <fst/float-weight.h>
+#include <fst/fst.h>
+#include <fst/impl-to-fst.h>
 #include <fst/mutable-fst.h>
+#include <fst/properties.h>
 
 namespace fst {
 
 // This specifies whether to project on input or output.
 enum class ProjectType { INPUT = 1, OUTPUT = 2 };
 OPENFST_DEPRECATED("Use `ProjectType::INPUT` instead.")
-static constexpr ProjectType PROJECT_INPUT = ProjectType::INPUT;
+inline constexpr ProjectType PROJECT_INPUT = ProjectType::INPUT;
 OPENFST_DEPRECATED("Use `ProjectType::OUTPUT` instead.")
-static constexpr ProjectType PROJECT_OUTPUT = ProjectType::OUTPUT;
+inline constexpr ProjectType PROJECT_OUTPUT = ProjectType::OUTPUT;
 
 // Mapper to implement projection per arc.
 template <class A>
@@ -48,7 +68,7 @@ class ProjectMapper {
                                                 : MAP_CLEAR_SYMBOLS;
   }
 
-  constexpr uint64 Properties(uint64 props) const {
+  constexpr uint64_t Properties(uint64_t props) const {
     return ProjectProperties(props, project_type_ == ProjectType::INPUT);
   }
 
@@ -106,14 +126,16 @@ inline void Project(MutableFst<Arc> *fst, ProjectType project_type) {
 // caching.
 template <class A>
 class ProjectFst : public ArcMapFst<A, A, ProjectMapper<A>> {
+  using Base = ArcMapFst<A, A, ProjectMapper<A>>;
+
  public:
   using FromArc = A;
   using ToArc = A;
 
-  using Impl = internal::ArcMapFstImpl<A, A, ProjectMapper<A>>;
+  using typename Base::Impl;
 
   ProjectFst(const Fst<A> &fst, ProjectType project_type)
-      : ArcMapFst<A, A, ProjectMapper<A>>(fst, ProjectMapper<A>(project_type)) {
+      : Base(fst, ProjectMapper<A>(project_type)) {
     if (project_type == ProjectType::INPUT) {
       GetMutableImpl()->SetOutputSymbols(fst.InputSymbols());
     }
@@ -123,8 +145,7 @@ class ProjectFst : public ArcMapFst<A, A, ProjectMapper<A>> {
   }
 
   // See Fst<>::Copy() for doc.
-  ProjectFst(const ProjectFst &fst, bool safe = false)
-      : ArcMapFst<A, A, ProjectMapper<A>>(fst, safe) {}
+  ProjectFst(const ProjectFst &fst, bool safe = false) : Base(fst, safe) {}
 
   // Gets a copy of this ProjectFst. See Fst<>::Copy() for further doc.
   ProjectFst *Copy(bool safe = false) const override {
@@ -132,7 +153,7 @@ class ProjectFst : public ArcMapFst<A, A, ProjectMapper<A>> {
   }
 
  private:
-  using ImplToFst<Impl>::GetMutableImpl;
+  using Base::GetMutableImpl;
 };
 
 // Specialization for ProjectFst.

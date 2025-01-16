@@ -1,3 +1,17 @@
+// Copyright 2005-2024 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the 'License');
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an 'AS IS' BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
 // See www.openfst.org for extensive documentation on this weighted
 // finite-state transducer library.
 //
@@ -8,17 +22,27 @@
 #define FST_CONST_FST_H_
 
 #include <climits>
+#include <cstddef>
+#include <cstdint>
+#include <ios>
+#include <istream>
+#include <memory>
+#include <ostream>
 #include <string>
 #include <vector>
 
-#include <fst/types.h>
 #include <fst/log.h>
-
+#include <fst/arc.h>
 #include <fst/expanded-fst.h>
+#include <fst/float-weight.h>
 #include <fst/fst-decl.h>
+#include <fst/fst.h>
+#include <fst/impl-to-fst.h>
 #include <fst/mapped-file.h>
+#include <fst/properties.h>
 #include <fst/test-properties.h>
 #include <fst/util.h>
+#include <string_view>
 
 namespace fst {
 
@@ -47,7 +71,7 @@ class ConstFstImpl : public FstImpl<A> {
 
   ConstFstImpl() {
     std::string type = "const";
-    if (sizeof(Unsigned) != sizeof(uint32)) {
+    if (sizeof(Unsigned) != sizeof(uint32_t)) {
       type += std::to_string(CHAR_BIT * sizeof(Unsigned));
     }
     SetType(type);
@@ -102,7 +126,7 @@ class ConstFstImpl : public FstImpl<A> {
   };
 
   // Properties always true of this FST class.
-  static constexpr uint64 kStaticProperties = kExpanded;
+  static constexpr uint64_t kStaticProperties = kExpanded;
   // Current unaligned file format version. The unaligned version was added and
   // made the default since the aligned version does not work on pipes.
   static constexpr int kFileVersion = 2;
@@ -124,21 +148,9 @@ class ConstFstImpl : public FstImpl<A> {
 };
 
 template <class Arc, class Unsigned>
-constexpr uint64 ConstFstImpl<Arc, Unsigned>::kStaticProperties;
-
-template <class Arc, class Unsigned>
-constexpr int ConstFstImpl<Arc, Unsigned>::kFileVersion;
-
-template <class Arc, class Unsigned>
-constexpr int ConstFstImpl<Arc, Unsigned>::kAlignedFileVersion;
-
-template <class Arc, class Unsigned>
-constexpr int ConstFstImpl<Arc, Unsigned>::kMinFileVersion;
-
-template <class Arc, class Unsigned>
 ConstFstImpl<Arc, Unsigned>::ConstFstImpl(const Fst<Arc> &fst) {
   std::string type = "const";
-  if (sizeof(Unsigned) != sizeof(uint32)) {
+  if (sizeof(Unsigned) != sizeof(uint32_t)) {
     type += std::to_string(CHAR_BIT * sizeof(Unsigned));
   }
   SetType(type);
@@ -182,7 +194,7 @@ ConstFstImpl<Arc, Unsigned>::ConstFstImpl(const Fst<Arc> &fst) {
 template <class Arc, class Unsigned>
 ConstFstImpl<Arc, Unsigned> *ConstFstImpl<Arc, Unsigned>::Read(
     std::istream &strm, const FstReadOptions &opts) {
-  std::unique_ptr<ConstFstImpl> impl(new ConstFstImpl());
+  auto impl = std::make_unique<ConstFstImpl>();
   FstHeader hdr;
   if (!impl->ReadHeader(strm, opts, kMinFileVersion, &hdr)) return nullptr;
   impl->start_ = hdr.Start();
@@ -198,7 +210,7 @@ ConstFstImpl<Arc, Unsigned> *ConstFstImpl<Arc, Unsigned>::Read(
   }
   size_t b = impl->nstates_ * sizeof(ConstState);
   impl->states_region_.reset(
-      MappedFile::Map(&strm, opts.mode == FstReadOptions::MAP, opts.source, b));
+      MappedFile::Map(strm, opts.mode == FstReadOptions::MAP, opts.source, b));
   if (!strm || !impl->states_region_) {
     LOG(ERROR) << "ConstFst::Read: Read failed: " << opts.source;
     return nullptr;
@@ -211,7 +223,7 @@ ConstFstImpl<Arc, Unsigned> *ConstFstImpl<Arc, Unsigned>::Read(
   }
   b = impl->narcs_ * sizeof(Arc);
   impl->arcs_region_.reset(
-      MappedFile::Map(&strm, opts.mode == FstReadOptions::MAP, opts.source, b));
+      MappedFile::Map(strm, opts.mode == FstReadOptions::MAP, opts.source, b));
   if (!strm || !impl->arcs_region_) {
     LOG(ERROR) << "ConstFst::Read: Read failed: " << opts.source;
     return nullptr;
@@ -230,11 +242,13 @@ ConstFstImpl<Arc, Unsigned> *ConstFstImpl<Arc, Unsigned>::Read(
 // ConstFst is thread-safe.
 template <class A, class Unsigned>
 class ConstFst : public ImplToExpandedFst<internal::ConstFstImpl<A, Unsigned>> {
+  using Base = ImplToExpandedFst<internal::ConstFstImpl<A, Unsigned>>;
+
  public:
   using Arc = A;
   using StateId = typename Arc::StateId;
 
-  using Impl = internal::ConstFstImpl<A, Unsigned>;
+  using typename Base::Impl;
   using ConstState = typename Impl::ConstState;
 
   friend class StateIterator<ConstFst<Arc, Unsigned>>;
@@ -243,13 +257,12 @@ class ConstFst : public ImplToExpandedFst<internal::ConstFstImpl<A, Unsigned>> {
   template <class F, class G>
   void friend Cast(const F &, G *);
 
-  ConstFst() : ImplToExpandedFst<Impl>(std::make_shared<Impl>()) {}
+  ConstFst() : Base(std::make_shared<Impl>()) {}
 
-  explicit ConstFst(const Fst<Arc> &fst)
-      : ImplToExpandedFst<Impl>(std::make_shared<Impl>(fst)) {}
+  explicit ConstFst(const Fst<Arc> &fst) : Base(std::make_shared<Impl>(fst)) {}
 
   ConstFst(const ConstFst &fst, bool unused_safe = false)
-      : ImplToExpandedFst<Impl>(fst.GetSharedImpl()) {}
+      : Base(fst.GetSharedImpl()) {}
 
   // Gets a copy of this ConstFst. See Fst<>::Copy() for further doc.
   ConstFst *Copy(bool safe = false) const override {
@@ -264,8 +277,8 @@ class ConstFst : public ImplToExpandedFst<internal::ConstFstImpl<A, Unsigned>> {
 
   // Read a ConstFst from a file; return nullptr on error; empty source reads
   // from standard input.
-  static ConstFst *Read(const std::string &source) {
-    auto *impl = ImplToExpandedFst<Impl>::Read(source);
+  static ConstFst *Read(std::string_view source) {
+    auto *impl = Base::Read(source);
     return impl ? new ConstFst(std::shared_ptr<Impl>(impl)) : nullptr;
   }
 
@@ -290,10 +303,9 @@ class ConstFst : public ImplToExpandedFst<internal::ConstFstImpl<A, Unsigned>> {
   }
 
  private:
-  explicit ConstFst(std::shared_ptr<Impl> impl)
-      : ImplToExpandedFst<Impl>(impl) {}
+  explicit ConstFst(std::shared_ptr<Impl> impl) : Base(impl) {}
 
-  using ImplToFst<Impl, ExpandedFst<Arc>>::GetImpl;
+  using Base::GetImpl;
 
   // Uses overloading to extract the type of the argument.
   static const Impl *GetImplIfConstFst(const ConstFst &const_fst) {
@@ -341,7 +353,7 @@ bool ConstFst<Arc, Unsigned>::WriteFst(const FST &fst, std::ostream &strm,
   hdr.SetNumStates(num_states);
   hdr.SetNumArcs(num_arcs);
   std::string type = "const";
-  if (sizeof(Unsigned) != sizeof(uint32)) {
+  if (sizeof(Unsigned) != sizeof(uint32_t)) {
     type += std::to_string(CHAR_BIT * sizeof(Unsigned));
   }
   const auto properties =
@@ -447,9 +459,9 @@ class ArcIterator<ConstFst<Arc, Unsigned>> {
 
   void Seek(size_t a) { i_ = a; }
 
-  constexpr uint8 Flags() const { return kArcValueFlags; }
+  constexpr uint8_t Flags() const { return kArcValueFlags; }
 
-  void SetFlags(uint8, uint8) {}
+  void SetFlags(uint8_t, uint8_t) {}
 
  private:
   const Arc *arcs_;

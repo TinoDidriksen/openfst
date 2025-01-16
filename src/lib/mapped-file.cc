@@ -1,3 +1,17 @@
+// Copyright 2005-2024 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the 'License');
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an 'AS IS' BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
 // See www.openfst.org for extensive documentation on this weighted
 // finite-state transducer library.
 //
@@ -5,7 +19,10 @@
 #include <fst/mapped-file.h>
 
 #include <fcntl.h>
-#include <sys/types.h>
+
+#include <cstddef>
+#include <cstdint>
+#include <new>
 
 #ifdef _WIN32
 #include <io.h>         // for _get_osfhandle, _open
@@ -20,8 +37,9 @@
 #include <cerrno>
 #include <cstring>
 #include <ios>
-#include <limits>
+#include <istream>
 #include <memory>
+#include <string>
 
 #include <fst/log.h>
 
@@ -51,15 +69,18 @@ MappedFile::~MappedFile() {
 #endif
     } else {
       if (region_.data) {
-        operator delete(static_cast<char *>(region_.data) - region_.offset);
+        operator delete(region_.data, region_.size,
+                        std::align_val_t{region_.offset});
       }
     }
   }
 }
 
-MappedFile *MappedFile::Map(std::istream *istrm, bool memorymap,
-                            const std::string &source, size_t size) {
-  const auto spos = istrm->tellg();
+MappedFile * MappedFile::Map(std::istream &istrm,
+                                             bool memorymap,
+                                             const std::string &source,
+                                             size_t size) {
+  const auto spos = istrm.tellg();
   VLOG(2) << "memorymap: " << (memorymap ? "true" : "false") << " source: \""
           << source << "\""
           << " size: " << size << " offset: " << spos;
@@ -73,7 +94,7 @@ MappedFile *MappedFile::Map(std::istream *istrm, bool memorymap,
     if (fd != -1) {
       std::unique_ptr<MappedFile> mmf(MapFromFileDescriptor(fd, pos, size));
       if (close(fd) == 0 && mmf != nullptr) {
-        istrm->seekg(pos + size, std::ios::beg);
+        istrm.seekg(pos + size, std::ios::beg);
         if (istrm) {
           VLOG(2) << "mmap'ed region of " << size << " at offset " << pos
                   << " from " << source << " to addr " << mmf->region_.mmap;
@@ -95,8 +116,8 @@ MappedFile *MappedFile::Map(std::istream *istrm, bool memorymap,
   auto *buffer = static_cast<char *>(mf->mutable_data());
   while (size > 0) {
     const auto next_size = std::min(size, kMaxReadChunk);
-    const auto current_pos = istrm->tellg();
-    if (!istrm->read(buffer, next_size)) {
+    const auto current_pos = istrm.tellg();
+    if (!istrm.read(buffer, next_size)) {
       LOG(ERROR) << "Failed to read " << next_size << " bytes at offset "
                  << current_pos << "from \"" << source << "\"";
       return nullptr;
@@ -108,11 +129,13 @@ MappedFile *MappedFile::Map(std::istream *istrm, bool memorymap,
   return mf.release();
 }
 
-MappedFile *MappedFile::MapFromFileDescriptor(int fd, size_t pos, size_t size) {
+MappedFile * MappedFile::MapFromFileDescriptor(int fd,
+                                                               size_t pos,
+                                                               size_t size) {
 #ifdef _WIN32
   SYSTEM_INFO sysInfo;
   GetSystemInfo(&sysInfo);
-  const DWORD pagesize = sysInfo.dwPageSize;
+  const DWORD pagesize = sysInfo.dwAllocationGranularity;
 #else
   const int pagesize = sysconf(_SC_PAGESIZE);
 #endif  // _WIN32
@@ -131,18 +154,23 @@ MappedFile *MappedFile::MapFromFileDescriptor(int fd, size_t pos, size_t size) {
     LOG(ERROR) << "Invalid file descriptor fd=" << fd;
     return nullptr;
   }
+  const DWORD max_size_hi =
+      sizeof(size_t) > sizeof(DWORD) ? upsize >> (CHAR_BIT * sizeof(DWORD)) : 0;
+  const DWORD max_size_lo = upsize & DWORD_MAX;
   HANDLE file_mapping = CreateFileMappingA(file, nullptr, PAGE_READONLY,
-                                           upsize >> (8 * sizeof(DWORD)),
-                                           upsize & DWORD_MAX, nullptr);
+                                           max_size_hi, max_size_lo, nullptr);
   if (file_mapping == INVALID_HANDLE_VALUE) {
     LOG(ERROR) << "Can't create mapping for fd=" << fd << " size=" << upsize
                << ": " << GetLastError();
     return nullptr;
   }
 
+  const DWORD offset_pos_hi =
+      sizeof(size_t) > sizeof(DWORD) ? offset_pos >> (CHAR_BIT * sizeof(DWORD))
+                                     : 0;
+  const DWORD offset_pos_lo = offset_pos & DWORD_MAX;
   void *map = MapViewOfFile(file_mapping, FILE_MAP_READ,
-                            offset_pos >> (8 * sizeof(DWORD)),
-                            offset_pos & DWORD_MAX, upsize);
+                            offset_pos_hi, offset_pos_lo, upsize);
   if (!map) {
     LOG(ERROR) << "mmap failed for fd=" << fd << " size=" << upsize
                << " offset=" << offset_pos << ": " << GetLastError();
@@ -173,12 +201,10 @@ MappedFile *MappedFile::Allocate(size_t size, size_t align) {
   region.data = nullptr;
   region.offset = 0;
   if (size > 0) {
-    // TODO(jrosenstock,sorenj): Use std::align() when that is no longer banned.
-    // Use std::aligned_alloc() when C++17 is allowed.
-    char *buffer = static_cast<char *>(operator new(size + align));
-    uintptr_t address = reinterpret_cast<uintptr_t>(buffer);
-    region.offset = align - (address % align);
-    region.data = buffer + region.offset;
+    region.offset = align;
+    region.data = static_cast<char *>(operator new(
+        size, std::align_val_t{align}
+        ));
   }
   region.mmap = nullptr;
   region.size = size;
@@ -193,9 +219,5 @@ MappedFile *MappedFile::Borrow(void *data) {
   region.offset = 0;
   return new MappedFile(region);
 }
-
-constexpr size_t MappedFile::kArchAlignment;
-
-constexpr size_t MappedFile::kMaxReadChunk;
 
 }  // namespace fst

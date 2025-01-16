@@ -1,3 +1,17 @@
+// Copyright 2005-2024 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the 'License');
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an 'AS IS' BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
 // See www.openfst.org for extensive documentation on this weighted
 // finite-state transducer library.
 //
@@ -6,22 +20,29 @@
 #ifndef FST_SCRIPT_COMPILE_IMPL_H_
 #define FST_SCRIPT_COMPILE_IMPL_H_
 
+#include <cstddef>
 #include <iostream>
+#include <istream>
 #include <memory>
+#include <optional>
 #include <sstream>
 #include <string>
 #include <vector>
 
+#include <fst/log.h>
 #include <fst/fst.h>
+#include <fst/properties.h>
+#include <fst/symbol-table.h>
 #include <fst/util.h>
 #include <fst/vector-fst.h>
 #include <unordered_map>
+#include <string_view>
 
 DECLARE_string(fst_field_separator);
 
 namespace fst {
 
-// Compile a binary Fst from textual input, helper class for fstcompile.cc
+// Compile a binary FST from textual input, helper class for fstcompile.cc.
 // WARNING: Stand-alone use of this class not recommended, most code should
 // read/write using the binary format which is much more efficient.
 template <class Arc>
@@ -31,51 +52,48 @@ class FstCompiler {
   using StateId = typename Arc::StateId;
   using Weight = typename Arc::Weight;
 
-  // WARNING: use of negative labels not recommended as it may cause conflicts.
   // If add_symbols_ is true, then the symbols will be dynamically added to the
   // symbol tables. This is only useful if you set the (i/o)keep flag to attach
   // the final symbol table, or use the accessors. (The input symbol tables are
   // const and therefore not changed.)
-  FstCompiler(std::istream &istrm, const std::string &source,  // NOLINT
+  FstCompiler(std::istream &istrm, std::string_view source,
               const SymbolTable *isyms, const SymbolTable *osyms,
               const SymbolTable *ssyms, bool accep, bool ikeep, bool okeep,
-              bool nkeep, bool allow_negative_labels = false) {
+              bool nkeep) {
     std::unique_ptr<SymbolTable> misyms(isyms ? isyms->Copy() : nullptr);
     std::unique_ptr<SymbolTable> mosyms(osyms ? osyms->Copy() : nullptr);
     std::unique_ptr<SymbolTable> mssyms(ssyms ? ssyms->Copy() : nullptr);
     Init(istrm, source, misyms.get(), mosyms.get(), mssyms.get(), accep, ikeep,
-         okeep, nkeep, allow_negative_labels, false);
+         okeep, nkeep, false);
   }
 
-  FstCompiler(std::istream &istrm, const std::string &source,  // NOLINT
-              SymbolTable *isyms, SymbolTable *osyms, SymbolTable *ssyms,
-              bool accep, bool ikeep, bool okeep, bool nkeep,
-              bool allow_negative_labels, bool add_symbols) {
+  FstCompiler(std::istream &istrm, std::string_view source, SymbolTable *isyms,
+              SymbolTable *osyms, SymbolTable *ssyms, bool accep, bool ikeep,
+              bool okeep, bool nkeep, bool add_symbols) {
     Init(istrm, source, isyms, osyms, ssyms, accep, ikeep, okeep, nkeep,
-         allow_negative_labels, add_symbols);
+         add_symbols);
   }
 
-  void Init(std::istream &istrm, const std::string &source,  // NOLINT
-            SymbolTable *isyms, SymbolTable *osyms, SymbolTable *ssyms,
-            bool accep, bool ikeep, bool okeep, bool nkeep,
-            bool allow_negative_labels, bool add_symbols) {
+  void Init(std::istream &istrm, std::string_view source, SymbolTable *isyms,
+            SymbolTable *osyms, SymbolTable *ssyms, bool accep, bool ikeep,
+            bool okeep, bool nkeep, bool add_symbols) {
     nline_ = 0;
-    source_ = source;
+    source_ = std::string(source);
     isyms_ = isyms;
     osyms_ = osyms;
     ssyms_ = ssyms;
     nstates_ = 0;
     keep_state_numbering_ = nkeep;
-    allow_negative_labels_ = allow_negative_labels;
     add_symbols_ = add_symbols;
     bool start_state_populated = false;
     char line[kLineLen];
-    const std::string separator = FLAGS_fst_field_separator + "\n";
+    const std::string separator =
+        FST_FLAGS_fst_field_separator + "\n";
     while (istrm.getline(line, kLineLen)) {
       ++nline_;
-      std::vector<char *> col;
-      SplitString(line, separator.c_str(), &col, true);
-      if (col.empty() || col[0][0] == '\0') continue;
+      const std::vector<std::string_view> col =
+          StrSplit(line, ByAnyChar(separator), SkipEmpty());
+      if (col.empty() || col[0].empty()) continue;
       if (col.size() > 5 || (col.size() > 4 && accep) ||
           (col.size() == 3 && !accep)) {
         FSTERROR() << "FstCompiler: Bad number of columns, source = " << source_
@@ -89,7 +107,6 @@ class FstCompiler {
         fst_.SetStart(s);
         start_state_populated = true;
       }
-
       Arc arc;
       StateId d = s;
       switch (col.size()) {
@@ -137,12 +154,17 @@ class FstCompiler {
   // Maximum line length in text file.
   static constexpr int kLineLen = 8096;
 
-  StateId StrToId(const char *s, SymbolTable *syms, const char *name,
-                  bool allow_negative = false) const {
+  StateId StrToId(std::string_view s, SymbolTable *syms,
+                  std::string_view name) const {
     StateId n = 0;
     if (syms) {
-      n = (add_symbols_) ? syms->AddSymbol(s) : syms->Find(s);
-      if (n == -1 || (!allow_negative && n < 0)) {
+      // n = (add_symbols_) ? syms->AddSymbol(s) : syms->Find(s);
+      if (add_symbols_) {
+        n = syms->AddSymbol(s);
+      } else {
+        n = syms->Find(s);
+      }
+      if (n == kNoSymbol) {
         FSTERROR() << "FstCompiler: Symbol \"" << s
                    << "\" is not mapped to any integer " << name
                    << ", symbol table = " << syms->Name()
@@ -150,18 +172,18 @@ class FstCompiler {
         fst_.SetProperties(kError, kError);
       }
     } else {
-      char *p;
-      n = strtoll(s, &p, 10);
-      if (*p != '\0' || (!allow_negative && n < 0)) {
+      auto maybe_n = ParseInt64(s);
+      if (!maybe_n.has_value()) {
         FSTERROR() << "FstCompiler: Bad " << name << " integer = \"" << s
                    << "\", source = " << source_ << ", line = " << nline_;
         fst_.SetProperties(kError, kError);
       }
+      n = *maybe_n;
     }
     return n;
   }
 
-  StateId StrToStateId(const char *s) {
+  StateId StrToStateId(std::string_view s) {
     StateId n = StrToId(s, ssyms_, "state ID");
     if (keep_state_numbering_) return n;
     // Remaps state IDs to make dense set.
@@ -174,17 +196,17 @@ class FstCompiler {
     }
   }
 
-  StateId StrToILabel(const char *s) const {
-    return StrToId(s, isyms_, "arc ilabel", allow_negative_labels_);
+  StateId StrToILabel(std::string_view s) const {
+    return StrToId(s, isyms_, "arc ilabel");
   }
 
-  StateId StrToOLabel(const char *s) const {
-    return StrToId(s, osyms_, "arc olabel", allow_negative_labels_);
+  StateId StrToOLabel(std::string_view s) const {
+    return StrToId(s, osyms_, "arc olabel");
   }
 
-  Weight StrToWeight(const char *s, bool allow_zero) const {
+  Weight StrToWeight(std::string_view s, bool allow_zero) const {
     Weight w;
-    std::istringstream strm(s);
+    std::istringstream strm(std::string{s});
     strm >> w;
     if (!strm || (!allow_zero && w == Weight::Zero())) {
       FSTERROR() << "FstCompiler: Bad weight = \"" << s
@@ -204,7 +226,6 @@ class FstCompiler {
   std::unordered_map<StateId, StateId> states_;  // State ID map.
   StateId nstates_;                               // Number of seen states.
   bool keep_state_numbering_;
-  bool allow_negative_labels_;  // Not recommended; may cause conflicts.
   bool add_symbols_;            // Add to symbol tables on-the fly.
 
   FstCompiler(const FstCompiler &) = delete;

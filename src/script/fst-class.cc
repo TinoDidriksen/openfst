@@ -1,3 +1,17 @@
+// Copyright 2005-2024 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the 'License');
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an 'AS IS' BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
 // See www.openfst.org for extensive documentation on this weighted
 // finite-state transducer library.
 //
@@ -7,13 +21,20 @@
 
 #include <fst/script/fst-class.h>
 
+#include <ios>
+#include <iostream>
 #include <istream>
+#include <memory>
+#include <string>
 
 #include <fst/log.h>
-#include <fst/equal.h>
-#include <fst/fst-decl.h>
-#include <fst/reverse.h>
-#include <fst/union.h>
+#include <fst/arc.h>
+#include <fstream>
+#include <fst/fst.h>
+#include <fst/properties.h>
+#include <fst/util.h>
+#include <fst/script/weight-class.h>
+#include <string_view>
 
 namespace fst {
 namespace script {
@@ -22,7 +43,8 @@ namespace {
 // Helper functions.
 
 template <class F>
-F *ReadFstClass(std::istream &istrm, const std::string &source) {
+std::unique_ptr<F> ReadFstClass(std::istream &istrm,
+                                                const std::string &source) {
   if (!istrm) {
     LOG(ERROR) << "ReadFstClass: Can't open file: " << source;
     return nullptr;
@@ -41,7 +63,8 @@ F *ReadFstClass(std::istream &istrm, const std::string &source) {
 }
 
 template <class F>
-FstClassImplBase *CreateFstClass(const std::string &arc_type) {
+std::unique_ptr<FstClassImplBase> CreateFstClass(
+    std::string_view arc_type) {
   static const auto *reg = FstClassIORegistration<F>::Register::GetRegister();
   auto creator = reg->GetCreator(arc_type);
   if (!creator) {
@@ -52,7 +75,8 @@ FstClassImplBase *CreateFstClass(const std::string &arc_type) {
 }
 
 template <class F>
-FstClassImplBase *ConvertFstClass(const FstClass &other) {
+std::unique_ptr<FstClassImplBase> ConvertFstClass(
+    const FstClass &other) {
   static const auto *reg = FstClassIORegistration<F>::Register::GetRegister();
   auto converter = reg->GetConverter(other.ArcType());
   if (!converter) {
@@ -66,7 +90,8 @@ FstClassImplBase *ConvertFstClass(const FstClass &other) {
 
 // FstClass methods.
 
-FstClass *FstClass::Read(const std::string &source) {
+std::unique_ptr<FstClass> FstClass::Read(
+    const std::string &source) {
   if (!source.empty()) {
     std::ifstream istrm(source, std::ios_base::in | std::ios_base::binary);
     return ReadFstClass<FstClass>(istrm, source);
@@ -75,12 +100,13 @@ FstClass *FstClass::Read(const std::string &source) {
   }
 }
 
-FstClass *FstClass::Read(std::istream &istrm, const std::string &source) {
+std::unique_ptr<FstClass> FstClass::Read(
+    std::istream &istrm, const std::string &source) {
   return ReadFstClass<FstClass>(istrm, source);
 }
 
 bool FstClass::WeightTypesMatch(const WeightClass &weight,
-                                const std::string &op_name) const {
+                                std::string_view op_name) const {
   if (WeightType() != weight.Type()) {
     FSTERROR() << op_name << ": FST and weight with non-matching weight types: "
                << WeightType() << " and " << weight.Type();
@@ -91,8 +117,8 @@ bool FstClass::WeightTypesMatch(const WeightClass &weight,
 
 // MutableFstClass methods.
 
-MutableFstClass *MutableFstClass::Read(const std::string &source,
-                                       bool convert) {
+std::unique_ptr<MutableFstClass> MutableFstClass::Read(
+    const std::string &source, bool convert) {
   if (convert == false) {
     if (!source.empty()) {
       std::ifstream in(source, std::ios_base::in | std::ios_base::binary);
@@ -104,16 +130,17 @@ MutableFstClass *MutableFstClass::Read(const std::string &source,
     std::unique_ptr<FstClass> ifst(FstClass::Read(source));
     if (!ifst) return nullptr;
     if (ifst->Properties(kMutable, false) == kMutable) {
-      return static_cast<MutableFstClass *>(ifst.release());
+      return fst::WrapUnique(down_cast<MutableFstClass *>(ifst.release()));
     } else {
-      return new VectorFstClass(*ifst.release());
+      return std::make_unique<VectorFstClass>(*ifst.release());
     }
   }
 }
 
 // VectorFstClass methods.
 
-VectorFstClass *VectorFstClass::Read(const std::string &source) {
+std::unique_ptr<VectorFstClass> VectorFstClass::Read(
+    const std::string &source) {
   if (!source.empty()) {
     std::ifstream in(source, std::ios_base::in | std::ios_base::binary);
     return ReadFstClass<VectorFstClass>(in, source);
@@ -122,7 +149,7 @@ VectorFstClass *VectorFstClass::Read(const std::string &source) {
   }
 }
 
-VectorFstClass::VectorFstClass(const std::string &arc_type)
+VectorFstClass::VectorFstClass(std::string_view arc_type)
     : MutableFstClass(CreateFstClass<VectorFstClass>(arc_type)) {}
 
 VectorFstClass::VectorFstClass(const FstClass &other)

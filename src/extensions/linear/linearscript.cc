@@ -1,3 +1,17 @@
+// Copyright 2005-2024 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the 'License');
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an 'AS IS' BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
 // See www.openfst.org for extensive documentation on this weighted
 // finite-state transducer library.
 
@@ -5,11 +19,15 @@
 #include <fst/extensions/linear/linearscript.h>
 
 #include <cctype>
-#include <cstdio>
+#include <cstddef>
+#include <functional>
 #include <set>
+#include <sstream>
+#include <string>
+#include <vector>
 
 #include <fst/flags.h>
-#include <fst/arc.h>
+#include <fst/log.h>
 #include <fstream>
 #include <fst/script/script-impl.h>
 
@@ -29,13 +47,14 @@ namespace fst {
 namespace script {
 
 bool ValidateDelimiter() {
-  return FLAGS_delimiter.size() == 1 && !std::isspace(FLAGS_delimiter[0]);
+  return FST_FLAGS_delimiter.size() == 1 &&
+         !std::isspace(FST_FLAGS_delimiter[0]);
 }
 
 bool ValidateEmptySymbol() {
-  bool okay = !FLAGS_empty_symbol.empty();
-  for (size_t i = 0; i < FLAGS_empty_symbol.size(); ++i) {
-    char c = FLAGS_empty_symbol[i];
+  bool okay = !FST_FLAGS_empty_symbol.empty();
+  for (size_t i = 0; i < FST_FLAGS_empty_symbol.size(); ++i) {
+    char c = FST_FLAGS_empty_symbol[i];
     if (std::isspace(c)) okay = false;
   }
   return okay;
@@ -64,7 +83,7 @@ void SplitByWhitespace(const std::string &str, std::vector<std::string> *out) {
 }
 
 int ScanNumClasses(char **models, int models_len) {
-  std::set<std::string> preds;
+  std::set<std::string, std::less<>> preds;
   for (int i = 0; i < models_len; ++i) {
     std::ifstream in(models[i]);
     if (!in) LOG(FATAL) << "Failed to open " << models[i];

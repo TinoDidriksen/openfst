@@ -1,3 +1,17 @@
+// Copyright 2005-2024 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the 'License');
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an 'AS IS' BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
 // See www.openfst.org for extensive documentation on this weighted
 // finite-state transducer library.
 //
@@ -9,8 +23,10 @@
 
 #include <fst/flags.h>
 #include <fst/log.h>
+#include <fst/script/fst-class.h>
 #include <fst/script/getters.h>
 #include <fst/script/map.h>
+#include <fst/script/weight-class.h>
 
 DECLARE_double(delta);
 DECLARE_string(map_type);
@@ -27,7 +43,6 @@ int fstmap_main(int argc, char **argv) {
   usage += argv[0];
   usage += " [in.fst [out.fst]]\n";
 
-  std::set_new_handler(FailedNewHandler);
   SET_FLAGS(usage.c_str(), &argc, &argv, true);
   if (argc > 3) {
     ShowUsage();
@@ -43,20 +58,22 @@ int fstmap_main(int argc, char **argv) {
   if (!ifst) return 1;
 
   s::MapType map_type;
-  if (!s::GetMapType(FLAGS_map_type, &map_type)) {
+  if (!s::GetMapType(FST_FLAGS_map_type, &map_type)) {
     LOG(ERROR) << argv[0] << ": Unknown or unsupported map type "
-               << FLAGS_map_type;
+               << FST_FLAGS_map_type;
     return 1;
   }
 
   const auto weight_param =
-      !FLAGS_weight.empty()
-          ? WeightClass(ifst->WeightType(), FLAGS_weight)
-          : (FLAGS_map_type == "times" ? WeightClass::One(ifst->WeightType())
-                                       : WeightClass::Zero(ifst->WeightType()));
+      !FST_FLAGS_weight.empty()
+          ? WeightClass(ifst->WeightType(), FST_FLAGS_weight)
+          : (FST_FLAGS_map_type == "times"
+                 ? WeightClass::One(ifst->WeightType())
+                 : WeightClass::Zero(ifst->WeightType()));
 
   std::unique_ptr<FstClass> ofst(
-      s::Map(*ifst, map_type, FLAGS_delta, FLAGS_power, weight_param));
+      s::Map(*ifst, map_type, FST_FLAGS_delta,
+             FST_FLAGS_power, weight_param));
 
   return !ofst->Write(out_name);
 }

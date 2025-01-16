@@ -1,11 +1,27 @@
+// Copyright 2005-2024 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the 'License');
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an 'AS IS' BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
 #ifndef FST_TEST_RAND_FST_H_
 #define FST_TEST_RAND_FST_H_
 
+#include <cstddef>
+#include <cstdint>
 #include <random>
 
-#include <fst/types.h>
 #include <fst/log.h>
 #include <fst/mutable-fst.h>
+#include <fst/properties.h>
 #include <fst/verify.h>
 
 namespace fst {
@@ -14,7 +30,7 @@ namespace fst {
 template <class Arc, class Generate>
 void RandFst(const int num_random_states, const int num_random_arcs,
              const int num_random_labels, const float acyclic_prob,
-             Generate generate, uint64 seed, MutableFst<Arc> *fst) {
+             Generate generate, uint64_t seed, MutableFst<Arc> *fst) {
   using Label = typename Arc::Label;
   using StateId = typename Arc::StateId;
   using Weight = typename Arc::Weight;
@@ -82,10 +98,10 @@ void RandFst(const int num_random_states, const int num_random_arcs,
   CHECK(Verify(*fst));
 
   // Get/compute all properties.
-  const uint64 props = fst->Properties(kFstProperties, true);
+  const uint64_t props = fst->Properties(kFstProperties, true);
 
   // Select random set of properties to be unknown.
-  uint64 mask = 0;
+  uint64_t mask = 0;
   for (int n = 0; n < 8; ++n) {
     mask |= std::uniform_int_distribution<>(0, 0xff)(rand);
     mask <<= 8;

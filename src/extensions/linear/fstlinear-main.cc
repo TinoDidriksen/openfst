@@ -1,3 +1,17 @@
+// Copyright 2005-2024 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the 'License');
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an 'AS IS' BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
 // See www.openfst.org for extensive documentation on this weighted
 // finite-state transducer library.
 
@@ -15,7 +29,6 @@ DECLARE_string(save_osymbols);
 
 int fstlinear_main(int argc, char **argv) {
   // TODO(wuke): more detailed usage
-  std::set_new_handler(FailedNewHandler);
   SET_FLAGS(argv[0], &argc, &argv, true);
   fst::script::ValidateDelimiter();
   fst::script::ValidateEmptySymbol();
@@ -25,10 +38,11 @@ int fstlinear_main(int argc, char **argv) {
     return 1;
   }
 
-  fst::script::LinearCompile(FLAGS_arc_type, FLAGS_epsilon_symbol,
-                                 FLAGS_unknown_symbol, FLAGS_vocab, argv + 1,
-                                 argc - 1, FLAGS_out, FLAGS_save_isymbols,
-                                 FLAGS_save_fsymbols, FLAGS_save_osymbols);
+  fst::script::LinearCompile(
+      FST_FLAGS_arc_type, FST_FLAGS_epsilon_symbol,
+      FST_FLAGS_unknown_symbol, FST_FLAGS_vocab, argv + 1,
+      argc - 1, FST_FLAGS_out, FST_FLAGS_save_isymbols,
+      FST_FLAGS_save_fsymbols, FST_FLAGS_save_osymbols);
 
   return 0;
 }

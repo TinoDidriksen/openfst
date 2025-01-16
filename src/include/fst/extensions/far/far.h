@@ -1,3 +1,17 @@
+// Copyright 2005-2024 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the 'License');
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an 'AS IS' BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
 // See www.openfst.org for extensive documentation on this weighted
 // finite-state transducer library.
 //
@@ -6,24 +20,52 @@
 #ifndef FST_EXTENSIONS_FAR_FAR_H_
 #define FST_EXTENSIONS_FAR_FAR_H_
 
+#include <algorithm>
+#include <cstddef>
+#include <cstdint>
+#include <ios>
 #include <iostream>
+#include <istream>
+#include <memory>
+#include <ostream>
 #include <sstream>
+#include <string>
+#include <utility>
+#include <vector>
 
 #include <fst/log.h>
 #include <fst/extensions/far/stlist.h>
 #include <fst/extensions/far/sttable.h>
+#include <fst/arc.h>
 #include <fstream>
 #include <fst/fst.h>
+#include <fst/properties.h>
+#include <fst/util.h>
 #include <fst/vector-fst.h>
+#include <string_view>
 
 namespace fst {
 
 enum class FarEntryType { LINE, FILE };
 
-inline bool IsFst(const std::string &source) {
-  std::ifstream strm(source, std::ios_base::in | std::ios_base::binary);
+enum class FarType {
+  DEFAULT = 0,
+  STTABLE = 1,
+  STLIST = 2,
+  FST = 3,
+};
+
+// Checks for FST magic number in an input stream (to be opened given the source
+// name), to indicate to the caller function that the stream content is an FST
+// header.
+inline bool IsFst(std::string_view source) {
+  std::ifstream strm(std::string(source),
+                          std::ios_base::in | std::ios_base::binary);
   if (!strm) return false;
-  return IsFstHeader(strm, source);
+  int32_t magic_number = 0;
+  ReadType(strm, &magic_number);
+  bool match = magic_number == kFstMagicNumber;
+  return match;
 }
 
 // FST archive header class
@@ -31,46 +73,48 @@ class FarHeader {
  public:
   const std::string &ArcType() const { return arctype_; }
 
-  const std::string &FarType() const { return fartype_; }
+  enum FarType FarType() const { return fartype_; }
 
   bool Read(const std::string &source) {
     FstHeader fsthdr;
-    if (source.empty()) {
+    arctype_ = "unknown";
+    // This function assumes that opening `source` multiple times will
+    // produce the same sequence of bytes.  This is definitely not the case
+    // for `/dev/stdin`.  Of course, there are many other ways to spell this,
+    // and we can't detect them all, but we make a tiny effort to provide a
+    // reasonable warning.  Maybe we should be checking for a regular file
+    // instead?
+    if (source.empty() || source == "/dev/stdin") {
       // Header reading unsupported on stdin. Assumes STList and StdArc.
-      fartype_ = "stlist";
+      LOG(WARNING) << "Cannot reopen stdin; assuming far_type=stlist and "
+                      "arc_type=standard; either may be wrong.";
+      fartype_ = FarType::STLIST;
       arctype_ = "standard";
       return true;
     } else if (IsSTTable(source)) {  // Checks if STTable.
-      ReadSTTableHeader(source, &fsthdr);
-      fartype_ = "sttable";
-      arctype_ = fsthdr.ArcType().empty() ? "unknown" : fsthdr.ArcType();
+      fartype_ = FarType::STTABLE;
+      if (!ReadSTTableHeader(source, &fsthdr)) return false;
+      arctype_ = fsthdr.ArcType().empty() ? ErrorArc::Type() : fsthdr.ArcType();
       return true;
     } else if (IsSTList(source)) {  // Checks if STList.
-      ReadSTListHeader(source, &fsthdr);
-      fartype_ = "stlist";
-      arctype_ = fsthdr.ArcType().empty() ? "unknown" : fsthdr.ArcType();
+      fartype_ = FarType::STLIST;
+      if (!ReadSTListHeader(source, &fsthdr)) return false;
+      arctype_ = fsthdr.ArcType().empty() ? ErrorArc::Type() : fsthdr.ArcType();
       return true;
     } else if (IsFst(source)) {  // Checks if FST.
+      fartype_ = FarType::FST;
       std::ifstream istrm(source,
                                std::ios_base::in | std::ios_base::binary);
-      fsthdr.Read(istrm, source);
-      fartype_ = "fst";
-      arctype_ = fsthdr.ArcType().empty() ? "unknown" : fsthdr.ArcType();
+      if (!fsthdr.Read(istrm, source)) return false;
+      arctype_ = fsthdr.ArcType().empty() ? ErrorArc::Type() : fsthdr.ArcType();
       return true;
     }
     return false;
   }
 
  private:
-  std::string fartype_;
+  enum FarType fartype_;
   std::string arctype_;
-};
-
-enum class FarType {
-  DEFAULT = 0,
-  STTABLE = 1,
-  STLIST = 2,
-  FST = 3,
 };
 
 // This class creates an archive of FSTs.
@@ -80,21 +124,21 @@ class FarWriter {
   using Arc = A;
 
   // Creates a new (empty) FST archive; returns null on error.
-  static FarWriter *Create(const std::string &source,
+  static FarWriter *Create(std::string_view source,
                            FarType type = FarType::DEFAULT);
 
   // Adds an FST to the end of an archive. Keys must be non-empty and
   // in lexicographic order. FSTs must have a suitable write method.
-  virtual void Add(const std::string &key, const Fst<Arc> &fst) = 0;
+  virtual void Add(std::string_view key, const Fst<Arc> &fst) = 0;
 
   virtual FarType Type() const = 0;
 
   virtual bool Error() const = 0;
 
-  virtual ~FarWriter() {}
+  virtual ~FarWriter() = default;
 
  protected:
-  FarWriter() {}
+  FarWriter() = default;
 };
 
 // This class iterates through an existing archive of FSTs.
@@ -114,8 +158,8 @@ class FarReader {
   // Resets current position to beginning of archive.
   virtual void Reset() = 0;
 
-  // Sets current position to first entry >= key.  Returns true if a match.
-  virtual bool Find(const std::string &key) = 0;
+  // Sets current position to first entry >= key. Returns true if a match.
+  virtual bool Find(std::string_view key) = 0;
 
   // Current position at end of archive?
   virtual bool Done() const = 0;
@@ -135,10 +179,10 @@ class FarReader {
 
   virtual bool Error() const = 0;
 
-  virtual ~FarReader() {}
+  virtual ~FarReader() = default;
 
  protected:
-  FarReader() {}
+  FarReader() = default;
 };
 
 template <class Arc>
@@ -154,12 +198,12 @@ class STTableFarWriter : public FarWriter<A> {
  public:
   using Arc = A;
 
-  static STTableFarWriter *Create(const std::string &source) {
+  static STTableFarWriter *Create(std::string_view source) {
     auto *writer = STTableWriter<Fst<Arc>, FstWriter<Arc>>::Create(source);
     return new STTableFarWriter(writer);
   }
 
-  void Add(const std::string &key, const Fst<Arc> &fst) final {
+  void Add(std::string_view key, const Fst<Arc> &fst) final {
     writer_->Add(key, fst);
   }
 
@@ -179,12 +223,12 @@ class STListFarWriter : public FarWriter<A> {
  public:
   using Arc = A;
 
-  static STListFarWriter *Create(const std::string &source) {
+  static STListFarWriter *Create(std::string_view source) {
     auto *writer = STListWriter<Fst<Arc>, FstWriter<Arc>>::Create(source);
     return new STListFarWriter(writer);
   }
 
-  void Add(const std::string &key, const Fst<Arc> &fst) final {
+  void Add(std::string_view key, const Fst<Arc> &fst) final {
     writer_->Add(key, fst);
   }
 
@@ -204,14 +248,14 @@ class FstFarWriter final : public FarWriter<A> {
  public:
   using Arc = A;
 
-  explicit FstFarWriter(const std::string &source)
+  explicit FstFarWriter(std::string_view source)
       : source_(source), error_(false), written_(false) {}
 
-  static FstFarWriter *Create(const std::string &source) {
+  static FstFarWriter *Create(std::string_view source) {
     return new FstFarWriter(source);
   }
 
-  void Add(const std::string &key, const Fst<A> &fst) final {
+  void Add(std::string_view key, const Fst<A> &fst) final {
     if (written_) {
       LOG(WARNING) << "FstFarWriter::Add: only one FST supported,"
                    << " subsequent entries discarded.";
@@ -225,7 +269,7 @@ class FstFarWriter final : public FarWriter<A> {
 
   bool Error() const final { return error_; }
 
-  ~FstFarWriter() final {}
+  ~FstFarWriter() final = default;
 
  private:
   std::string source_;
@@ -234,11 +278,11 @@ class FstFarWriter final : public FarWriter<A> {
 };
 
 template <class Arc>
-FarWriter<Arc> *FarWriter<Arc>::Create(const std::string &source,
-                                       FarType type) {
+FarWriter<Arc> *FarWriter<Arc>::Create(std::string_view source, FarType type) {
   switch (type) {
     case FarType::DEFAULT:
       if (source.empty()) return STListFarWriter<Arc>::Create(source);
+      [[fallthrough]];
     case FarType::STTABLE:
       return STTableFarWriter<Arc>::Create(source);
     case FarType::STLIST:
@@ -265,21 +309,23 @@ class STTableFarReader : public FarReader<A> {
  public:
   using Arc = A;
 
-  static STTableFarReader *Open(const std::string &source) {
-    auto *reader = STTableReader<Fst<Arc>, FstReader<Arc>>::Open(source);
+  static STTableFarReader *Open(std::string_view source) {
+    auto reader =
+        fst::WrapUnique(STTableReader<Fst<Arc>, FstReader<Arc>>::Open(source));
     if (!reader || reader->Error()) return nullptr;
-    return new STTableFarReader(reader);
+    return new STTableFarReader(std::move(reader));
   }
 
   static STTableFarReader *Open(const std::vector<std::string> &sources) {
-    auto *reader = STTableReader<Fst<Arc>, FstReader<Arc>>::Open(sources);
+    auto reader = fst::WrapUnique(
+        STTableReader<Fst<Arc>, FstReader<Arc>>::Open(sources));
     if (!reader || reader->Error()) return nullptr;
-    return new STTableFarReader(reader);
+    return new STTableFarReader(std::move(reader));
   }
 
   void Reset() final { reader_->Reset(); }
 
-  bool Find(const std::string &key) final { return reader_->Find(key); }
+  bool Find(std::string_view key) final { return reader_->Find(key); }
 
   bool Done() const final { return reader_->Done(); }
 
@@ -294,8 +340,9 @@ class STTableFarReader : public FarReader<A> {
   bool Error() const final { return reader_->Error(); }
 
  private:
-  explicit STTableFarReader(STTableReader<Fst<Arc>, FstReader<Arc>> *reader)
-      : reader_(reader) {}
+  explicit STTableFarReader(
+      std::unique_ptr<STTableReader<Fst<Arc>, FstReader<Arc>>> reader)
+      : reader_(std::move(reader)) {}
 
   std::unique_ptr<STTableReader<Fst<Arc>, FstReader<Arc>>> reader_;
 };
@@ -305,21 +352,23 @@ class STListFarReader : public FarReader<A> {
  public:
   using Arc = A;
 
-  static STListFarReader *Open(const std::string &source) {
-    auto *reader = STListReader<Fst<Arc>, FstReader<Arc>>::Open(source);
+  static STListFarReader *Open(std::string_view source) {
+    auto reader =
+        fst::WrapUnique(STListReader<Fst<Arc>, FstReader<Arc>>::Open(source));
     if (!reader || reader->Error()) return nullptr;
-    return new STListFarReader(reader);
+    return new STListFarReader(std::move(reader));
   }
 
   static STListFarReader *Open(const std::vector<std::string> &sources) {
-    auto *reader = STListReader<Fst<Arc>, FstReader<Arc>>::Open(sources);
+    auto reader =
+        fst::WrapUnique(STListReader<Fst<Arc>, FstReader<Arc>>::Open(sources));
     if (!reader || reader->Error()) return nullptr;
-    return new STListFarReader(reader);
+    return new STListFarReader(std::move(reader));
   }
 
   void Reset() final { reader_->Reset(); }
 
-  bool Find(const std::string &key) final { return reader_->Find(key); }
+  bool Find(std::string_view key) final { return reader_->Find(key); }
 
   bool Done() const final { return reader_->Done(); }
 
@@ -334,8 +383,9 @@ class STListFarReader : public FarReader<A> {
   bool Error() const final { return reader_->Error(); }
 
  private:
-  explicit STListFarReader(STListReader<Fst<Arc>, FstReader<Arc>> *reader)
-      : reader_(reader) {}
+  explicit STListFarReader(
+      std::unique_ptr<STListReader<Fst<Arc>, FstReader<Arc>>> reader)
+      : reader_(std::move(reader)) {}
 
   std::unique_ptr<STListReader<Fst<Arc>, FstReader<Arc>>> reader_;
 };
@@ -345,9 +395,9 @@ class FstFarReader final : public FarReader<A> {
  public:
   using Arc = A;
 
-  static FstFarReader *Open(const std::string &source) {
+  static FstFarReader *Open(std::string_view source) {
     std::vector<std::string> sources;
-    sources.push_back(source);
+    sources.push_back(std::string(source));
     return new FstFarReader<Arc>(sources);
   }
 
@@ -396,7 +446,7 @@ class FstFarReader final : public FarReader<A> {
     ReadFst();
   }
 
-  bool Find(const std::string &key) final {
+  bool Find(std::string_view key) final {
     if (has_stdin_) {
       FSTERROR()
           << "FstFarReader::Find: Operation not supported on standard input";

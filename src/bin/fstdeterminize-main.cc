@@ -1,3 +1,17 @@
+// Copyright 2005-2024 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the 'License');
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an 'AS IS' BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
 // See www.openfst.org for extensive documentation on this weighted
 // finite-state transducer library.
 //
@@ -8,8 +22,12 @@
 #include <string>
 
 #include <fst/flags.h>
+#include <fst/log.h>
+#include <fst/determinize.h>
 #include <fst/script/determinize.h>
+#include <fst/script/fst-class.h>
 #include <fst/script/getters.h>
+#include <fst/script/weight-class.h>
 
 DECLARE_double(delta);
 DECLARE_string(weight);
@@ -29,7 +47,6 @@ int fstdeterminize_main(int argc, char **argv) {
   usage += argv[0];
   usage += " [in.fst [out.fst]]\n";
 
-  std::set_new_handler(FailedNewHandler);
   SET_FLAGS(usage.c_str(), &argc, &argv, true);
   if (argc > 3) {
     ShowUsage();
@@ -37,9 +54,9 @@ int fstdeterminize_main(int argc, char **argv) {
   }
 
   DeterminizeType det_type;
-  if (!s::GetDeterminizeType(FLAGS_det_type, &det_type)) {
+  if (!s::GetDeterminizeType(FST_FLAGS_det_type, &det_type)) {
     LOG(ERROR) << argv[0] << ": Unknown or unsupported determinization type: "
-               << FLAGS_det_type;
+               << FST_FLAGS_det_type;
     return 1;
   }
 
@@ -54,12 +71,14 @@ int fstdeterminize_main(int argc, char **argv) {
   VectorFstClass ofst(ifst->ArcType());
 
   const auto weight_threshold =
-      FLAGS_weight.empty() ? WeightClass::Zero(ifst->WeightType())
-                           : WeightClass(ifst->WeightType(), FLAGS_weight);
+      FST_FLAGS_weight.empty()
+          ? WeightClass::Zero(ifst->WeightType())
+          : WeightClass(ifst->WeightType(), FST_FLAGS_weight);
 
-  const s::DeterminizeOptions opts(FLAGS_delta, weight_threshold, FLAGS_nstate,
-                                   FLAGS_subsequential_label, det_type,
-                                   FLAGS_increment_subsequential_label);
+  const s::DeterminizeOptions opts(
+      FST_FLAGS_delta, weight_threshold, FST_FLAGS_nstate,
+      FST_FLAGS_subsequential_label, det_type,
+      FST_FLAGS_increment_subsequential_label);
 
   s::Determinize(*ifst, &ofst, opts);
 

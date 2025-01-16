@@ -1,3 +1,17 @@
+// Copyright 2005-2024 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the 'License');
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an 'AS IS' BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
 // See www.openfst.org for extensive documentation on this weighted
 // finite-state transducer library.
 //
@@ -6,18 +20,23 @@
 #ifndef FST_RELABEL_H_
 #define FST_RELABEL_H_
 
+#include <cstddef>
+#include <cstdint>
+#include <memory>
 #include <string>
-#include <unordered_map>
 #include <utility>
 #include <vector>
 
-#include <fst/types.h>
 #include <fst/log.h>
-
+#include <fst/arc.h>
 #include <fst/cache.h>
-#include <fst/test-properties.h>
-
-
+#include <fst/float-weight.h>
+#include <fst/fst.h>
+#include <fst/impl-to-fst.h>
+#include <fst/mutable-fst.h>
+#include <fst/properties.h>
+#include <fst/symbol-table.h>
+#include <fst/util.h>
 #include <unordered_map>
 
 namespace fst {
@@ -29,10 +48,8 @@ namespace fst {
 template <class Arc>
 void Relabel(
     MutableFst<Arc> *fst,
-    const std::vector<std::pair<typename Arc::Label, typename Arc::Label>>
-        &ipairs,
-    const std::vector<std::pair<typename Arc::Label, typename Arc::Label>>
-        &opairs) {
+    const std::vector<std::pair<typename Arc::Label, typename Arc::Label>> &        ipairs,
+    const std::vector<std::pair<typename Arc::Label, typename Arc::Label>> &        opairs) {
   using Label = typename Arc::Label;
   const auto props = fst->Properties(kFstProperties, false);
   // Constructs label-to-label maps.
@@ -45,9 +62,12 @@ void Relabel(
     for (MutableArcIterator<MutableFst<Arc>> aiter(fst, siter.Value());
          !aiter.Done(); aiter.Next()) {
       auto arc = aiter.Value();
+      // dense_hash_map does not support find on the empty_key_val.
+      // These labels should never be in an FST anyway.
+      DCHECK_NE(arc.ilabel, kNoLabel);
+      DCHECK_NE(arc.olabel, kNoLabel);
       // Relabels input.
-      auto it = input_map.find(arc.ilabel);
-      if (it != input_map.end()) {
+      if (auto it = input_map.find(arc.ilabel); it != input_map.end()) {
         if (it->second == kNoLabel) {
           FSTERROR() << "Input symbol ID " << arc.ilabel
                      << " missing from target vocabulary";
@@ -57,8 +77,7 @@ void Relabel(
         arc.ilabel = it->second;
       }
       // Relabels output.
-      it = output_map.find(arc.olabel);
-      if (it != output_map.end()) {
+      if (auto it = output_map.find(arc.olabel); it != output_map.end()) {
         if (it->second == kNoLabel) {
           FSTERROR() << "Output symbol id " << arc.olabel
                      << " missing from target vocabulary";
@@ -167,7 +186,7 @@ void Relabel(MutableFst<Arc> *fst, const SymbolTable *old_isymbols,
              bool attach_new_osymbols) {
   Relabel(fst, old_isymbols, new_isymbols, "" /* no unknown isymbol */,
           attach_new_isymbols, old_osymbols, new_osymbols,
-          "" /* no unknown ioymbol */, attach_new_osymbols);
+          "" /* no unknown osymbol */, attach_new_osymbols);
 }
 
 // Relabels either the input labels or output labels. The old to
@@ -299,10 +318,10 @@ class RelabelFstImpl : public CacheImpl<Arc> {
     return CacheImpl<Arc>::NumOutputEpsilons(s);
   }
 
-  uint64 Properties() const override { return Properties(kFstProperties); }
+  uint64_t Properties() const override { return Properties(kFstProperties); }
 
   // Sets error if found, and returns other FST impl properties.
-  uint64 Properties(uint64 mask) const override {
+  uint64_t Properties(uint64_t mask) const override {
     if ((mask & kError) && fst_->Properties(kError, false)) {
       SetProperties(kError, kError);
     }
@@ -318,12 +337,12 @@ class RelabelFstImpl : public CacheImpl<Arc> {
     for (ArcIterator<Fst<Arc>> aiter(*fst_, s); !aiter.Done(); aiter.Next()) {
       auto arc = aiter.Value();
       if (relabel_input_) {
-        auto it = input_map_.find(arc.ilabel);
-        if (it != input_map_.end()) arc.ilabel = it->second;
+        if (auto it = input_map_.find(arc.ilabel); it != input_map_.end()) {
+          arc.ilabel = it->second;
+        }
       }
       if (relabel_output_) {
-        auto it = output_map_.find(arc.olabel);
-        if (it != output_map_.end()) {
+        if (auto it = output_map_.find(arc.olabel); it != output_map_.end()) {
           arc.olabel = it->second;
         }
       }
@@ -347,6 +366,8 @@ class RelabelFstImpl : public CacheImpl<Arc> {
 // reference counting, delegating most methods to ImplToFst.
 template <class A>
 class RelabelFst : public ImplToFst<internal::RelabelFstImpl<A>> {
+  using Base = ImplToFst<internal::RelabelFstImpl<A>>;
+
  public:
   using Arc = A;
   using Label = typename Arc::Label;
@@ -355,7 +376,7 @@ class RelabelFst : public ImplToFst<internal::RelabelFstImpl<A>> {
 
   using Store = DefaultCacheStore<Arc>;
   using State = typename Store::State;
-  using Impl = internal::RelabelFstImpl<Arc>;
+  using typename Base::Impl;
 
   friend class ArcIterator<RelabelFst<A>>;
   friend class StateIterator<RelabelFst<A>>;
@@ -364,26 +385,23 @@ class RelabelFst : public ImplToFst<internal::RelabelFstImpl<A>> {
              const std::vector<std::pair<Label, Label>> &ipairs,
              const std::vector<std::pair<Label, Label>> &opairs,
              const RelabelFstOptions &opts = RelabelFstOptions())
-      : ImplToFst<Impl>(std::make_shared<Impl>(fst, ipairs, opairs, opts)) {}
+      : Base(std::make_shared<Impl>(fst, ipairs, opairs, opts)) {}
 
   RelabelFst(const Fst<Arc> &fst, const SymbolTable *new_isymbols,
              const SymbolTable *new_osymbols,
              const RelabelFstOptions &opts = RelabelFstOptions())
-      : ImplToFst<Impl>(
-            std::make_shared<Impl>(fst, fst.InputSymbols(), new_isymbols,
-                                   fst.OutputSymbols(), new_osymbols, opts)) {}
+      : Base(std::make_shared<Impl>(fst, fst.InputSymbols(), new_isymbols,
+                                    fst.OutputSymbols(), new_osymbols, opts)) {}
 
   RelabelFst(const Fst<Arc> &fst, const SymbolTable *old_isymbols,
              const SymbolTable *new_isymbols, const SymbolTable *old_osymbols,
              const SymbolTable *new_osymbols,
              const RelabelFstOptions &opts = RelabelFstOptions())
-      : ImplToFst<Impl>(std::make_shared<Impl>(fst, old_isymbols, new_isymbols,
-                                               old_osymbols, new_osymbols,
-                                               opts)) {}
+      : Base(std::make_shared<Impl>(fst, old_isymbols, new_isymbols,
+                                    old_osymbols, new_osymbols, opts)) {}
 
   // See Fst<>::Copy() for doc.
-  RelabelFst(const RelabelFst &fst, bool safe = false)
-      : ImplToFst<Impl>(fst, safe) {}
+  RelabelFst(const RelabelFst &fst, bool safe = false) : Base(fst, safe) {}
 
   // Gets a copy of this RelabelFst. See Fst<>::Copy() for further doc.
   RelabelFst *Copy(bool safe = false) const override {
@@ -397,8 +415,8 @@ class RelabelFst : public ImplToFst<internal::RelabelFstImpl<A>> {
   }
 
  private:
-  using ImplToFst<Impl>::GetImpl;
-  using ImplToFst<Impl>::GetMutableImpl;
+  using Base::GetImpl;
+  using Base::GetMutableImpl;
 
   RelabelFst &operator=(const RelabelFst &) = delete;
 };
@@ -452,7 +470,7 @@ class ArcIterator<RelabelFst<Arc>> : public CacheArcIterator<RelabelFst<Arc>> {
 template <class Arc>
 inline void RelabelFst<Arc>::InitStateIterator(
     StateIteratorData<Arc> *data) const {
-  data->base = new StateIterator<RelabelFst<Arc>>(*this);
+  data->base = std::make_unique<StateIterator<RelabelFst<Arc>>>(*this);
 }
 
 // Useful alias when using StdArc.

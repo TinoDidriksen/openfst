@@ -1,3 +1,17 @@
+// Copyright 2005-2024 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the 'License');
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an 'AS IS' BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
 // See www.openfst.org for extensive documentation on this weighted
 // finite-state transducer library.
 //
@@ -6,16 +20,27 @@
 #ifndef FST_EXTENSIONS_PDT_REPLACE_H_
 #define FST_EXTENSIONS_PDT_REPLACE_H_
 
+#include <cstddef>
+#include <cstdint>
+#include <deque>
 #include <map>
 #include <memory>
 #include <set>
-#include <unordered_map>
+#include <string>
+#include <type_traits>
 #include <utility>
 #include <vector>
 
+#include <fst/log.h>
+#include <fst/connect.h>
+#include <fst/fst.h>
+#include <fst/mutable-fst.h>
+#include <fst/properties.h>
 #include <fst/replace-util.h>
 #include <fst/replace.h>
 #include <fst/symbol-table-ops.h>
+#include <fst/symbol-table.h>
+#include <fst/util.h>
 #include <unordered_map>
 
 namespace fst {
@@ -41,24 +66,24 @@ struct ReplaceParenHash {
 //
 // Mohri, M., and Pereira, F. 1998. Dynamic compilation of weighted context-free
 // grammars. In Proc. ACL, pages 891-897.
-enum PdtParserType {
+enum class PdtParserType : uint8_t {
   // Top-down construction. Applied to a simple LL(1) grammar (among others),
   // gives a DPDA. If promoted to a DPDT, with outputs being production
   // numbers, gives a leftmost derivation. Left recursive grammars are
   // problematic in use.
-  PDT_LEFT_PARSER,
+  LEFT,
 
-  // Top-down construction. Similar to PDT_LEFT_PARSE except bounded-stack
+  // Top-down construction. Similar to LEFT except bounded-stack
   // (expandable as an FST) result with regular or, more generally, strongly
   // regular grammars. Epsilons may replace some parentheses, which may
   // introduce some non-determinism.
-  PDT_LEFT_SR_PARSER,
+  LEFT_SR,
 
   /* TODO(riley):
   // Bottom-up construction. Applied to a LR(0) grammar, gives a DPDA.
-  // If promoted to a DPDT, with outputs being the production nubmers,
+  // If promoted to a DPDT, with outputs being the production numbers,
   // gives the reverse of a rightmost derivation.
-  PDT_RIGHT_PARSER,
+  RIGHT,
   */
 };
 
@@ -66,7 +91,8 @@ template <class Arc>
 struct PdtReplaceOptions {
   using Label = typename Arc::Label;
 
-  explicit PdtReplaceOptions(Label root, PdtParserType type = PDT_LEFT_PARSER,
+  explicit PdtReplaceOptions(Label root,
+                             PdtParserType type = PdtParserType::LEFT,
                              Label start_paren_labels = kNoLabel,
                              std::string left_paren_prefix = "(_",
                              std::string right_paren_prefix = ")_")
@@ -96,8 +122,8 @@ class PdtParser {
   using LabelStatePair = std::pair<Label, StateId>;
   using StateWeightPair = std::pair<StateId, Weight>;
   using ParenKey = std::pair<size_t, StateId>;
-  using ParenMap =
-      std::unordered_map<ParenKey, size_t, internal::ReplaceParenHash<StateId>>;
+  using ParenMap = std::unordered_map<ParenKey, size_t,
+                                       internal::ReplaceParenHash<StateId>>;
 
   PdtParser(const std::vector<LabelFstPair> &fst_array,
             const PdtReplaceOptions<Arc> &opts)
@@ -346,8 +372,8 @@ void PdtParser<Arc>::AddParensToFst(
 }
 
 template <class Arc>
-void PdtParser<Arc>::AddParensToSymbolTables(
-    const std::vector<LabelPair> &parens, MutableFst<Arc> *ofst) {
+void PdtParser<Arc>::AddParensToSymbolTables(const std::vector<LabelPair> &parens,
+                                             MutableFst<Arc> *ofst) {
   auto size = parens.size();
   if (ofst->InputSymbols()) {
     if (!AddAuxiliarySymbols(left_paren_prefix_, start_paren_labels_, size,
@@ -780,18 +806,20 @@ void Replace(
     std::vector<std::pair<typename Arc::Label, typename Arc::Label>> *parens,
     const PdtReplaceOptions<Arc> &opts) {
   switch (opts.type) {
-    case PDT_LEFT_PARSER: {
+    case PdtParserType::LEFT: {
       PdtLeftParser<Arc> pr(ifst_array, opts);
       pr.GetParser(ofst, parens);
       return;
     }
-    case PDT_LEFT_SR_PARSER: {
+    case PdtParserType::LEFT_SR: {
       PdtLeftSRParser<Arc> pr(ifst_array, opts);
       pr.GetParser(ofst, parens);
       return;
     }
     default:
-      FSTERROR() << "Replace: Unknown PDT parser type: " << opts.type;
+      FSTERROR() << "Replace: Unknown PDT parser type: "
+                 << static_cast<std::underlying_type_t<PdtParserType>>(
+                        opts.type);
       ofst->DeleteStates();
       ofst->SetProperties(kError, kError);
       parens->clear();

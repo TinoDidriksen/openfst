@@ -1,3 +1,17 @@
+// Copyright 2005-2024 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the 'License');
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an 'AS IS' BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
 // See www.openfst.org for extensive documentation on this weighted
 // finite-state transducer library.
 //
@@ -6,23 +20,29 @@
 #ifndef FST_EXTENSIONS_LINEAR_LINEAR_FST_DATA_H_
 #define FST_EXTENSIONS_LINEAR_LINEAR_FST_DATA_H_
 
+#include <cstddef>
+#include <istream>
 #include <memory>
 #include <numeric>
+#include <ostream>
+#include <sstream>
 #include <string>
 #include <utility>
 #include <vector>
 
 #include <fst/compat.h>
+#include <fst/log.h>
 #include <fst/extensions/linear/trie.h>
 #include <fst/fst.h>
+#include <fst/util.h>
 
 namespace fst {
 
+template <class A>
+class FeatureGroup;
 // Forward declarations
 template <class A>
 class LinearFstDataBuilder;
-template <class A>
-class FeatureGroup;
 
 // Immutable data storage of the feature weights in a linear
 // model. Produces state tuples that represent internal states of a
@@ -42,8 +62,8 @@ class LinearFstData {
 
   // Sentence boundary labels. Both of them are negative labels other
   // than `kNoLabel`.
-  static const Label kStartOfSentence;
-  static const Label kEndOfSentence;
+  static constexpr Label kStartOfSentence = -3;
+  static constexpr Label kEndOfSentence = -2;
 
   // Constructs empty data; for non-trivial ways of construction see
   // `Read()` and `LinearFstDataBuilder`.
@@ -106,16 +126,16 @@ class LinearFstData {
             typename std::vector<Label>::const_iterator>
   PossibleOutputLabels(Label word) const;
 
-  static LinearFstData<A> *Read(std::istream &strm);  // NOLINT
-  std::ostream &Write(std::ostream &strm) const;      // NOLINT
+  static LinearFstData<A> *Read(std::istream &strm);
+  std::ostream &Write(std::ostream &strm) const;
 
  private:
   // Offsets in `output_pool_`
   struct InputAttribute {
     size_t output_begin, output_length;
 
-    std::istream &Read(std::istream &strm);         // NOLINT
-    std::ostream &Write(std::ostream &strm) const;  // NOLINT
+    std::istream &Read(std::istream &strm);
+    std::ostream &Write(std::ostream &strm) const;
   };
 
   // Mapping from input label to per-group feature label
@@ -136,11 +156,6 @@ class LinearFstData {
   LinearFstData(const LinearFstData &) = delete;
   LinearFstData &operator=(const LinearFstData &) = delete;
 };
-
-template <class A>
-const typename A::Label LinearFstData<A>::kStartOfSentence = -3;
-template <class A>
-const typename A::Label LinearFstData<A>::kEndOfSentence = -2;
 
 template <class A>
 template <class Iterator>
@@ -198,7 +213,7 @@ LinearFstData<A>::PossibleOutputLabels(Label word) const {
 }
 
 template <class A>
-inline LinearFstData<A> *LinearFstData<A>::Read(std::istream &strm) {  // NOLINT
+inline LinearFstData<A> *LinearFstData<A>::Read(std::istream &strm) {
   std::unique_ptr<LinearFstData<A>> data(new LinearFstData<A>());
   ReadType(strm, &(data->max_future_size_));
   ReadType(strm, &(data->max_input_label_));
@@ -221,8 +236,7 @@ inline LinearFstData<A> *LinearFstData<A>::Read(std::istream &strm) {  // NOLINT
 }
 
 template <class A>
-inline std::ostream &LinearFstData<A>::Write(
-    std::ostream &strm) const {  // NOLINT
+inline std::ostream &LinearFstData<A>::Write(std::ostream &strm) const {
   WriteType(strm, max_future_size_);
   WriteType(strm, max_input_label_);
   // Feature groups
@@ -250,7 +264,7 @@ typename A::Label LinearFstData<A>::FindFeature(size_t group,
 
 template <class A>
 inline std::istream &LinearFstData<A>::InputAttribute::Read(
-    std::istream &strm) {  // NOLINT
+    std::istream &strm) {
   ReadType(strm, &output_begin);
   ReadType(strm, &output_length);
   return strm;
@@ -258,7 +272,7 @@ inline std::istream &LinearFstData<A>::InputAttribute::Read(
 
 template <class A>
 inline std::ostream &LinearFstData<A>::InputAttribute::Write(
-    std::ostream &strm) const {  // NOLINT
+    std::ostream &strm) const {
   WriteType(strm, output_begin);
   WriteType(strm, output_length);
   return strm;
@@ -301,7 +315,7 @@ class FeatureGroup {
     return trie_[trie_state].final_weight;
   }
 
-  static FeatureGroup<A> *Read(std::istream &strm) {  // NOLINT
+  static FeatureGroup<A> *Read(std::istream &strm) {
     size_t delay;
     ReadType(strm, &delay);
     int start;
@@ -318,7 +332,7 @@ class FeatureGroup {
     }
   }
 
-  std::ostream &Write(std::ostream &strm) const {  // NOLINT
+  std::ostream &Write(std::ostream &strm) const {
     WriteType(strm, delay_);
     WriteType(strm, start_);
     WriteType(strm, trie_);
@@ -348,14 +362,14 @@ class FeatureGroup {
           weight(Weight::One()),
           final_weight(Weight::One()) {}
 
-    std::istream &Read(std::istream &strm) {  // NOLINT
+    std::istream &Read(std::istream &strm) {
       ReadType(strm, &back_link);
       ReadType(strm, &weight);
       ReadType(strm, &final_weight);
       return strm;
     }
 
-    std::ostream &Write(std::ostream &strm) const {  // NOLINT
+    std::ostream &Write(std::ostream &strm) const {
       WriteType(strm, back_link);
       WriteType(strm, weight);
       WriteType(strm, final_weight);
@@ -398,13 +412,13 @@ struct FeatureGroup<A>::InputOutputLabel {
     return input == that.input && output == that.output;
   }
 
-  std::istream &Read(std::istream &strm) {  // NOLINT
+  std::istream &Read(std::istream &strm) {
     ReadType(strm, &input);
     ReadType(strm, &output);
     return strm;
   }
 
-  std::ostream &Write(std::ostream &strm) const {  // NOLINT
+  std::ostream &Write(std::ostream &strm) const {
     WriteType(strm, input);
     WriteType(strm, output);
     return strm;
@@ -474,7 +488,7 @@ inline std::string FeatureGroup<A>::Stats() const {
 template <class A>
 class LinearFstData<A>::GroupFeatureMap {
  public:
-  GroupFeatureMap() {}
+  GroupFeatureMap() = default;
 
   void Init(size_t num_groups, size_t num_words) {
     num_groups_ = num_groups;
@@ -497,13 +511,13 @@ class LinearFstData<A>::GroupFeatureMap {
     return true;
   }
 
-  std::istream &Read(std::istream &strm) {  // NOLINT
+  std::istream &Read(std::istream &strm) {
     ReadType(strm, &num_groups_);
     ReadType(strm, &pool_);
     return strm;
   }
 
-  std::ostream &Write(std::ostream &strm) const {  // NOLINT
+  std::ostream &Write(std::ostream &strm) const {
     WriteType(strm, num_groups_);
     WriteType(strm, pool_);
     return strm;

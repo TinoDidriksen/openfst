@@ -1,16 +1,16 @@
-AC_INIT([OpenFst], [1.7.9], [help@www.openfst.org])
+AC_INIT([OpenFst], [1.8.4], [help@www.openfst.org])
 AM_INIT_AUTOMAKE([foreign nostdinc -Wall -Werror subdir-objects])
 AM_PROG_AR
 
 AC_PROG_CXX
 # This library does not throw exceptions, so we do not generate exception
 # handling code. However, users are free to re-enable exception handling.
-CXX="$CXX -std=c++11 -fno-exceptions"
+CXX="$CXX -std=c++17 -fno-exceptions -Wno-deprecated-declarations"
 
 AC_DISABLE_STATIC
 AC_PROG_LIBTOOL
 
-AC_CONFIG_HEADERS([config.h src/include/fst/config.h])
+AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_SRCDIR([src/lib/fst.cc])
 AC_CONFIG_FILES([
   Makefile
@@ -105,8 +105,8 @@ AC_ARG_ENABLE([python],
               [enable_python=no])
 AM_CONDITIONAL([HAVE_PYTHON], [test "x$enable_python" != xno])
 if test "x$enable_python" != xno; then
-  AM_PATH_PYTHON(3.6)
-  AC_PYTHON_DEVEL([>= '3.6'])
+  AM_PATH_PYTHON
+  AX_PYTHON_DEVEL(,,AC_MSG_ERROR([Python headers not found]))
 fi
 
 AC_ARG_ENABLE([special],
@@ -159,10 +159,8 @@ AC_RUN_IFELSE([AC_LANG_PROGRAM([
                  bool FloatEqIsReflexive(T m) {
                    volatile T x = 1.111;
                    x *= m;
-
                    T y = 1.111;
                    y *= m;
-
                    return x == y;
                  }
                ], [
@@ -176,10 +174,10 @@ AC_RUN_IFELSE([AC_LANG_PROGRAM([
                    return 1;
                  }
                ])],
-              [echo "Float equality is good"],
+              [echo "Checking for float equality... yes"],
               [AC_MSG_FAILURE(m4_normalize([
-                   Test float equality failed!
-                   Compile with -msse -mfpmath=sse if using g++.
+                   "Checking for float equality... no
+                   Compile with -msse -mfpmath=sse if using g++."
               ]))])
 
 AC_CHECK_LIB([dl], dlopen, [DL_LIBS=-ldl])

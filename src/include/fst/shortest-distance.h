@@ -1,3 +1,17 @@
+// Copyright 2005-2024 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the 'License');
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an 'AS IS' BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
 // See www.openfst.org for extensive documentation on this weighted
 // finite-state transducer library.
 //
@@ -10,19 +24,23 @@
 #include <vector>
 
 #include <fst/log.h>
-
+#include <fst/arc.h>
 #include <fst/arcfilter.h>
 #include <fst/cache.h>
 #include <fst/equal.h>
+#include <fst/expanded-fst.h>
+#include <fst/fst.h>
+#include <fst/properties.h>
 #include <fst/queue.h>
 #include <fst/reverse.h>
-#include <fst/test-properties.h>
-
+#include <fst/util.h>
+#include <fst/vector-fst.h>
+#include <fst/weight.h>
 
 namespace fst {
 
 // A representable float for shortest distance and shortest path algorithms.
-constexpr float kShortestDelta = 1e-6;
+inline constexpr float kShortestDelta = 1e-6;
 
 template <class Arc, class Queue, class ArcFilter>
 struct ShortestDistanceOptions {
@@ -81,12 +99,11 @@ class ShortestDistanceState {
         source_id_(0),
         error_(false) {
     distance_->clear();
-    if (fst.Properties(kExpanded, false) == kExpanded) {
-      const auto num_states = CountStates(fst);
-      distance_->reserve(num_states);
-      adder_.reserve(num_states);
-      radder_.reserve(num_states);
-      enqueued_.reserve(num_states);
+    if (std::optional<StateId> num_states = fst.NumStatesIfKnown()) {
+      distance_->reserve(*num_states);
+      adder_.reserve(*num_states);
+      radder_.reserve(*num_states);
+      enqueued_.reserve(*num_states);
     }
   }
 

@@ -1,3 +1,17 @@
+// Copyright 2005-2024 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the 'License');
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an 'AS IS' BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
 // See www.openfst.org for extensive documentation on this weighted
 // finite-state transducer library.
 //
@@ -6,39 +20,53 @@
 #ifndef FST_ENCODE_H_
 #define FST_ENCODE_H_
 
+#include <climits>
+#include <cstddef>
+#include <cstdint>
+#include <ios>
 #include <iostream>
+#include <istream>
 #include <memory>
+#include <ostream>
 #include <string>
-#include <unordered_map>
 #include <utility>
 #include <vector>
 
-#include <fst/types.h>
 #include <fst/log.h>
 #include <fst/arc-map.h>
+#include <fst/arc.h>
+#include <fst/cache.h>
 #include <fstream>
+#include <fst/float-weight.h>
+#include <fst/fst.h>
+#include <fst/impl-to-fst.h>
+#include <fst/mutable-fst.h>
+#include <fst/properties.h>
 #include <fst/rmfinalepsilon.h>
+#include <fst/symbol-table.h>
+#include <fst/util.h>
 #include <unordered_map>
+#include <string_view>
 
 namespace fst {
 
 enum EncodeType { ENCODE = 1, DECODE = 2 };
 
-static constexpr uint8 kEncodeLabels = 0x01;
-static constexpr uint8 kEncodeWeights = 0x02;
-static constexpr uint8 kEncodeFlags = 0x03;
+inline constexpr uint8_t kEncodeLabels = 0x01;
+inline constexpr uint8_t kEncodeWeights = 0x02;
+inline constexpr uint8_t kEncodeFlags = kEncodeLabels | kEncodeWeights;
 
 namespace internal {
 
 // Bits storing whether or not an encode table has input and/or output symbol
 // tables, for internal use only.
-static constexpr uint8 kEncodeHasISymbols = 0x04;
-static constexpr uint8 kEncodeHasOSymbols = 0x08;
+inline constexpr uint8_t kEncodeHasISymbols = 0x04;
+inline constexpr uint8_t kEncodeHasOSymbols = 0x08;
 
 // Identifies stream data as an encode table (and its endianity).
-static const int32 kEncodeMagicNumber = 2128178506;
+inline constexpr int32_t kEncodeMagicNumber = 2128178506;
 // TODO(b/141172858): deprecated, remove by 2020-01-01.
-static const int32 kEncodeDeprecatedMagicNumber = 2129983209;
+inline constexpr int32_t kEncodeDeprecatedMagicNumber = 2129983209;
 
 }  // namespace internal
 
@@ -51,27 +79,29 @@ class EncodeTableHeader {
 
   const std::string &ArcType() const { return arctype_; }
 
-  uint8 Flags() const { return flags_; }
+  uint8_t Flags() const { return flags_; }
 
   size_t Size() const { return size_; }
 
   // Setters.
 
-  void SetArcType(const std::string &arctype) { arctype_ = arctype; }
+  void SetArcType(std::string_view arctype) {
+    arctype_ = std::string(arctype);
+  }
 
-  void SetFlags(uint8 flags) { flags_ = flags; }
+  void SetFlags(uint8_t flags) { flags_ = flags; }
 
   void SetSize(size_t size) { size_ = size; }
 
   // IO.
 
-  bool Read(std::istream &strm, const std::string &source);
+  bool Read(std::istream &strm, std::string_view source);
 
-  bool Write(std::ostream &strm, const std::string &source) const;
+  bool Write(std::ostream &strm, std::string_view source) const;
 
  private:
   std::string arctype_;
-  uint8 flags_;
+  uint8_t flags_;
   size_t size_;
 };
 
@@ -95,17 +125,23 @@ class EncodeTable {
         : ilabel(ilabel), olabel(olabel), weight(std::move(weight)) {}
 
     // Constructs from arc and flags.
-    Triple(const Arc &arc, uint8 flags)
+    Triple(const Arc &arc, uint8_t flags)
         : ilabel(arc.ilabel),
           olabel(flags & kEncodeLabels ? arc.olabel : 0),
           weight(flags & kEncodeWeights ? arc.weight : Weight::One()) {}
 
     static std::unique_ptr<Triple> Read(std::istream &strm) {
-      auto triple = fst::make_unique<Triple>();
+      auto triple = std::make_unique<Triple>();
       ReadType(strm, &triple->ilabel);
       ReadType(strm, &triple->olabel);
       ReadType(strm, &triple->weight);
       return triple;
+    }
+
+    void Write(std::ostream &strm) const {
+      WriteType(strm, ilabel);
+      WriteType(strm, olabel);
+      WriteType(strm, weight);
     }
 
     // Exploited below for TripleEqual functor.
@@ -127,7 +163,7 @@ class EncodeTable {
   // Hash functor for one Triple pointer.
   class TripleHash {
    public:
-    explicit TripleHash(uint8 flags) : flags_(flags) {}
+    explicit TripleHash(uint8_t flags) : flags_(flags) {}
 
     size_t operator()(const Triple *triple) const {
       size_t hash = triple->ilabel;
@@ -143,10 +179,10 @@ class EncodeTable {
     }
 
    private:
-    uint8 flags_;
+    uint8_t flags_;
   };
 
-  explicit EncodeTable(uint8 flags)
+  explicit EncodeTable(uint8_t flags)
       : flags_(flags), triple2label_(1024, TripleHash(flags)) {}
 
   // Given an arc, encodes either input/output labels or input/costs or both.
@@ -155,9 +191,9 @@ class EncodeTable {
     // a clash with a true epsilon arc; to avoid this we hallucinate kNoLabel
     // labels instead.
     if (arc.nextstate == kNoStateId && (flags_ & kEncodeWeights)) {
-      return Encode(fst::make_unique<Triple>(kNoLabel, kNoLabel, arc.weight));
+      return Encode(std::make_unique<Triple>(kNoLabel, kNoLabel, arc.weight));
     } else {
-      return Encode(fst::make_unique<Triple>(arc, flags_));
+      return Encode(std::make_unique<Triple>(arc, flags_));
     }
   }
 
@@ -172,13 +208,13 @@ class EncodeTable {
 
   size_t Size() const { return triples_.size(); }
 
-  static EncodeTable *Read(std::istream &strm, const std::string &source);
+  static EncodeTable *Read(std::istream &strm, std::string_view source);
 
-  bool Write(std::ostream &strm, const std::string &source) const;
+  bool Write(std::ostream &strm, std::string_view source) const;
 
   // This is masked to hide internal-only isymbol and osymbol bits.
 
-  uint8 Flags() const { return flags_ & kEncodeFlags; }
+  uint8_t Flags() const { return flags_ & kEncodeFlags; }
 
   const SymbolTable *InputSymbols() const { return isymbols_.get(); }
 
@@ -212,7 +248,7 @@ class EncodeTable {
     return insert_result.first->second;
   }
 
-  uint8 flags_;
+  uint8_t flags_;
   std::vector<std::unique_ptr<Triple>> triples_;
   std::unordered_map<const Triple *, Label, TripleHash, TripleEqual>
       triple2label_;
@@ -225,13 +261,13 @@ class EncodeTable {
 
 template <class Arc>
 EncodeTable<Arc> *EncodeTable<Arc>::Read(std::istream &strm,
-                                         const std::string &source) {
+                                         std::string_view source) {
   EncodeTableHeader hdr;
   if (!hdr.Read(strm, source)) return nullptr;
   const auto flags = hdr.Flags();
   const auto size = hdr.Size();
-  auto table = fst::make_unique<EncodeTable>(flags);
-  for (int64 i = 0; i < size; ++i) {
+  auto table = std::make_unique<EncodeTable>(flags);
+  for (int64_t i = 0; i < size; ++i) {
     table->triples_.emplace_back(std::move(Triple::Read(strm)));
     table->triple2label_[table->triples_.back().get()] = table->triples_.size();
   }
@@ -250,17 +286,13 @@ EncodeTable<Arc> *EncodeTable<Arc>::Read(std::istream &strm,
 
 template <class Arc>
 bool EncodeTable<Arc>::Write(std::ostream &strm,
-                             const std::string &source) const {
+                             std::string_view source) const {
   EncodeTableHeader hdr;
   hdr.SetArcType(Arc::Type());
   hdr.SetFlags(flags_);  // Real flags, not masked ones.
   hdr.SetSize(Size());
   if (!hdr.Write(strm, source)) return false;
-  for (const auto &triple : triples_) {
-    WriteType(strm, triple->ilabel);
-    WriteType(strm, triple->olabel);
-    WriteType(strm, triple->weight);
-  }
+  for (const auto &triple : triples_) triple->Write(strm);
   if (flags_ & kEncodeHasISymbols) isymbols_->Write(strm);
   if (flags_ & kEncodeHasOSymbols) osymbols_->Write(strm);
   strm.flush();
@@ -295,7 +327,7 @@ class EncodeMapper {
   using Weight = typename Arc::Weight;
 
  public:
-  explicit EncodeMapper(uint8 flags, EncodeType type = ENCODE)
+  explicit EncodeMapper(uint8_t flags, EncodeType type = ENCODE)
       : flags_(flags),
         type_(type),
         table_(std::make_shared<internal::EncodeTable<Arc>>(flags)),
@@ -330,12 +362,12 @@ class EncodeMapper {
     return MAP_CLEAR_SYMBOLS;
   }
 
-  uint8 Flags() const { return flags_; }
+  uint8_t Flags() const { return flags_; }
 
-  uint64 Properties(uint64 inprops) {
-    uint64 outprops = inprops;
+  uint64_t Properties(uint64_t inprops) {
+    uint64_t outprops = inprops;
     if (error_) outprops |= kError;
-    uint64 mask = kFstProperties;
+    uint64_t mask = kFstProperties;
     if (flags_ & kEncodeLabels) {
       mask &= kILabelInvariantProperties & kOLabelInvariantProperties;
     }
@@ -344,20 +376,31 @@ class EncodeMapper {
               (type_ == ENCODE ? kAddSuperFinalProperties
                                : kRmSuperFinalProperties);
     }
-    return outprops & mask;
+    if (type_ == ENCODE) mask |= kIDeterministic;
+    outprops &= mask;
+    if (type_ == ENCODE) {
+      if (flags_ & kEncodeLabels) {
+        outprops |= kAcceptor;
+      }
+      if (flags_ & kEncodeWeights) {
+        outprops |= kUnweighted | kUnweightedCycles;
+      }
+    }
+    return outprops;
   }
 
   EncodeType Type() const { return type_; }
 
-  static EncodeMapper *Read(std::istream &strm, const std::string &source,
+  static EncodeMapper *Read(std::istream &strm, std::string_view source,
                             EncodeType type = ENCODE) {
     auto *table = internal::EncodeTable<Arc>::Read(strm, source);
     return table ? new EncodeMapper(table->Flags(), type, table) : nullptr;
   }
 
-  static EncodeMapper *Read(const std::string &source,
+  static EncodeMapper *Read(std::string_view source,
                             EncodeType type = ENCODE) {
-    std::ifstream strm(source, std::ios_base::in | std::ios_base::binary);
+    std::ifstream strm(std::string(source),
+                            std::ios_base::in | std::ios_base::binary);
     if (!strm) {
       LOG(ERROR) << "EncodeMapper: Can't open file: " << source;
       return nullptr;
@@ -365,12 +408,12 @@ class EncodeMapper {
     return Read(strm, source, type);
   }
 
-  bool Write(std::ostream &strm, const std::string &source) const {
+  bool Write(std::ostream &strm, std::string_view source) const {
     return table_->Write(strm, source);
   }
 
-  bool Write(const std::string &source) const {
-    std::ofstream strm(source,
+  bool Write(std::string_view source) const {
+    std::ofstream strm(std::string(source),
                              std::ios_base::out | std::ios_base::binary);
     if (!strm) {
       LOG(ERROR) << "EncodeMapper: Can't open file: " << source;
@@ -392,12 +435,12 @@ class EncodeMapper {
   }
 
  private:
-  uint8 flags_;
+  uint8_t flags_;
   EncodeType type_;
   std::shared_ptr<internal::EncodeTable<Arc>> table_;
   bool error_;
 
-  explicit EncodeMapper(uint8 flags, EncodeType type,
+  explicit EncodeMapper(uint8_t flags, EncodeType type,
                         internal::EncodeTable<Arc> *table)
       : flags_(flags), type_(type), table_(table), error_(false) {}
 
@@ -480,22 +523,23 @@ inline void Decode(MutableFst<Arc> *fst, const EncodeMapper<Arc> &mapper) {
 // exclusive of caching.
 template <class Arc>
 class EncodeFst : public ArcMapFst<Arc, Arc, EncodeMapper<Arc>> {
+  using Base = ArcMapFst<Arc, Arc, EncodeMapper<Arc>>;
+
  public:
   using Mapper = EncodeMapper<Arc>;
-  using Impl = internal::ArcMapFstImpl<Arc, Arc, Mapper>;
+  using typename Base::Impl;
 
   EncodeFst(const Fst<Arc> &fst, Mapper *encoder)
-      : ArcMapFst<Arc, Arc, Mapper>(fst, encoder, ArcMapFstOptions()) {
+      : Base(fst, encoder, ArcMapFstOptions()) {
     encoder->SetInputSymbols(fst.InputSymbols());
     encoder->SetOutputSymbols(fst.OutputSymbols());
   }
 
   EncodeFst(const Fst<Arc> &fst, const Mapper &encoder)
-      : ArcMapFst<Arc, Arc, Mapper>(fst, encoder, ArcMapFstOptions()) {}
+      : Base(fst, encoder, ArcMapFstOptions()) {}
 
   // See Fst<>::Copy() for doc.
-  EncodeFst(const EncodeFst &fst, bool copy = false)
-      : ArcMapFst<Arc, Arc, Mapper>(fst, copy) {}
+  EncodeFst(const EncodeFst &fst, bool copy = false) : Base(fst, copy) {}
 
   // Makes a copy of this EncodeFst. See Fst<>::Copy() for further doc.
   EncodeFst *Copy(bool safe = false) const override {
@@ -507,8 +551,8 @@ class EncodeFst : public ArcMapFst<Arc, Arc, EncodeMapper<Arc>> {
   }
 
  private:
-  using ImplToFst<Impl>::GetImpl;
-  using ImplToFst<Impl>::GetMutableImpl;
+  using Base::GetImpl;
+  using Base::GetMutableImpl;
 };
 
 // On-the-fly decoding of an input FST.
@@ -522,20 +566,20 @@ class EncodeFst : public ArcMapFst<Arc, Arc, EncodeMapper<Arc>> {
 // exclusive of caching.
 template <class Arc>
 class DecodeFst : public ArcMapFst<Arc, Arc, EncodeMapper<Arc>> {
+  using Base = ArcMapFst<Arc, Arc, EncodeMapper<Arc>>;
+
  public:
   using Mapper = EncodeMapper<Arc>;
-  using Impl = internal::ArcMapFstImpl<Arc, Arc, Mapper>;
+  using typename Base::Impl;
 
   DecodeFst(const Fst<Arc> &fst, const Mapper &encoder)
-      : ArcMapFst<Arc, Arc, Mapper>(fst, Mapper(encoder, DECODE),
-                                    ArcMapFstOptions()) {
+      : Base(fst, Mapper(encoder, DECODE), ArcMapFstOptions()) {
     GetMutableImpl()->SetInputSymbols(encoder.InputSymbols());
     GetMutableImpl()->SetOutputSymbols(encoder.OutputSymbols());
   }
 
   // See Fst<>::Copy() for doc.
-  DecodeFst(const DecodeFst &fst, bool safe = false)
-      : ArcMapFst<Arc, Arc, Mapper>(fst, safe) {}
+  DecodeFst(const DecodeFst &fst, bool safe = false) : Base(fst, safe) {}
 
   // Makes a copy of this DecodeFst. See Fst<>::Copy() for further doc.
   DecodeFst *Copy(bool safe = false) const override {
@@ -543,8 +587,8 @@ class DecodeFst : public ArcMapFst<Arc, Arc, EncodeMapper<Arc>> {
   }
 
  private:
-  using ImplToFst<Impl>::GetImpl;
-  using ImplToFst<Impl>::GetMutableImpl;
+  using Base::GetImpl;
+  using Base::GetMutableImpl;
 };
 
 // Specialization for EncodeFst.

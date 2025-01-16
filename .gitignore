@@ -1,4 +1,6 @@
+INSTALL
 Makefile
+*.bazel*
 *.in
 .deps
 aclocal.m4
@@ -24,5 +26,3 @@ missing
 src/include/fst/stamp-h2
 stamp-h1
 test-driver
-BUILD.bazel
-WORKSPACE

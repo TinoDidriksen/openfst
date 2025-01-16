@@ -1,3 +1,17 @@
+// Copyright 2005-2024 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the 'License');
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an 'AS IS' BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
 // See www.openfst.org for extensive documentation on this weighted
 // finite-state transducer library.
 //
@@ -9,9 +23,12 @@
 
 #include <fst/flags.h>
 #include <fst/log.h>
+#include <fst/randgen.h>
 #include <fst/script/equivalent.h>
+#include <fst/script/fst-class.h>
 #include <fst/script/getters.h>
 #include <fst/script/randequivalent.h>
+#include <fst/script/script-impl.h>
 
 DECLARE_double(delta);
 DECLARE_bool(random);
@@ -31,7 +48,6 @@ int fstequivalent_main(int argc, char **argv) {
   usage += argv[0];
   usage += " in1.fst in2.fst\n";
 
-  std::set_new_handler(FailedNewHandler);
   SET_FLAGS(usage.c_str(), &argc, &argv, true);
   if (argc != 3) {
     ShowUsage();
@@ -52,21 +68,25 @@ int fstequivalent_main(int argc, char **argv) {
   std::unique_ptr<FstClass> ifst2(FstClass::Read(in2_name));
   if (!ifst2) return 1;
 
-  if (!FLAGS_random) {
-    bool result = s::Equivalent(*ifst1, *ifst2, FLAGS_delta);
-    if (!result) VLOG(1) << "FSTs are not equivalent";
-    return result ? 0 : 2;
-  } else {
+  bool result;
+  if (FST_FLAGS_random) {
     s::RandArcSelection ras;
-    if (!s::GetRandArcSelection(FLAGS_select, &ras)) {
+    if (!s::GetRandArcSelection(FST_FLAGS_select, &ras)) {
       LOG(ERROR) << argv[0] << ": Unknown or unsupported select type "
-                 << FLAGS_select;
+                 << FST_FLAGS_select;
       return 1;
     }
-    const RandGenOptions<s::RandArcSelection> opts(ras, FLAGS_max_length);
-    bool result = s::RandEquivalent(*ifst1, *ifst2, FLAGS_npath, opts,
-                                    FLAGS_delta, FLAGS_seed);
-    if (!result) VLOG(1) << "FSTs are not equivalent";
-    return result ? 0 : 2;
+    const RandGenOptions<s::RandArcSelection> opts(
+        ras, FST_FLAGS_max_length);
+    const auto seed = s::GetSeed(FST_FLAGS_seed);
+    VLOG(1) << argv[0] << ": Seed = " << seed;
+    result = s::RandEquivalent(*ifst1, *ifst2, FST_FLAGS_npath, opts,
+                               FST_FLAGS_delta, seed);
+  } else {
+    result = s::Equivalent(*ifst1, *ifst2, FST_FLAGS_delta);
   }
+
+  if (!result) VLOG(1) << "FSTs are not equivalent";
+
+  return result ? 0 : 2;
 }

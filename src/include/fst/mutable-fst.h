@@ -1,3 +1,17 @@
+// Copyright 2005-2024 Google LLC
+//
+// Licensed under the Apache License, Version 2.0 (the 'License');
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an 'AS IS' BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+//
 // See www.openfst.org for extensive documentation on this weighted
 // finite-state transducer library.
 //
@@ -10,17 +24,24 @@
 #include <sys/types.h>
 
 #include <cstddef>
+#include <cstdint>
+#include <ios>
+#include <iostream>
 #include <istream>
+#include <memory>
 #include <string>
 #include <utility>
 #include <vector>
 
-#include <fst/types.h>
 #include <fst/log.h>
-#include <fstream>
-
+#include <fst/arc.h>
 #include <fst/expanded-fst.h>
-
+#include <fstream>
+#include <fst/fst.h>
+#include <fst/properties.h>
+#include <fst/register.h>
+#include <fst/symbol-table.h>
+#include <string_view>
 
 namespace fst {
 
@@ -49,7 +70,7 @@ class MutableFst : public ExpandedFst<A> {
   virtual void SetFinal(StateId s, Weight weight = Weight::One()) = 0;
 
   // Sets property bits w.r.t. mask.
-  virtual void SetProperties(uint64 props, uint64 mask) = 0;
+  virtual void SetProperties(uint64_t props, uint64_t mask) = 0;
 
   // Adds a state and returns its ID.
   virtual StateId AddState() = 0;
@@ -126,7 +147,7 @@ class MutableFst : public ExpandedFst<A> {
     }
     auto *fst = reader(strm, ropts);
     if (!fst) return nullptr;
-    return static_cast<MutableFst *>(fst);
+    return down_cast<MutableFst *>(fst);
   }
 
   // Reads a MutableFst from a file; returns nullptr on error. An empty
@@ -134,7 +155,7 @@ class MutableFst : public ExpandedFst<A> {
   // convert to a mutable FST subclass (given by convert_type) in the case
   // that the input FST is non-mutable.
   static MutableFst *Read(const std::string &source, bool convert = false,
-                          const std::string &convert_type = "vector") {
+                          std::string_view convert_type = "vector") {
     if (convert == false) {
       if (!source.empty()) {
         std::ifstream strm(source,
@@ -151,7 +172,7 @@ class MutableFst : public ExpandedFst<A> {
       std::unique_ptr<Fst<Arc>> ifst(Fst<Arc>::Read(source));
       if (!ifst) return nullptr;
       if (ifst->Properties(kMutable, false)) {
-        return static_cast<MutableFst *>(ifst.release());
+        return down_cast<MutableFst *>(ifst.release());
       } else {
         std::unique_ptr<Fst<Arc>> ofst(Convert(*ifst, convert_type));
         ifst.reset();
@@ -159,7 +180,7 @@ class MutableFst : public ExpandedFst<A> {
         if (!ofst->Properties(kMutable, false)) {
           LOG(ERROR) << "MutableFst: Bad convert type: " << convert_type;
         }
-        return static_cast<MutableFst *>(ofst.release());
+        return down_cast<MutableFst *>(ofst.release());
       }
     }
   }
@@ -182,7 +203,7 @@ class MutableArcIteratorBase : public ArcIteratorBase<Arc> {
 
 template <class Arc>
 struct MutableArcIteratorData {
-  MutableArcIteratorBase<Arc> *base;  // Specific iterator.
+  std::unique_ptr<MutableArcIteratorBase<Arc>> base;  // Specific iterator.
 };
 
 // Generic mutable arc iterator, templated on the FST definition; a wrapper
@@ -210,8 +231,6 @@ class MutableArcIterator {
     fst->InitMutableArcIterator(s, &data_);
   }
 
-  ~MutableArcIterator() { delete data_.base; }
-
   bool Done() const { return data_.base->Done(); }
 
   const Arc &Value() const { return data_.base->Value(); }
@@ -226,9 +245,9 @@ class MutableArcIterator {
 
   void SetValue(const Arc &arc) { data_.base->SetValue(arc); }
 
-  uint8 Flags() const { return data_.base->Flags(); }
+  uint8_t Flags() const { return data_.base->Flags(); }
 
-  void SetFlags(uint8 flags, uint8 mask) {
+  void SetFlags(uint8_t flags, uint8_t mask) {
     return data_.base->SetFlags(flags, mask);
   }
 
@@ -272,14 +291,17 @@ using StdMutableFst = MutableFst<StdArc>;
 
 // This is a helper class template useful for attaching a MutableFst interface
 // to its implementation, handling reference counting and COW semantics.
-template <class Impl, class FST = MutableFst<typename Impl::Arc>>
-class ImplToMutableFst : public ImplToExpandedFst<Impl, FST> {
+template <class I, class FST = MutableFst<typename I::Arc>>
+class ImplToMutableFst : public ImplToExpandedFst<I, FST> {
+  using Base = ImplToExpandedFst<I, FST>;
+
  public:
+  using Impl = I;
   using Arc = typename Impl::Arc;
   using StateId = typename Arc::StateId;
   using Weight = typename Arc::Weight;
 
-  using ImplToExpandedFst<Impl, FST>::operator=;
+  using Base::operator=;
 
   void SetStart(StateId s) override {
     MutateCheck();
@@ -291,7 +313,7 @@ class ImplToMutableFst : public ImplToExpandedFst<Impl, FST> {
     GetMutableImpl()->SetFinal(s, std::move(weight));
   }
 
-  void SetProperties(uint64 props, uint64 mask) override {
+  void SetProperties(uint64_t props, uint64_t mask) override {
     // Can skip mutate check if extrinsic properties don't change,
     // since it is then safe to update all (shallow) copies
     const auto exprops = kExtrinsicProperties & mask;
@@ -385,17 +407,15 @@ class ImplToMutableFst : public ImplToExpandedFst<Impl, FST> {
   }
 
  protected:
-  using ImplToExpandedFst<Impl, FST>::GetImpl;
-  using ImplToExpandedFst<Impl, FST>::GetMutableImpl;
-  using ImplToExpandedFst<Impl, FST>::Unique;
-  using ImplToExpandedFst<Impl, FST>::SetImpl;
-  using ImplToExpandedFst<Impl, FST>::InputSymbols;
+  using Base::GetImpl;
+  using Base::GetMutableImpl;
+  using Base::InputSymbols;
+  using Base::SetImpl;
+  using Base::Unique;
 
-  explicit ImplToMutableFst(std::shared_ptr<Impl> impl)
-      : ImplToExpandedFst<Impl, FST>(impl) {}
+  explicit ImplToMutableFst(std::shared_ptr<Impl> impl) : Base(impl) {}
 
-  ImplToMutableFst(const ImplToMutableFst &fst, bool safe)
-      : ImplToExpandedFst<Impl, FST>(fst, safe) {}
+  ImplToMutableFst(const ImplToMutableFst &fst, bool safe) : Base(fst, safe) {}
 
   void MutateCheck() {
     if (!Unique()) SetImpl(std::make_shared<Impl>(*this));
