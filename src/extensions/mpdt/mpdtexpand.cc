@@ -17,13 +17,15 @@
 //
 // Expands a (bounded-stack) MPDT as an FST.
 
+#include <string>
+
 #include <fst/flags.h>
 
 DEFINE_string(mpdt_parentheses, "",
-              "MPDT parenthesis label pairs with assignments");
+          "MPDT parenthesis label pairs with assignments");
 DEFINE_bool(connect, true, "Trim output?");
 DEFINE_bool(keep_parentheses, false, "Keep PDT parentheses in result?");
 
-int mpdtexpand_main(int argc, char **argv);
+int mpdtexpand_main(int argc, char** argv);
 
-int main(int argc, char **argv) { return mpdtexpand_main(argc, argv); }
+int main(int argc, char** argv) { return mpdtexpand_main(argc, argv); }

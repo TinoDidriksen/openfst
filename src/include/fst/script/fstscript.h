@@ -47,13 +47,11 @@
 #include <fst/script/disambiguate.h>
 #include <fst/script/draw.h>
 #include <fst/script/encode.h>
-#include <fst/script/encodemapper-class.h>
 #include <fst/script/epsnormalize.h>
 #include <fst/script/equal.h>
 #include <fst/script/equivalent.h>
 #include <fst/script/fst-class.h>
 // Flag-to-enum parsers.
-#include <fst/script/getters.h>
 #include <fst/script/info.h>
 #include <fst/script/intersect.h>
 #include <fst/script/invert.h>
@@ -77,11 +75,9 @@
 #include <fst/script/shortest-path.h>
 #include <fst/script/stateiterator-class.h>
 #include <fst/script/synchronize.h>
-#include <fst/script/text-io.h>
 #include <fst/script/topsort.h>
 #include <fst/script/union.h>
 #include <fst/script/verify.h>
-#include <fst/script/weight-class.h>
 
 // This class is necessary because registering each of the operations
 // separately overfills the stack, as there's so many of them.

@@ -25,7 +25,7 @@
 namespace fst {
 namespace script {
 
-void Decode(MutableFstClass *fst, const EncodeMapperClass &mapper) {
+void Decode(MutableFstClass* fst, const EncodeMapperClass& mapper) {
   if (!internal::ArcTypesMatch(*fst, mapper, "Decode")) {
     fst->SetProperties(kError, kError);
     return;

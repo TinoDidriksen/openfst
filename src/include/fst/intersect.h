@@ -20,18 +20,12 @@
 #ifndef FST_INTERSECT_H_
 #define FST_INTERSECT_H_
 
-#include <algorithm>
-#include <vector>
-
-#include <fst/log.h>
 #include <fst/arc.h>
 #include <fst/cache.h>
 #include <fst/compose-filter.h>
 #include <fst/compose.h>
 #include <fst/connect.h>
-#include <fst/float-weight.h>
 #include <fst/fst.h>
-#include <fst/impl-to-fst.h>
 #include <fst/matcher.h>
 #include <fst/mutable-fst.h>
 #include <fst/properties.h>
@@ -50,9 +44,9 @@ struct IntersectFstOptions
     : public ComposeFstOptions<Arc, M, Filter, StateTable> {
   IntersectFstOptions() = default;
 
-  explicit IntersectFstOptions(const CacheOptions &opts, M *matcher1 = nullptr,
-                               M *matcher2 = nullptr, Filter *filter = nullptr,
-                               StateTable *state_table = nullptr)
+  explicit IntersectFstOptions(const CacheOptions& opts, M* matcher1 = nullptr,
+                               M* matcher2 = nullptr, Filter* filter = nullptr,
+                               StateTable* state_table = nullptr)
       : ComposeFstOptions<Arc, M, Filter, StateTable>(opts, matcher1, matcher2,
                                                       filter, state_table) {}
 };
@@ -80,8 +74,8 @@ class IntersectFst : public ComposeFst<A> {
   using Base::CreateBase1;
   using Base::Properties;
 
-  IntersectFst(const Fst<Arc> &fst1, const Fst<Arc> &fst2,
-               const CacheOptions &opts = CacheOptions())
+  IntersectFst(const Fst<Arc>& fst1, const Fst<Arc>& fst2,
+               const CacheOptions& opts = CacheOptions())
       : Base(CreateBase(fst1, fst2, opts)) {
     const bool acceptors =
         fst1.Properties(kAcceptor, true) && fst2.Properties(kAcceptor, true);
@@ -92,8 +86,8 @@ class IntersectFst : public ComposeFst<A> {
   }
 
   template <class M, class Filter, class StateTable>
-  IntersectFst(const Fst<Arc> &fst1, const Fst<Arc> &fst2,
-               const IntersectFstOptions<Arc, M, Filter, StateTable> &opts)
+  IntersectFst(const Fst<Arc>& fst1, const Fst<Arc>& fst2,
+               const IntersectFstOptions<Arc, M, Filter, StateTable>& opts)
       : Base(CreateBase1(fst1, fst2, opts)) {
     const bool acceptors =
         fst1.Properties(kAcceptor, true) && fst2.Properties(kAcceptor, true);
@@ -104,10 +98,10 @@ class IntersectFst : public ComposeFst<A> {
   }
 
   // See Fst<>::Copy() for doc.
-  IntersectFst(const IntersectFst &fst, bool safe = false) : Base(fst, safe) {}
+  IntersectFst(const IntersectFst& fst, bool safe = false) : Base(fst, safe) {}
 
   // Get a copy of this IntersectFst. See Fst<>::Copy() for further doc.
-  IntersectFst *Copy(bool safe = false) const override {
+  IntersectFst* Copy(bool safe = false) const override {
     return new IntersectFst(*this, safe);
   }
 
@@ -120,7 +114,7 @@ class IntersectFst : public ComposeFst<A> {
 template <class Arc>
 class StateIterator<IntersectFst<Arc>> : public StateIterator<ComposeFst<Arc>> {
  public:
-  explicit StateIterator(const IntersectFst<Arc> &fst)
+  explicit StateIterator(const IntersectFst<Arc>& fst)
       : StateIterator<ComposeFst<Arc>>(fst) {}
 };
 
@@ -130,7 +124,7 @@ class ArcIterator<IntersectFst<Arc>> : public ArcIterator<ComposeFst<Arc>> {
  public:
   using StateId = typename Arc::StateId;
 
-  ArcIterator(const IntersectFst<Arc> &fst, StateId s)
+  ArcIterator(const IntersectFst<Arc>& fst, StateId s)
       : ArcIterator<ComposeFst<Arc>>(fst, s) {}
 };
 
@@ -148,9 +142,9 @@ using StdIntersectFst = IntersectFst<StdArc>;
 //
 // Caveats: same as Compose.
 template <class Arc>
-void Intersect(const Fst<Arc> &ifst1, const Fst<Arc> &ifst2,
-               MutableFst<Arc> *ofst,
-               const IntersectOptions &opts = IntersectOptions()) {
+void Intersect(const Fst<Arc>& ifst1, const Fst<Arc>& ifst2,
+               MutableFst<Arc>* ofst,
+               const IntersectOptions& opts = IntersectOptions()) {
   using M = Matcher<Fst<Arc>>;
   // In each case, we cache only the last state for fastest copy.
   switch (opts.filter_type) {

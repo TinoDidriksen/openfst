@@ -47,20 +47,39 @@ inline int nth_bit(uint64_t v, uint32_t r) {
 }
 }  // namespace fst
 
-#elif SIZE_MAX == UINT32_MAX
+#else  // !defined(__BMI2__)
+
+namespace fst_internal {
+
+// Returns the position of the r-th 1 bit in v.  This should only be used to
+// generate tables, never in run-time code.
+constexpr int SlowSelectInByte(uint8_t v, int r) {
+  for (int i = 0; i < 8; ++i) {
+    if ((v >> i) & 1) {
+      if (r == 0) return i;
+      r--;
+    }
+  }
+  return -1;
+}
+
+}  // namespace fst_internal
+
+#if SIZE_MAX == UINT32_MAX
 // Detect 32-bit architectures via size_t.
 
 namespace fst {
+
 // Returns the position (0-63) of the r-th 1 bit in v.
 // 0 <= r < CountOnes(v) <= 64. Therefore, v must not be 0.
 int nth_bit(uint64_t v, uint32_t r);
+
 }  // namespace fst
 
 #elif SIZE_MAX == UINT64_MAX
 // Default 64-bit version, used by ARM64 and Intel < Haswell.
 
-namespace fst {
-namespace internal {
+namespace fst_internal {
 
 constexpr std::array<uint64_t, 64> PrefixSumOverflows() {
   std::array<uint64_t, 64> a{};
@@ -71,10 +90,29 @@ constexpr std::array<uint64_t, 64> PrefixSumOverflows() {
   return a;
 }
 
+// Generates a table mapping (rank, byte) to the bit position of that rank.
+// The table is flattened, indexed by rank * 256 + byte.
+// If the rank is out of bounds for the byte, 0 is stored.
+constexpr std::array<uint8_t, 2048> GenerateSelectInByteTable() {
+  std::array<uint8_t, 2048> table{};
+  for (int r = 0; r < 8; ++r) {
+    for (int v = 0; v < 256; ++v) {
+      int pos = SlowSelectInByte(static_cast<uint8_t>(v), r);
+      constexpr uint8_t kInvalidValue = 0;
+      table[r * 256 + v] =
+          (pos == -1) ? kInvalidValue : static_cast<uint8_t>(pos);
+    }
+  }
+  return table;
+}
+
 constexpr std::array<uint64_t, 64> kPrefixSumOverflow = PrefixSumOverflows();
 
-extern const uint8_t kSelectInByte[2048];
-}  // namespace internal
+constexpr std::array<uint8_t, 2048> kSelectInByte = GenerateSelectInByteTable();
+
+}  // namespace fst_internal
+
+namespace fst {
 
 // Returns the position (0-63) of the r-th 1 bit in v.
 // 0 <= r < CountOnes(v) <= 64. Therefore, v must not be 0.
@@ -84,6 +122,9 @@ extern const uint8_t kSelectInByte[2048];
 // improvements from "Optimized Succinct Data Structures for Massive Data"
 // by Gog & Petri, 2014.
 inline int nth_bit(const uint64_t v, const uint32_t r) {
+  using fst_internal::kPrefixSumOverflow;
+  using fst_internal::kSelectInByte;
+
   constexpr uint64_t kOnesStep8 = 0x0101010101010101;
   constexpr uint64_t kMSBsStep8 = 0x80 * kOnesStep8;
 
@@ -112,7 +153,7 @@ inline int nth_bit(const uint64_t v, const uint32_t r) {
   // still set if byte_sums - r > 0, or byte_sums > r. The first one set
   // is in the byte with the sum larger than r (since r is 0-based),
   // so this is the byte we need.
-  const uint64_t b = (byte_sums + internal::kPrefixSumOverflow[r]) & kMSBsStep8;
+  const uint64_t b = (byte_sums + kPrefixSumOverflow[r]) & kMSBsStep8;
   // The first bit set is the high bit in the byte, so
   // num_trailing_zeros == 8 * byte_nr + 7 and the byte number is the
   // number of trailing zeros divided by 8.
@@ -121,9 +162,8 @@ inline int nth_bit(const uint64_t v, const uint32_t r) {
   // The top byte contains the whole-word popcount; we never need that.
   byte_sums <<= 8;
   // Paper uses reinterpret_cast<uint8_t *>; use shift/mask instead.
-  const int rank_in_byte = r - (byte_sums >> shift) & 0xFF;
-  return shift +
-         internal::kSelectInByte[(rank_in_byte << 8) + ((v >> shift) & 0xFF)];
+  const int rank_in_byte = r - ((byte_sums >> shift) & 0xFF);
+  return shift + kSelectInByte[(rank_in_byte << 8) + ((v >> shift) & 0xFF)];
 }
 }  // namespace fst
 
@@ -132,5 +172,7 @@ inline int nth_bit(const uint64_t v, const uint32_t r) {
 #error Unrecognized architecture size
 
 #endif
+
+#endif  // !defined(__BMI2__)
 
 #endif  // FST_EXTENSIONS_NGRAM_NTHBIT_H_

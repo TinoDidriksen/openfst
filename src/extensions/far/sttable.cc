@@ -20,9 +20,9 @@
 #include <cstdint>
 #include <string>
 
+#include <string_view>
 #include <fstream>
 #include <fst/util.h>
-#include <string_view>
 
 namespace fst {
 

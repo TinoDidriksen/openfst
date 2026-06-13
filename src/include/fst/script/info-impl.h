@@ -28,20 +28,18 @@
 #include <string>
 #include <vector>
 
-#include <fst/log.h>
+#include <string_view>
 #include <fst/arcfilter.h>
 #include <fst/cc-visitors.h>
 #include <fst/dfs-visit.h>
 #include <fst/fst.h>
 #include <fst/lookahead-matcher.h>
-#include <fst/matcher.h>
 #include <fst/properties.h>
 #include <fst/queue.h>
 #include <fst/util.h>
 #include <fst/verify.h>
 #include <fst/visit.h>
 #include <fst/script/arcfilter-impl.h>
-#include <string_view>
 
 namespace fst {
 
@@ -54,7 +52,7 @@ class FstInfo {
   // When info_type is "short" (or "auto" and not an ExpandedFst) then only
   // minimal info is computed and can be requested.
   template <typename Arc>
-  FstInfo(const Fst<Arc> &fst, bool test_properties,
+  FstInfo(const Fst<Arc>& fst, bool test_properties,
           script::ArcFilterType arc_filter_type = script::ArcFilterType::ANY,
           std::string_view info_type = "auto", bool verify = true)
       : fst_type_(fst.Type()),
@@ -112,7 +110,7 @@ class FstInfo {
       std::map<Label, size_t> ilabel_count;
       std::map<Label, size_t> olabel_count;
       for (ArcIterator<Fst<Arc>> aiter(fst, s); !aiter.Done(); aiter.Next()) {
-        const auto &arc = aiter.Value();
+        const auto& arc = aiter.Value();
         ++narcs_;
         if (arc.ilabel == 0 && arc.olabel == 0) ++nepsilons_;
         if (arc.ilabel == 0) ++niepsilons_;
@@ -197,13 +195,13 @@ class FstInfo {
 
   // Short info.
 
-  const std::string &FstType() const { return fst_type_; }
+  const std::string& FstType() const { return fst_type_; }
 
-  const std::string &ArcType() const { return arc_type_; }
+  const std::string& ArcType() const { return arc_type_; }
 
-  const std::string &InputSymbols() const { return input_symbols_; }
+  const std::string& InputSymbols() const { return input_symbols_; }
 
-  const std::string &OutputSymbols() const { return output_symbols_; }
+  const std::string& OutputSymbols() const { return output_symbols_; }
 
   bool LongInfo() const { return long_info_; }
 
@@ -342,10 +340,10 @@ class FstInfo {
 };
 
 // Prints `properties` to `ostrm` in a user-friendly multi-line format.
-void PrintProperties(std::ostream &ostrm, uint64_t properties);
+void PrintProperties(std::ostream& ostrm, uint64_t properties);
 
 // Prints `header` to `ostrm` in a user-friendly multi-line format.
-void PrintHeader(std::ostream &ostrm, const FstHeader &header);
+void PrintHeader(std::ostream& ostrm, const FstHeader& header);
 
 }  // namespace fst
 

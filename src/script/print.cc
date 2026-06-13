@@ -20,6 +20,7 @@
 #include <ostream>
 #include <string>
 
+#include <fst/flags.h>
 #include <fst/symbol-table.h>
 #include <fst/script/fst-class.h>
 #include <fst/script/script-impl.h>
@@ -27,10 +28,10 @@
 namespace fst {
 namespace script {
 
-void Print(const FstClass &fst, std::ostream &ostrm, const std::string &dest,
-           const SymbolTable *isyms, const SymbolTable *osyms,
-           const SymbolTable *ssyms, bool accept, bool show_weight_one,
-           const std::string &missing_sym) {
+void Print(const FstClass& fst, std::ostream& ostrm, const std::string& dest,
+           const SymbolTable* isyms, const SymbolTable* osyms,
+           const SymbolTable* ssyms, bool accept, bool show_weight_one,
+           const std::string& missing_sym) {
   const auto sep = FST_FLAGS_fst_field_separator.substr(0, 1);
   FstPrintArgs args{fst,   isyms, osyms, ssyms,      accept, show_weight_one,
                     ostrm, dest,  sep,   missing_sym};
@@ -38,10 +39,10 @@ void Print(const FstClass &fst, std::ostream &ostrm, const std::string &dest,
 }
 
 // TODO(kbg,2019-09-01): Deprecated.
-void PrintFst(const FstClass &fst, std::ostream &ostrm, const std::string &dest,
-              const SymbolTable *isyms, const SymbolTable *osyms,
-              const SymbolTable *ssyms, bool accept, bool show_weight_one,
-              const std::string &missing_sym) {
+void PrintFst(const FstClass& fst, std::ostream& ostrm, const std::string& dest,
+              const SymbolTable* isyms, const SymbolTable* osyms,
+              const SymbolTable* ssyms, bool accept, bool show_weight_one,
+              const std::string& missing_sym) {
   Print(fst, ostrm, dest, isyms, osyms, ssyms, accept, show_weight_one,
         missing_sym);
 }

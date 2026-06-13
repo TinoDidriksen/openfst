@@ -26,8 +26,8 @@
 namespace fst {
 namespace script {
 
-bool RandEquivalent(const FstClass &fst1, const FstClass &fst2, int32_t npath,
-                    const RandGenOptions<RandArcSelection> &opts, float delta,
+bool RandEquivalent(const FstClass& fst1, const FstClass& fst2, int32_t npath,
+                    const RandGenOptions<RandArcSelection>& opts, float delta,
                     uint64_t seed) {
   if (!internal::ArcTypesMatch(fst1, fst2, "RandEquivalent")) return false;
   FstRandEquivalentInnerArgs iargs{fst1, fst2, npath, opts, delta, seed};

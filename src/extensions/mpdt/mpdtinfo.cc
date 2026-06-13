@@ -18,11 +18,13 @@
 // Prints out various information about an MPDT such as number of states, arcs,
 // and parentheses.
 
+#include <string>
+
 #include <fst/flags.h>
 
 DEFINE_string(mpdt_parentheses, "",
-              "MPDT parenthesis label pairs with assignments");
+          "MPDT parenthesis label pairs with assignments");
 
-int mpdtinfo_main(int argc, char **argv);
+int mpdtinfo_main(int argc, char** argv);
 
-int main(int argc, char **argv) { return mpdtinfo_main(argc, argv); }
+int main(int argc, char** argv) { return mpdtinfo_main(argc, argv); }

@@ -24,6 +24,7 @@
 #include <ostream>
 #include <string>
 
+#include <fst/flags.h>
 #include <fst/log.h>
 #include <fst/arc.h>
 #include <fst/const-fst.h>
@@ -51,13 +52,13 @@ class PhiFstMatcherData {
         phi_loop_(phi_loop),
         rewrite_mode_(rewrite_mode) {}
 
-  PhiFstMatcherData(const PhiFstMatcherData &data)
+  PhiFstMatcherData(const PhiFstMatcherData& data)
       : phi_label_(data.phi_label_),
         phi_loop_(data.phi_loop_),
         rewrite_mode_(data.rewrite_mode_) {}
 
-  static PhiFstMatcherData<Label> *Read(std::istream &istrm,
-                                        const FstReadOptions &read) {
+  static PhiFstMatcherData<Label>* Read(std::istream& istrm,
+                                        const FstReadOptions& read) {
     auto data = std::make_unique<PhiFstMatcherData<Label>>();
     ReadType(istrm, &data->phi_label_);
     ReadType(istrm, &data->phi_loop_);
@@ -67,7 +68,7 @@ class PhiFstMatcherData {
     return data.release();
   }
 
-  bool Write(std::ostream &ostrm, const FstWriteOptions &opts) const {
+  bool Write(std::ostream& ostrm, const FstWriteOptions& opts) const {
     WriteType(ostrm, phi_label_);
     WriteType(ostrm, phi_loop_);
     WriteType(ostrm, static_cast<int32_t>(rewrite_mode_));
@@ -81,7 +82,7 @@ class PhiFstMatcherData {
   MatcherRewriteMode RewriteMode() const { return rewrite_mode_; }
 
  private:
-  static MatcherRewriteMode RewriteMode(const std::string &mode) {
+  static MatcherRewriteMode RewriteMode(const std::string& mode) {
     if (mode == "auto") return MATCHER_REWRITE_AUTO;
     if (mode == "always") return MATCHER_REWRITE_ALWAYS;
     if (mode == "never") return MATCHER_REWRITE_NEVER;
@@ -116,7 +117,7 @@ class PhiFstMatcher : public PhiMatcher<M> {
 
   // This makes a copy of the FST.
   PhiFstMatcher(
-      const FST &fst, MatchType match_type,
+      const FST& fst, MatchType match_type,
       std::shared_ptr<MatcherData> data = std::make_shared<MatcherData>())
       : PhiMatcher<M>(fst, match_type,
                       PhiLabel(match_type, data ? data->PhiLabel()
@@ -127,7 +128,7 @@ class PhiFstMatcher : public PhiMatcher<M> {
 
   // This doesn't copy the FST.
   PhiFstMatcher(
-      const FST *fst, MatchType match_type,
+      const FST* fst, MatchType match_type,
       std::shared_ptr<MatcherData> data = std::make_shared<MatcherData>())
       : PhiMatcher<M>(fst, match_type,
                       PhiLabel(match_type, data ? data->PhiLabel()
@@ -137,14 +138,14 @@ class PhiFstMatcher : public PhiMatcher<M> {
         data_(data) {}
 
   // This makes a copy of the FST.
-  PhiFstMatcher(const PhiFstMatcher<M, flags> &matcher, bool safe = false)
+  PhiFstMatcher(const PhiFstMatcher<M, flags>& matcher, bool safe = false)
       : PhiMatcher<M>(matcher, safe), data_(matcher.data_) {}
 
-  PhiFstMatcher<M, flags> *Copy(bool safe = false) const override {
+  PhiFstMatcher<M, flags>* Copy(bool safe = false) const override {
     return new PhiFstMatcher<M, flags>(*this, safe);
   }
 
-  const MatcherData *GetData() const { return data_.get(); }
+  const MatcherData* GetData() const { return data_.get(); }
 
   std::shared_ptr<MatcherData> GetSharedData() const { return data_; }
 

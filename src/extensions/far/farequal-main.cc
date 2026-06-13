@@ -21,18 +21,18 @@
 #include <string>
 
 #include <fst/flags.h>
+#include <fst/flags.h>
 #include <fst/log.h>
 #include <fst/extensions/far/far-class.h>
 #include <fst/extensions/far/farscript.h>
 #include <fst/extensions/far/getters.h>
 #include <fst/util.h>
-#include <fst/script/arg-packs.h>
 
 DECLARE_string(begin_key);
 DECLARE_string(end_key);
 DECLARE_double(delta);
 
-int farequal_main(int argc, char **argv) {
+int farequal_main(int argc, char** argv) {
   namespace s = fst::script;
   using fst::script::FarReaderClass;
 
@@ -41,7 +41,6 @@ int farequal_main(int argc, char **argv) {
   usage += " in1.far in2.far";
 
   SET_FLAGS(usage.c_str(), &argc, &argv, true);
-  s::ExpandArgs(argc, argv, &argc, &argv);
   if (argc != 3) {
     ShowUsage();
     return 1;

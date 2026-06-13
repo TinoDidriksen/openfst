@@ -25,6 +25,7 @@
 #include <string>
 
 #include <fst/flags.h>
+#include <fst/flags.h>
 #include <fst/log.h>
 #include <fstream>
 #include <fst/fst.h>
@@ -42,7 +43,7 @@ DECLARE_bool(fst_verify);
 namespace {
 // Prints info using only the header of the FST with path `in_name`.
 // Returns true on success.
-bool PrintHeaderInfo(const std::string &in_name) {
+bool PrintHeaderInfo(const std::string& in_name) {
   fst::FstHeader header;
   if (in_name.empty()) {
     if (!header.Read(std::cin, "stdin")) {
@@ -71,7 +72,7 @@ bool PrintHeaderInfo(const std::string &in_name) {
 }
 }  // namespace
 
-int fstinfo_main(int argc, char **argv) {
+int fstinfo_main(int argc, char** argv) {
   namespace s = fst::script;
   using fst::script::FstClass;
 

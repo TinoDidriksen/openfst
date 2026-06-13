@@ -27,8 +27,8 @@
 namespace fst {
 namespace script {
 
-void Prune(const FstClass &ifst, MutableFstClass *ofst,
-           const WeightClass &weight_threshold, int64_t state_threshold,
+void Prune(const FstClass& ifst, MutableFstClass* ofst,
+           const WeightClass& weight_threshold, int64_t state_threshold,
            float delta) {
   if (!internal::ArcTypesMatch(ifst, *ofst, "Prune") ||
       !ofst->WeightTypesMatch(weight_threshold, "Prune")) {
@@ -39,7 +39,7 @@ void Prune(const FstClass &ifst, MutableFstClass *ofst,
   Apply<Operation<FstPruneArgs1>>("Prune", ifst.ArcType(), &args);
 }
 
-void Prune(MutableFstClass *fst, const WeightClass &weight_threshold,
+void Prune(MutableFstClass* fst, const WeightClass& weight_threshold,
            int64_t state_threshold, float delta) {
   if (!fst->WeightTypesMatch(weight_threshold, "Prune")) {
     fst->SetProperties(kError, kError);

@@ -40,9 +40,9 @@ struct WithReturnValue {
   using Args = std::remove_reference_t<ArgTuple>;
 
   Retval retval;
-  const Args &args;
+  const Args& args;
 
-  explicit WithReturnValue(const Args &args) : args(args) {}
+  explicit WithReturnValue(const Args& args) : args(args) {}
 };
 
 }  // namespace script

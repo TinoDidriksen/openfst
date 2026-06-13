@@ -23,7 +23,7 @@
 namespace fst {
 namespace script {
 
-void Connect(MutableFstClass *fst) {
+void Connect(MutableFstClass* fst) {
   Apply<Operation<MutableFstClass>>("Connect", fst->ArcType(), fst);
 }
 

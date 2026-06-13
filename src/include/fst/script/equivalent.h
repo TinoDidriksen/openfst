@@ -30,20 +30,20 @@ namespace fst {
 namespace script {
 
 using FstEquivalentInnerArgs =
-    std::tuple<const FstClass &, const FstClass &, float, bool *>;
+    std::tuple<const FstClass&, const FstClass&, float, bool*>;
 
 using FstEquivalentArgs = WithReturnValue<bool, FstEquivalentInnerArgs>;
 
 template <class Arc>
-void Equivalent(FstEquivalentArgs *args) {
-  const Fst<Arc> &fst1 = *std::get<0>(args->args).GetFst<Arc>();
-  const Fst<Arc> &fst2 = *std::get<1>(args->args).GetFst<Arc>();
+void Equivalent(FstEquivalentArgs* args) {
+  const Fst<Arc>& fst1 = *std::get<0>(args->args).GetFst<Arc>();
+  const Fst<Arc>& fst2 = *std::get<1>(args->args).GetFst<Arc>();
   args->retval =
       Equivalent(fst1, fst2, std::get<2>(args->args), std::get<3>(args->args));
 }
 
-bool Equivalent(const FstClass &fst1, const FstClass &fst2,
-                float delta = kDelta, bool *error = nullptr);
+bool Equivalent(const FstClass& fst1, const FstClass& fst2,
+                float delta = kDelta, bool* error = nullptr);
 
 }  // namespace script
 }  // namespace fst

@@ -23,6 +23,7 @@
 #include <string>
 
 #include <fst/flags.h>
+#include <fst/flags.h>
 #include <fst/log.h>
 #include <fst/reweight.h>
 #include <fst/script/fst-class.h>
@@ -36,7 +37,7 @@ DECLARE_bool(remove_total_weight);
 DECLARE_bool(remove_common_affix);
 DECLARE_string(reweight_type);
 
-int fstpush_main(int argc, char **argv) {
+int fstpush_main(int argc, char** argv) {
   namespace s = fst::script;
   using fst::ReweightType;
   using fst::script::FstClass;

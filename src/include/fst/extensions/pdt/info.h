@@ -26,12 +26,10 @@
 #include <iostream>
 #include <string>
 #include <utility>
-#include <vector>
 
-#include <fst/extensions/pdt/pdt.h>
-#include <fst/fst.h>
 #include <unordered_map>
 #include <unordered_set>
+#include <fst/fst.h>
 
 namespace fst {
 
@@ -43,12 +41,12 @@ class PdtInfo {
   using StateId = typename Arc::StateId;
   using Weight = typename Arc::Weight;
 
-  PdtInfo(const Fst<Arc> &fst,
+  PdtInfo(const Fst<Arc>& fst,
           const std::vector<std::pair<Label, Label>> &parents);
 
-  const std::string &FstType() const { return fst_type_; }
+  const std::string& FstType() const { return fst_type_; }
 
-  const std::string &ArcType() const { return Arc::Type(); }
+  const std::string& ArcType() const { return Arc::Type(); }
 
   int64_t NumStates() const { return nstates_; }
 
@@ -82,7 +80,7 @@ class PdtInfo {
 
 template <class Arc>
 PdtInfo<Arc>::PdtInfo(
-    const Fst<Arc> &fst,
+    const Fst<Arc>& fst,
     const std::vector<std::pair<typename Arc::Label, typename Arc::Label>> &        parens)
     : fst_type_(fst.Type()),
       nstates_(0),
@@ -98,7 +96,7 @@ PdtInfo<Arc>::PdtInfo(
   std::unordered_set<StateId> open_paren_state_set;
   std::unordered_set<StateId> close_paren_state_set;
   for (size_t i = 0; i < parens.size(); ++i) {
-    const auto &pair = parens[i];
+    const auto& pair = parens[i];
     paren_map[pair.first] = i;
     paren_map[pair.second] = i;
   }
@@ -106,7 +104,7 @@ PdtInfo<Arc>::PdtInfo(
     ++nstates_;
     const auto s = siter.Value();
     for (ArcIterator<Fst<Arc>> aiter(fst, s); !aiter.Done(); aiter.Next()) {
-      const auto &arc = aiter.Value();
+      const auto& arc = aiter.Value();
       ++narcs_;
       const auto it = paren_map.find(arc.ilabel);
       if (it != paren_map.end()) {

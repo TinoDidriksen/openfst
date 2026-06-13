@@ -26,86 +26,88 @@
 #include <ostream>
 #include <string>
 
+#include <string_view>
 #include <fst/arc.h>
 #include <fst/generic-register.h>
 #include <fst/util.h>
 #include <fst/weight.h>
-#include <string_view>
 
 namespace fst {
 namespace script {
 
 class WeightImplBase {
  public:
-  virtual WeightImplBase *Copy() const = 0;
-  virtual void Print(std::ostream *o) const = 0;
-  virtual const std::string &Type() const = 0;
+  virtual WeightImplBase* Copy() const = 0;
+  virtual void Print(std::ostream* o) const = 0;
+  virtual const std::string& Type() const = 0;
   virtual std::string ToString() const = 0;
   virtual bool Member() const = 0;
   virtual uint64_t Properties() const = 0;
-  virtual bool operator==(const WeightImplBase &other) const = 0;
-  virtual bool operator!=(const WeightImplBase &other) const = 0;
-  virtual WeightImplBase &PlusEq(const WeightImplBase &other) = 0;
-  virtual WeightImplBase &TimesEq(const WeightImplBase &other) = 0;
-  virtual WeightImplBase &DivideEq(const WeightImplBase &other) = 0;
-  virtual WeightImplBase &PowerEq(size_t n) = 0;
+  virtual bool operator==(const WeightImplBase& other) const = 0;
+  virtual bool operator!=(const WeightImplBase& other) const = 0;
+  virtual WeightImplBase& PlusEq(const WeightImplBase& other) = 0;
+  virtual WeightImplBase& TimesEq(const WeightImplBase& other) = 0;
+  virtual WeightImplBase& DivideEq(const WeightImplBase& other) = 0;
+  virtual WeightImplBase& PowerEq(size_t n) = 0;
   virtual ~WeightImplBase() = default;
 };
 
 template <class W>
 class WeightClassImpl : public WeightImplBase {
  public:
-  explicit WeightClassImpl(const W &weight) : weight_(weight) {}
+  explicit WeightClassImpl(const W& weight) : weight_(weight) {}
 
-  WeightClassImpl<W> *Copy() const final {
+  WeightClassImpl<W>* Copy() const final {
     return new WeightClassImpl<W>(weight_);
   }
 
-  const std::string &Type() const final { return W::Type(); }
+  const std::string& Type() const final { return W::Type(); }
 
-  void Print(std::ostream *ostrm) const final { *ostrm << weight_; }
+  void Print(std::ostream* ostrm) const final { *ostrm << weight_; }
 
-  std::string ToString() const final {
-    return WeightToStr(weight_);
-  }
+  std::string ToString() const final { return WeightToStr(weight_); }
 
   bool Member() const final { return weight_.Member(); }
 
   uint64_t Properties() const override { return weight_.Properties(); }
 
-  bool operator==(const WeightImplBase &other) const final {
-    const auto *typed_other = down_cast<const WeightClassImpl<W> *>(&other);
+  bool operator==(const WeightImplBase& other) const final {
+    const auto* typed_other =
+        down_cast<const WeightClassImpl<W>*>(&other);
     return weight_ == typed_other->weight_;
   }
 
-  bool operator!=(const WeightImplBase &other) const final {
+  bool operator!=(const WeightImplBase& other) const final {
     return !(*this == other);
   }
 
-  WeightClassImpl<W> &PlusEq(const WeightImplBase &other) final {
-    const auto *typed_other = down_cast<const WeightClassImpl<W> *>(&other);
+  WeightClassImpl<W>& PlusEq(const WeightImplBase& other) final {
+    const auto* typed_other =
+        down_cast<const WeightClassImpl<W>*>(&other);
     weight_ = Plus(weight_, typed_other->weight_);
     return *this;
   }
 
-  WeightClassImpl<W> &TimesEq(const WeightImplBase &other) final {
-    const auto *typed_other = down_cast<const WeightClassImpl<W> *>(&other);
+  WeightClassImpl<W>& TimesEq(const WeightImplBase& other) final {
+    const auto* typed_other =
+        down_cast<const WeightClassImpl<W>*>(&other);
     weight_ = Times(weight_, typed_other->weight_);
     return *this;
   }
 
-  WeightClassImpl<W> &DivideEq(const WeightImplBase &other) final {
-    const auto *typed_other = down_cast<const WeightClassImpl<W> *>(&other);
+  WeightClassImpl<W>& DivideEq(const WeightImplBase& other) final {
+    const auto* typed_other =
+        down_cast<const WeightClassImpl<W>*>(&other);
     weight_ = Divide(weight_, typed_other->weight_);
     return *this;
   }
 
-  WeightClassImpl<W> &PowerEq(size_t n) final {
+  WeightClassImpl<W>& PowerEq(size_t n) final {
     weight_ = Power(weight_, n);
     return *this;
   }
 
-  W *GetImpl() { return &weight_; }
+  W* GetImpl() { return &weight_; }
 
  private:
   W weight_;
@@ -116,19 +118,19 @@ class WeightClass {
   WeightClass() = default;
 
   template <class W>
-  explicit WeightClass(const W &weight)
+  explicit WeightClass(const W& weight)
       : impl_(std::make_unique<WeightClassImpl<W>>(weight)) {}
 
   template <class W>
-  explicit WeightClass(const WeightClassImpl<W> &impl)
+  explicit WeightClass(const WeightClassImpl<W>& impl)
       : impl_(std::make_unique<WeightClassImpl<W>>(impl)) {}
 
   WeightClass(std::string_view weight_type, std::string_view weight_str);
 
-  WeightClass(const WeightClass &other)
+  WeightClass(const WeightClass& other)
       : impl_(other.impl_ ? other.impl_->Copy() : nullptr) {}
 
-  WeightClass &operator=(const WeightClass &other) {
+  WeightClass& operator=(const WeightClass& other) {
     impl_.reset(other.impl_ ? other.impl_->Copy() : nullptr);
     return *this;
   }
@@ -144,20 +146,20 @@ class WeightClass {
   static WeightClass NoWeight(std::string_view weight_type);
 
   template <class W>
-  const W *GetWeight() const {
+  const W* GetWeight() const {
     if (W::Type() != impl_->Type()) {
       return nullptr;
     } else {
-      auto *typed_impl = static_cast<WeightClassImpl<W> *>(impl_.get());
+      auto* typed_impl = static_cast<WeightClassImpl<W>*>(impl_.get());
       return typed_impl->GetImpl();
     }
   }
 
   std::string ToString() const { return (impl_) ? impl_->ToString() : "none"; }
 
-  const std::string &Type() const {
+  const std::string& Type() const {
     if (impl_) return impl_->Type();
-    static const std::string *const no_type = new std::string("none");
+    static const std::string* const no_type = new std::string("none");
     return *no_type;
   }
 
@@ -165,42 +167,42 @@ class WeightClass {
 
   uint64_t Properties() const { return impl_ ? impl_->Properties() : 0; }
 
-  static bool WeightTypesMatch(const WeightClass &lhs, const WeightClass &rhs,
+  static bool WeightTypesMatch(const WeightClass& lhs, const WeightClass& rhs,
                                std::string_view op_name);
 
-  friend bool operator==(const WeightClass &lhs, const WeightClass &rhs);
+  friend bool operator==(const WeightClass& lhs, const WeightClass& rhs);
 
-  friend WeightClass Plus(const WeightClass &lhs, const WeightClass &rhs);
+  friend WeightClass Plus(const WeightClass& lhs, const WeightClass& rhs);
 
-  friend WeightClass Times(const WeightClass &lhs, const WeightClass &rhs);
+  friend WeightClass Times(const WeightClass& lhs, const WeightClass& rhs);
 
-  friend WeightClass Divide(const WeightClass &lhs, const WeightClass &rhs);
+  friend WeightClass Divide(const WeightClass& lhs, const WeightClass& rhs);
 
-  friend WeightClass Power(const WeightClass &w, size_t n);
+  friend WeightClass Power(const WeightClass& w, size_t n);
 
  private:
-  const WeightImplBase *GetImpl() const { return impl_.get(); }
+  const WeightImplBase* GetImpl() const { return impl_.get(); }
 
-  WeightImplBase *GetImpl() { return impl_.get(); }
+  WeightImplBase* GetImpl() { return impl_.get(); }
 
   std::unique_ptr<WeightImplBase> impl_;
 
-  friend std::ostream &operator<<(std::ostream &o, const WeightClass &c);
+  friend std::ostream& operator<<(std::ostream& o, const WeightClass& c);
 };
 
-bool operator==(const WeightClass &lhs, const WeightClass &rhs);
+bool operator==(const WeightClass& lhs, const WeightClass& rhs);
 
-bool operator!=(const WeightClass &lhs, const WeightClass &rhs);
+bool operator!=(const WeightClass& lhs, const WeightClass& rhs);
 
-WeightClass Plus(const WeightClass &lhs, const WeightClass &rhs);
+WeightClass Plus(const WeightClass& lhs, const WeightClass& rhs);
 
-WeightClass Times(const WeightClass &lhs, const WeightClass &rhs);
+WeightClass Times(const WeightClass& lhs, const WeightClass& rhs);
 
-WeightClass Divide(const WeightClass &lhs, const WeightClass &rhs);
+WeightClass Divide(const WeightClass& lhs, const WeightClass& rhs);
 
-WeightClass Power(const WeightClass &w, size_t n);
+WeightClass Power(const WeightClass& w, size_t n);
 
-std::ostream &operator<<(std::ostream &o, const WeightClass &c);
+std::ostream& operator<<(std::ostream& o, const WeightClass& c);
 
 // Registration for generic weight types.
 

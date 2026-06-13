@@ -27,16 +27,18 @@
 namespace fst {
 namespace script {
 
-void Draw(const FstClass &fst, const SymbolTable *isyms,
-          const SymbolTable *osyms, const SymbolTable *ssyms, bool accep,
-          const std::string &title, float width, float height, bool portrait,
+void Draw(const FstClass& fst, const SymbolTable* isyms,
+          const SymbolTable* osyms, const SymbolTable* ssyms, bool accep,
+          const std::string& title, float width, float height, bool portrait,
           bool vertical, float ranksep, float nodesep, int fontsize,
-          int precision, const std::string &float_format, bool show_weight_one,
-          std::ostream &ostrm, const std::string &dest) {
-  FstDrawArgs args{
-      fst,      isyms,     osyms,        ssyms,           accep,   title,
-      width,    height,    portrait,     vertical,        ranksep, nodesep,
-      fontsize, precision, float_format, show_weight_one, ostrm,   dest};
+          int precision, const std::string& float_format, bool show_weight_one,
+          const std::string& format, std::ostream& ostrm,
+          const std::string& dest) {
+  FstDrawArgs args{fst,      isyms,     osyms,        ssyms,
+                   accep,    title,     width,        height,
+                   portrait, vertical,  ranksep,      nodesep,
+                   fontsize, precision, float_format, show_weight_one,
+                   format,   ostrm,     dest};
   Apply<Operation<FstDrawArgs>>("Draw", fst.ArcType(), &args);
 }
 

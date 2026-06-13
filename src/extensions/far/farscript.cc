@@ -24,17 +24,14 @@
 #include <string>
 #include <vector>
 
+#include <string_view>
 #include <fst/extensions/far/far-class.h>
 #include <fst/extensions/far/far.h>
 #include <fst/extensions/far/info.h>
 #include <fst/arc.h>
-#include <fst/cache.h>
-#include <fst/error-weight.h>
-#include <fst/float-weight.h>
 #include <fst/string.h>
 #include <fst/script/encodemapper-class.h>
 #include <fst/script/script-impl.h>
-#include <string_view>
 
 #define REGISTER_FST_OPERATION_4ARCS(Op, ArgPack) \
   REGISTER_FST_OPERATION_3ARCS(Op, ArgPack);      \
@@ -43,13 +40,13 @@
 namespace fst {
 namespace script {
 
-void CompileStrings(const std::vector<std::string> &sources,
-                    FarWriterClass &writer, std::string_view fst_type,
+void CompileStrings(const std::vector<std::string>& sources,
+                    FarWriterClass& writer, std::string_view fst_type,
                     int32_t generate_keys, FarEntryType fet, TokenType tt,
-                    const std::string &symbols_source,
-                    const std::string &unknown_symbol, bool keep_symbols,
-                    bool initial_symbols, const std::string &key_prefix,
-                    const std::string &key_suffix) {
+                    const std::string& symbols_source,
+                    const std::string& unknown_symbol, bool keep_symbols,
+                    bool initial_symbols, const std::string& key_prefix,
+                    const std::string& key_suffix) {
   FarCompileStringsArgs args{sources,
                              writer,
                              fst_type,
@@ -68,7 +65,7 @@ void CompileStrings(const std::vector<std::string> &sources,
 
 REGISTER_FST_OPERATION_4ARCS(CompileStrings, FarCompileStringsArgs);
 
-void Convert(FarReaderClass &reader, FarWriterClass &writer,
+void Convert(FarReaderClass& reader, FarWriterClass& writer,
              std::string_view fst_type) {
   FarConvertArgs args{reader, writer, fst_type};
   Apply<Operation<FarConvertArgs>>("Convert", reader.ArcType(), &args);
@@ -76,17 +73,17 @@ void Convert(FarReaderClass &reader, FarWriterClass &writer,
 
 REGISTER_FST_OPERATION_4ARCS(Convert, FarConvertArgs);
 
-void Create(const std::vector<std::string> &sources, FarWriterClass &writer,
-            const int32_t generate_keys, const std::string &key_prefix,
-            const std::string &key_suffix) {
+void Create(const std::vector<std::string>& sources, FarWriterClass& writer,
+            const int32_t generate_keys, const std::string& key_prefix,
+            const std::string& key_suffix) {
   FarCreateArgs args{sources, writer, generate_keys, key_prefix, key_suffix};
   Apply<Operation<FarCreateArgs>>("Create", writer.ArcType(), &args);
 }
 
 REGISTER_FST_OPERATION_4ARCS(Create, FarCreateArgs);
 
-void Decode(FarReaderClass &reader, FarWriterClass &writer,
-            const EncodeMapperClass &encoder) {
+void Decode(FarReaderClass& reader, FarWriterClass& writer,
+            const EncodeMapperClass& encoder) {
   if (!internal::ArcTypesMatch(reader, encoder, "Decode") ||
       !internal::ArcTypesMatch(writer, encoder, "Decode")) {
     return;
@@ -97,8 +94,8 @@ void Decode(FarReaderClass &reader, FarWriterClass &writer,
 
 REGISTER_FST_OPERATION_4ARCS(Decode, FarDecodeArgs);
 
-void Encode(FarReaderClass &reader, FarWriterClass &writer,
-            EncodeMapperClass *encoder) {
+void Encode(FarReaderClass& reader, FarWriterClass& writer,
+            EncodeMapperClass* encoder) {
   if (!internal::ArcTypesMatch(reader, *encoder, "Encode") ||
       !internal::ArcTypesMatch(writer, *encoder, "Encode")) {
     return;
@@ -109,7 +106,7 @@ void Encode(FarReaderClass &reader, FarWriterClass &writer,
 
 REGISTER_FST_OPERATION_4ARCS(Encode, FarEncodeArgs);
 
-bool Equal(FarReaderClass &reader1, FarReaderClass &reader2, float delta,
+bool Equal(FarReaderClass& reader1, FarReaderClass& reader2, float delta,
            std::string_view begin_key, std::string_view end_key) {
   if (!internal::ArcTypesMatch(reader1, reader2, "Equal")) return false;
   FarEqualInnerArgs args{reader1, reader2, delta, begin_key, end_key};
@@ -120,11 +117,11 @@ bool Equal(FarReaderClass &reader1, FarReaderClass &reader2, float delta,
 
 REGISTER_FST_OPERATION_4ARCS(Equal, FarEqualArgs);
 
-void Extract(FarReaderClass &reader, int32_t generate_sources,
-             const std::string &keys, const std::string &key_separator,
-             const std::string &range_delimiter,
-             const std::string &source_prefix,
-             const std::string &source_suffix) {
+void Extract(FarReaderClass& reader, int32_t generate_sources,
+             const std::string& keys, const std::string& key_separator,
+             const std::string& range_delimiter,
+             const std::string& source_prefix,
+             const std::string& source_suffix) {
   FarExtractArgs args{reader,        generate_sources, keys,
                       key_separator, range_delimiter,  source_prefix,
                       source_suffix};
@@ -133,17 +130,17 @@ void Extract(FarReaderClass &reader, int32_t generate_sources,
 
 REGISTER_FST_OPERATION_4ARCS(Extract, FarExtractArgs);
 
-void GetInfo(const std::vector<std::string> &sources,
-             const std::string &arc_type, const std::string &begin_key,
-             const std::string &end_key, bool list_fsts, FarInfoData *data) {
+void GetInfo(const std::vector<std::string>& sources,
+             const std::string& arc_type, const std::string& begin_key,
+             const std::string& end_key, bool list_fsts, FarInfoData* data) {
   FarGetInfoArgs args{sources, begin_key, end_key, list_fsts, data};
   Apply<Operation<FarGetInfoArgs>>("GetInfo", arc_type, &args);
 }
 
 REGISTER_FST_OPERATION_4ARCS(GetInfo, FarGetInfoArgs);
 
-void Info(const std::vector<std::string> &sources, const std::string &arc_type,
-          const std::string &begin_key, const std::string &end_key,
+void Info(const std::vector<std::string>& sources, const std::string& arc_type,
+          const std::string& begin_key, const std::string& end_key,
           bool list_fsts) {
   FarInfoArgs args{sources, begin_key, end_key, list_fsts};
   Apply<Operation<FarInfoArgs>>("Info", arc_type, &args);
@@ -151,7 +148,7 @@ void Info(const std::vector<std::string> &sources, const std::string &arc_type,
 
 REGISTER_FST_OPERATION_4ARCS(Info, FarInfoArgs);
 
-bool Isomorphic(FarReaderClass &reader1, FarReaderClass &reader2, float delta,
+bool Isomorphic(FarReaderClass& reader1, FarReaderClass& reader2, float delta,
                 std::string_view begin_key, std::string_view end_key) {
   if (!internal::ArcTypesMatch(reader1, reader2, "Equal")) return false;
   FarIsomorphicInnerArgs args{reader1, reader2, delta, begin_key, end_key};
@@ -163,13 +160,13 @@ bool Isomorphic(FarReaderClass &reader1, FarReaderClass &reader2, float delta,
 
 REGISTER_FST_OPERATION_4ARCS(Isomorphic, FarIsomorphicArgs);
 
-void PrintStrings(FarReaderClass &reader, const FarEntryType entry_type,
-                  const TokenType token_type, const std::string &begin_key,
-                  const std::string &end_key, bool print_key, bool print_weight,
-                  const std::string &symbols_source, bool initial_symbols,
+void PrintStrings(FarReaderClass& reader, const FarEntryType entry_type,
+                  const TokenType token_type, const std::string& begin_key,
+                  const std::string& end_key, bool print_key, bool print_weight,
+                  const std::string& symbols_source, bool initial_symbols,
                   const int32_t generate_sources,
-                  const std::string &source_prefix,
-                  const std::string &source_suffix) {
+                  const std::string& source_prefix,
+                  const std::string& source_suffix) {
   FarPrintStringsArgs args{reader,           entry_type,     token_type,
                            begin_key,        end_key,        print_key,
                            print_weight,     symbols_source, initial_symbols,

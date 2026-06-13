@@ -101,13 +101,11 @@
 #include <utility>
 #include <vector>
 
-#include <fst/log.h>
-#include <fst/arc.h>
+#include <string_view>
 #include <fst/generic-register.h>
 #include <fst/util.h>
 #include <fst/script/fst-class.h>
 #include <fst/script/weight-class.h>
-#include <string_view>
 
 namespace fst {
 namespace script {
@@ -132,7 +130,7 @@ class GenericOperationRegister
 
  protected:
   std::string ConvertKeyToSoFilename(
-      const std::pair<std::string_view, std::string_view> &key) const final {
+      const std::pair<std::string_view, std::string_view>& key) const final {
     // Uses the old-style FST for now.
     std::string legal_type(key.second);  // The arc type.
     ConvertToLegalCSymbol(&legal_type);
@@ -152,7 +150,7 @@ template <class Args>
 struct Operation {
   using ArgPack = Args;
 
-  using OpType = void (*)(ArgPack *args);
+  using OpType = void (*)(ArgPack* args);
 
   // The register (hash) type.
   using Register = GenericOperationRegister<OpType>;
@@ -163,9 +161,9 @@ struct Operation {
 
 // Macro for registering new types of operations.
 #define REGISTER_FST_OPERATION(Op, Arc, ArgPack)               \
-  static fst::script::Operation<ArgPack>::Registerer       \
+  static fst::script::Operation<ArgPack>::Registerer           \
       arc_dispatched_operation_##ArgPack##Op##Arc##_registerer \
-      ({#Op, Arc::Type()}, Op<Arc>)
+       ({#Op, Arc::Type()}, Op<Arc>)
 
 // A macro that calls REGISTER_FST_OPERATION for widely-used arc types.
 #define REGISTER_FST_OPERATION_3ARCS(Op, ArgPack) \
@@ -175,8 +173,8 @@ struct Operation {
 
 // Template function to apply an operation by name.
 template <class OpReg>
-void Apply(const std::string &op_name, const std::string &arc_type,
-           typename OpReg::ArgPack *args) {
+void Apply(const std::string& op_name, const std::string& arc_type,
+           typename OpReg::ArgPack* args) {
   const auto op =
       OpReg::Register::GetRegister()->GetOperation(op_name, arc_type);
   if (!op) {
@@ -192,7 +190,7 @@ namespace internal {
 // assuming that both m and n implement .ArcType(). The op_name argument is
 // used to construct the error message.
 template <class M, class N>
-bool ArcTypesMatch(const M &m, const N &n, const std::string &op_name) {
+bool ArcTypesMatch(const M& m, const N& n, const std::string& op_name) {
   if (m.ArcType() != n.ArcType()) {
     FSTERROR() << op_name << ": Arguments with non-matching arc types "
                << m.ArcType() << " and " << n.ArcType();
@@ -204,21 +202,21 @@ bool ArcTypesMatch(const M &m, const N &n, const std::string &op_name) {
 // From untyped to typed weights.
 template <class Weight>
 void CopyWeights(const std::vector<WeightClass> &weights,
-                 std::vector<Weight> *typed_weights) {
+                 std::vector<Weight>* typed_weights) {
   typed_weights->clear();
   typed_weights->reserve(weights.size());
-  for (const auto &weight : weights) {
+  for (const auto& weight : weights) {
     typed_weights->emplace_back(*weight.GetWeight<Weight>());
   }
 }
 
 // From typed to untyped weights.
 template <class Weight>
-void CopyWeights(const std::vector<Weight> &typed_weights,
-                 std::vector<WeightClass> *weights) {
+void CopyWeights(const std::vector<Weight>& typed_weights,
+                 std::vector<WeightClass>* weights) {
   weights->clear();
   weights->reserve(typed_weights.size());
-  for (const auto &typed_weight : typed_weights) {
+  for (const auto& typed_weight : typed_weights) {
     weights->emplace_back(typed_weight);
   }
 }
@@ -226,11 +224,11 @@ void CopyWeights(const std::vector<Weight> &typed_weights,
 }  // namespace internal
 
 // Used for Replace operations.
-inline std::vector<std::pair<int64_t, const FstClass *>> BorrowPairs(
+inline std::vector<std::pair<int64_t, const FstClass*>> BorrowPairs(
     const std::vector<std::pair<int64_t, std::unique_ptr<const FstClass>>> &        pairs) {
-  std::vector<std::pair<int64_t, const FstClass *>> borrowed_pairs;
+  std::vector<std::pair<int64_t, const FstClass*>> borrowed_pairs;
   borrowed_pairs.reserve(pairs.size());
-  for (const auto &pair : pairs) {
+  for (const auto& pair : pairs) {
     borrowed_pairs.emplace_back(pair.first, pair.second.get());
   }
   return borrowed_pairs;

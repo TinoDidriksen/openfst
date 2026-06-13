@@ -31,7 +31,7 @@
 #include <utility>
 #include <vector>
 
-#include <fst/log.h>
+#include <unordered_map>
 #include <fst/connect.h>
 #include <fst/fst.h>
 #include <fst/mutable-fst.h>
@@ -41,7 +41,6 @@
 #include <fst/symbol-table-ops.h>
 #include <fst/symbol-table.h>
 #include <fst/util.h>
-#include <unordered_map>
 
 namespace fst {
 namespace internal {
@@ -49,7 +48,7 @@ namespace internal {
 // Hash to paren IDs
 template <typename S>
 struct ReplaceParenHash {
-  size_t operator()(const std::pair<size_t, S> &paren) const {
+  size_t operator()(const std::pair<size_t, S>& paren) const {
     static constexpr auto prime = 7853;
     return paren.first + paren.second * prime;
   }
@@ -79,7 +78,7 @@ enum class PdtParserType : uint8_t {
   // introduce some non-determinism.
   LEFT_SR,
 
-  /* TODO(riley):
+  /* TODO:
   // Bottom-up construction. Applied to a LR(0) grammar, gives a DPDA.
   // If promoted to a DPDT, with outputs being the production numbers,
   // gives the reverse of a rightmost derivation.
@@ -117,7 +116,7 @@ class PdtParser {
   using Label = typename Arc::Label;
   using StateId = typename Arc::StateId;
   using Weight = typename Arc::Weight;
-  using LabelFstPair = std::pair<Label, const Fst<Arc> *>;
+  using LabelFstPair = std::pair<Label, const Fst<Arc>*>;
   using LabelPair = std::pair<Label, Label>;
   using LabelStatePair = std::pair<Label, StateId>;
   using StateWeightPair = std::pair<StateId, Weight>;
@@ -126,7 +125,7 @@ class PdtParser {
                                        internal::ReplaceParenHash<StateId>>;
 
   PdtParser(const std::vector<LabelFstPair> &fst_array,
-            const PdtReplaceOptions<Arc> &opts)
+            const PdtReplaceOptions<Arc>& opts)
       : root_(opts.root),
         start_paren_labels_(opts.start_paren_labels),
         left_paren_prefix_(std::move(opts.left_paren_prefix)),
@@ -152,15 +151,15 @@ class PdtParser {
   }
 
   virtual ~PdtParser() {
-    for (auto &pair : fst_array_) delete pair.second;
+    for (auto& pair : fst_array_) delete pair.second;
   }
 
   // Constructs the output PDT, dependent on the derived parser type.
-  virtual void GetParser(MutableFst<Arc> *ofst,
-                         std::vector<LabelPair> *parens) = 0;
+  virtual void GetParser(MutableFst<Arc>* ofst,
+                         std::vector<LabelPair>* parens) = 0;
 
  protected:
-  const std::vector<LabelFstPair> &FstArray() const { return fst_array_; }
+  const std::vector<LabelFstPair>& FstArray() const { return fst_array_; }
 
   Label Root() const { return root_; }
 
@@ -184,7 +183,7 @@ class PdtParser {
 
   // Maps to output state from input FST (label, state) pair, or returns
   // kNoStateId to signal lookup failure.
-  StateId GetState(const LabelStatePair &lsp) const {
+  StateId GetState(const LabelStatePair& lsp) const {
     auto it = state_map_.find(lsp);
     if (it == state_map_.end()) {
       return kNoStateId;
@@ -196,11 +195,11 @@ class PdtParser {
   // Builds single FST combining all referenced input FSTs, leaving in the
   // non-termnals for now; also tabulates the PDT states that correspond to the
   // start and final states of the input FSTs.
-  void CreateFst(MutableFst<Arc> *ofst, std::vector<StateId> *open_dest,
-                 std::vector<std::vector<StateWeightPair>> *close_src);
+  void CreateFst(MutableFst<Arc>* ofst, std::vector<StateId>* open_dest,
+                 std::vector<std::vector<StateWeightPair>>* close_src);
 
   // Assigns parenthesis labels from total allocated paren IDs.
-  void AssignParenLabels(size_t total_nparens, std::vector<LabelPair> *parens) {
+  void AssignParenLabels(size_t total_nparens, std::vector<LabelPair>* parens) {
     parens->clear();
     for (size_t paren_id = 0; paren_id < total_nparens; ++paren_id) {
       const auto open_paren = start_paren_labels_ + paren_id;
@@ -210,8 +209,8 @@ class PdtParser {
   }
 
   // Determines how non-terminal instances are assigned parentheses IDs.
-  virtual size_t AssignParenIds(const Fst<Arc> &ofst,
-                                ParenMap *paren_map) const = 0;
+  virtual size_t AssignParenIds(const Fst<Arc>& ofst,
+                                ParenMap* paren_map) const = 0;
 
   // Changes a non-terminal transition to an open parenthesis transition
   // redirected to the PDT state specified in the open_dest argument, when
@@ -227,14 +226,14 @@ class PdtParser {
   // the parenthesis that would carry the non-terminal arc weight and the other
   // parenthesis is omitted (appropriate for the strongly-regular case).
   void AddParensToFst(
-      const std::vector<LabelPair> &parens, const ParenMap &paren_map,
-      const std::vector<StateId> &open_dest,
-      const std::vector<std::vector<StateWeightPair>> &close_src,
-      const std::vector<bool> &close_non_term_weight, MutableFst<Arc> *ofst);
+      const std::vector<LabelPair>& parens, const ParenMap& paren_map,
+      const std::vector<StateId>& open_dest,
+      const std::vector<std::vector<StateWeightPair>>& close_src,
+      const std::vector<bool>& close_non_term_weight, MutableFst<Arc>* ofst);
 
   // Ensures that parentheses arcs are added to the symbol table.
   void AddParensToSymbolTables(const std::vector<LabelPair> &parens,
-                               MutableFst<Arc> *ofst);
+                               MutableFst<Arc>* ofst);
 
  private:
   std::vector<LabelFstPair> fst_array_;
@@ -254,8 +253,8 @@ class PdtParser {
 
 template <class Arc>
 void PdtParser<Arc>::CreateFst(
-    MutableFst<Arc> *ofst, std::vector<StateId> *open_dest,
-    std::vector<std::vector<StateWeightPair>> *close_src) {
+    MutableFst<Arc>* ofst, std::vector<StateId>* open_dest,
+    std::vector<std::vector<StateWeightPair>>* close_src) {
   ofst->DeleteStates();
   if (error_) {
     ofst->SetProperties(kError, kError);
@@ -274,7 +273,7 @@ void PdtParser<Arc>::CreateFst(
     const auto label = non_term_queue.front();
     non_term_queue.pop_front();
     StateId fst_id = Label2Id(label);
-    const auto *ifst = fst_array_[fst_id].second;
+    const auto* ifst = fst_array_[fst_id].second;
     for (StateIterator<Fst<Arc>> siter(*ifst); !siter.Done(); siter.Next()) {
       const auto is = siter.Value();
       const auto os = ofst->AddState();
@@ -312,15 +311,15 @@ void PdtParser<Arc>::CreateFst(
 
 template <class Arc>
 void PdtParser<Arc>::AddParensToFst(
-    const std::vector<LabelPair> &parens, const ParenMap &paren_map,
-    const std::vector<StateId> &open_dest,
-    const std::vector<std::vector<StateWeightPair>> &close_src,
-    const std::vector<bool> &close_non_term_weight, MutableFst<Arc> *ofst) {
+    const std::vector<LabelPair>& parens, const ParenMap& paren_map,
+    const std::vector<StateId>& open_dest,
+    const std::vector<std::vector<StateWeightPair>>& close_src,
+    const std::vector<bool>& close_non_term_weight, MutableFst<Arc>* ofst) {
   StateId dead_state = kNoStateId;
   using MIter = MutableArcIterator<MutableFst<Arc>>;
   for (StateIterator<Fst<Arc>> siter(*ofst); !siter.Done(); siter.Next()) {
     StateId os = siter.Value();
-    std::unique_ptr<MIter> aiter(new MIter(ofst, os));
+    auto aiter = std::make_unique<MIter>(ofst, os);
     for (auto n = 0; !aiter->Done(); aiter->Next(), ++n) {
       const auto arc = aiter->Value();  // A reference here may go stale.
       StateId nfst_id = Label2Id(arc.olabel);
@@ -352,7 +351,7 @@ void PdtParser<Arc>::AddParensToFst(
         // Adds close parentheses.
         if (close_paren != 0 || close_non_term_weight[nfst_id]) {
           for (size_t i = 0; i < close_src[nfst_id].size(); ++i) {
-            const auto &pair = close_src[nfst_id][i];
+            const auto& pair = close_src[nfst_id][i];
             const auto close_weight = close_non_term_weight[nfst_id]
                                           ? Times(arc.weight, pair.second)
                                           : pair.second;
@@ -361,7 +360,7 @@ void PdtParser<Arc>::AddParensToFst(
 
             ofst->AddArc(pair.first, farc);
             if (os == pair.first) {  // Invalidated iterator.
-              aiter.reset(new MIter(ofst, os));
+              aiter = std::make_unique<MIter>(ofst, os);
               aiter->Seek(n);
             }
           }
@@ -373,7 +372,7 @@ void PdtParser<Arc>::AddParensToFst(
 
 template <class Arc>
 void PdtParser<Arc>::AddParensToSymbolTables(const std::vector<LabelPair> &parens,
-                                             MutableFst<Arc> *ofst) {
+                                             MutableFst<Arc>* ofst) {
   auto size = parens.size();
   if (ofst->InputSymbols()) {
     if (!AddAuxiliarySymbols(left_paren_prefix_, start_paren_labels_, size,
@@ -426,26 +425,26 @@ class PdtLeftParser final : public PdtParser<Arc> {
   using PdtParser<Arc>::Label2Id;
   using PdtParser<Arc>::Root;
 
-  PdtLeftParser(const std::vector<LabelFstPair> &fst_array,
-                const PdtReplaceOptions<Arc> &opts)
+  PdtLeftParser(const std::vector<LabelFstPair>& fst_array,
+                const PdtReplaceOptions<Arc>& opts)
       : PdtParser<Arc>(fst_array, opts) {}
 
-  void GetParser(MutableFst<Arc> *ofst,
-                 std::vector<LabelPair> *parens) override;
+  void GetParser(MutableFst<Arc>* ofst,
+                 std::vector<LabelPair>* parens) override;
 
  protected:
   // Assigns a unique parenthesis ID for each non-terminal, destination
   // state pair.
-  size_t AssignParenIds(const Fst<Arc> &ofst,
-                        ParenMap *paren_map) const override;
+  size_t AssignParenIds(const Fst<Arc>& ofst,
+                        ParenMap* paren_map) const override;
 };
 
 template <class Arc>
-void PdtLeftParser<Arc>::GetParser(MutableFst<Arc> *ofst,
-                                   std::vector<LabelPair> *parens) {
+void PdtLeftParser<Arc>::GetParser(MutableFst<Arc>* ofst,
+                                   std::vector<LabelPair>* parens) {
   ofst->DeleteStates();
   parens->clear();
-  const auto &fst_array = FstArray();
+  const auto& fst_array = FstArray();
   // Map that gives the paren ID for a (non-terminal, dest. state) pair
   // (which can be unique).
   ParenMap paren_map;
@@ -473,8 +472,8 @@ void PdtLeftParser<Arc>::GetParser(MutableFst<Arc> *ofst,
 }
 
 template <class Arc>
-size_t PdtLeftParser<Arc>::AssignParenIds(const Fst<Arc> &ofst,
-                                          ParenMap *paren_map) const {
+size_t PdtLeftParser<Arc>::AssignParenIds(const Fst<Arc>& ofst,
+                                          ParenMap* paren_map) const {
   // Number of distinct parenthesis pairs per FST.
   std::vector<size_t> nparens(FstArray().size(), 0);
   // Number of distinct parenthesis pairs overall.
@@ -482,7 +481,7 @@ size_t PdtLeftParser<Arc>::AssignParenIds(const Fst<Arc> &ofst,
   for (StateIterator<Fst<Arc>> siter(ofst); !siter.Done(); siter.Next()) {
     const auto os = siter.Value();
     for (ArcIterator<Fst<Arc>> aiter(ofst, os); !aiter.Done(); aiter.Next()) {
-      const auto &arc = aiter.Value();
+      const auto& arc = aiter.Value();
       const auto nfst_id = Label2Id(arc.olabel);
       if (nfst_id != kNoStateId) {
         const ParenKey paren_key(nfst_id, arc.nextstate);
@@ -528,13 +527,13 @@ class PdtLeftSRParser final : public PdtParser<Arc> {
   using PdtParser<Arc>::Label2Id;
   using PdtParser<Arc>::Root;
 
-  PdtLeftSRParser(const std::vector<LabelFstPair> &fst_array,
-                  const PdtReplaceOptions<Arc> &opts)
+  PdtLeftSRParser(const std::vector<LabelFstPair>& fst_array,
+                  const PdtReplaceOptions<Arc>& opts)
       : PdtParser<Arc>(fst_array, opts),
         replace_util_(fst_array, ReplaceUtilOptions(opts.root)) {}
 
-  void GetParser(MutableFst<Arc> *ofst,
-                 std::vector<LabelPair> *parens) override;
+  void GetParser(MutableFst<Arc>* ofst,
+                 std::vector<LabelPair>* parens) override;
 
  protected:
   // Assigns a unique parenthesis ID for each non-terminal, destination state
@@ -542,8 +541,8 @@ class PdtLeftSRParser final : public PdtParser<Arc> {
   // a unique parenthesis ID for each dependency SCC, destination state pair if
   // the non-terminal instance is between
   // SCCs. Otherwise does nothing.
-  size_t AssignParenIds(const Fst<Arc> &ofst,
-                        ParenMap *paren_map) const override;
+  size_t AssignParenIds(const Fst<Arc>& ofst,
+                        ParenMap* paren_map) const override;
 
   // Returns dependency SCC for given label.
   size_t SCC(Label label) const { return replace_util_.SCC(label); }
@@ -563,7 +562,7 @@ class PdtLeftSRParser final : public PdtParser<Arc> {
   }
 
   // Components of left- (right-) linear dependency SCC; empty o.w.
-  const std::vector<size_t> &SCCComps(size_t scc_id) const {
+  const std::vector<size_t>& SCCComps(size_t scc_id) const {
     if (scc_comps_.empty()) GetSCCComps();
     return scc_comps_[scc_id];
   }
@@ -574,9 +573,9 @@ class PdtLeftSRParser final : public PdtParser<Arc> {
   StateId RepState(size_t scc_id) const {
     if (SCCComps(scc_id).empty()) return kNoStateId;
     const auto fst_id = SCCComps(scc_id).front();
-    const auto &fst_array = FstArray();
+    const auto& fst_array = FstArray();
     const auto label = fst_array[fst_id].first;
-    const auto *ifst = fst_array[fst_id].second;
+    const auto* ifst = fst_array[fst_id].second;
     if (SCCLeftLinear(scc_id)) {
       const LabelStatePair lsp(label, ifst->Start());
       return GetState(lsp);
@@ -590,13 +589,13 @@ class PdtLeftSRParser final : public PdtParser<Arc> {
  private:
   // Merges initial (final) states of in a left- (right-) linear dependency SCC
   // after dealing with the non-terminal arc and final weights.
-  void ProcSCCs(MutableFst<Arc> *ofst, std::vector<StateId> *open_dest,
-                std::vector<std::vector<StateWeightPair>> *close_src,
-                std::vector<bool> *close_non_term_weight) const;
+  void ProcSCCs(MutableFst<Arc>* ofst, std::vector<StateId>* open_dest,
+                std::vector<std::vector<StateWeightPair>>* close_src,
+                std::vector<bool>* close_non_term_weight) const;
 
   // Computes components of left- (right-) linear dependency SCC.
   void GetSCCComps() const {
-    const std::vector<LabelFstPair> &fst_array = FstArray();
+    const std::vector<LabelFstPair>& fst_array = FstArray();
     for (size_t i = 0; i < fst_array.size(); ++i) {
       const auto label = fst_array[i].first;
       const auto scc_id = SCC(label);
@@ -607,7 +606,7 @@ class PdtLeftSRParser final : public PdtParser<Arc> {
     }
   }
 
-  const std::set<StateId> &NonTermDests(StateId fst_id) const {
+  const std::set<StateId>& NonTermDests(StateId fst_id) const {
     if (non_term_dests_.empty()) GetNonTermDests();
     return non_term_dests_[fst_id];
   }
@@ -625,11 +624,11 @@ class PdtLeftSRParser final : public PdtParser<Arc> {
 };
 
 template <class Arc>
-void PdtLeftSRParser<Arc>::GetParser(MutableFst<Arc> *ofst,
-                                     std::vector<LabelPair> *parens) {
+void PdtLeftSRParser<Arc>::GetParser(MutableFst<Arc>* ofst,
+                                     std::vector<LabelPair>* parens) {
   ofst->DeleteStates();
   parens->clear();
-  const auto &fst_array = FstArray();
+  const auto& fst_array = FstArray();
   // Map that gives the paren ID for a (non-terminal, dest. state) pair.
   ParenMap paren_map;
   // Specifies the open parenthesis destination state for a given non-terminal.
@@ -659,10 +658,10 @@ void PdtLeftSRParser<Arc>::GetParser(MutableFst<Arc> *ofst,
 
 template <class Arc>
 void PdtLeftSRParser<Arc>::ProcSCCs(
-    MutableFst<Arc> *ofst, std::vector<StateId> *open_dest,
-    std::vector<std::vector<StateWeightPair>> *close_src,
-    std::vector<bool> *close_non_term_weight) const {
-  const auto &fst_array = FstArray();
+    MutableFst<Arc>* ofst, std::vector<StateId>* open_dest,
+    std::vector<std::vector<StateWeightPair>>* close_src,
+    std::vector<bool>* close_non_term_weight) const {
+  const auto& fst_array = FstArray();
   for (StateIterator<Fst<Arc>> siter(*ofst); !siter.Done(); siter.Next()) {
     const auto os = siter.Value();
     const auto label = GetLabelStatePair(os).first;
@@ -670,7 +669,7 @@ void PdtLeftSRParser<Arc>::ProcSCCs(
     const auto fst_id = Label2Id(label);
     const auto scc_id = SCC(label);
     const auto rs = RepState(scc_id);
-    const auto *ifst = fst_array[fst_id].second;
+    const auto* ifst = fst_array[fst_id].second;
     // SCC LEFT-LINEAR: puts non-terminal weights on close parentheses. Merges
     // initial states into SCC representative state and updates open_dest.
     if (SCCLeftLinear(scc_id)) {
@@ -678,7 +677,7 @@ void PdtLeftSRParser<Arc>::ProcSCCs(
       if (is == ifst->Start() && os != rs) {
         for (ArcIterator<Fst<Arc>> aiter(*ofst, os); !aiter.Done();
              aiter.Next()) {
-          const auto &arc = aiter.Value();
+          const auto& arc = aiter.Value();
           ofst->AddArc(rs, arc);
         }
         ofst->DeleteArcs(os);
@@ -723,18 +722,18 @@ void PdtLeftSRParser<Arc>::ProcSCCs(
 
 template <class Arc>
 void PdtLeftSRParser<Arc>::GetNonTermDests() const {
-  const auto &fst_array = FstArray();
+  const auto& fst_array = FstArray();
   non_term_dests_.resize(fst_array.size());
   for (size_t fst_id = 0; fst_id < fst_array.size(); ++fst_id) {
     const auto label = fst_array[fst_id].first;
     const auto scc_id = SCC(label);
     if (SCCRightLinear(scc_id)) {
-      const auto *ifst = fst_array[fst_id].second;
+      const auto* ifst = fst_array[fst_id].second;
       for (StateIterator<Fst<Arc>> siter(*ifst); !siter.Done(); siter.Next()) {
         const auto is = siter.Value();
         for (ArcIterator<Fst<Arc>> aiter(*ifst, is); !aiter.Done();
              aiter.Next()) {
-          const auto &arc = aiter.Value();
+          const auto& arc = aiter.Value();
           if (Label2Id(arc.olabel) != kNoStateId) {
             non_term_dests_[fst_id].insert(arc.nextstate);
           }
@@ -745,9 +744,9 @@ void PdtLeftSRParser<Arc>::GetNonTermDests() const {
 }
 
 template <class Arc>
-size_t PdtLeftSRParser<Arc>::AssignParenIds(const Fst<Arc> &ofst,
-                                            ParenMap *paren_map) const {
-  const auto &fst_array = FstArray();
+size_t PdtLeftSRParser<Arc>::AssignParenIds(const Fst<Arc>& ofst,
+                                            ParenMap* paren_map) const {
+  const auto& fst_array = FstArray();
   // Number of distinct parenthesis pairs per FST.
   std::vector<size_t> nparens(fst_array.size(), 0);
   // Number of distinct parenthesis pairs overall.
@@ -757,7 +756,7 @@ size_t PdtLeftSRParser<Arc>::AssignParenIds(const Fst<Arc> &ofst,
     const auto label = GetLabelStatePair(os).first;
     const auto scc_id = SCC(label);
     for (ArcIterator<Fst<Arc>> aiter(ofst, os); !aiter.Done(); aiter.Next()) {
-      const auto &arc = aiter.Value();
+      const auto& arc = aiter.Value();
       const auto nfst_id = Label2Id(arc.olabel);
       if (nfst_id != kNoStateId) {
         size_t nscc_id = SCC(arc.olabel);
@@ -800,11 +799,11 @@ size_t PdtLeftSRParser<Arc>::AssignParenIds(const Fst<Arc> &ofst,
 // are returned in the parens argument.
 template <class Arc>
 void Replace(
-    const std::vector<std::pair<typename Arc::Label, const Fst<Arc> *>>
-        &ifst_array,
-    MutableFst<Arc> *ofst,
-    std::vector<std::pair<typename Arc::Label, typename Arc::Label>> *parens,
-    const PdtReplaceOptions<Arc> &opts) {
+    const std::vector<std::pair<typename Arc::Label, const Fst<Arc>*>>&
+        ifst_array,
+    MutableFst<Arc>* ofst,
+    std::vector<std::pair<typename Arc::Label, typename Arc::Label>>* parens,
+    const PdtReplaceOptions<Arc>& opts) {
   switch (opts.type) {
     case PdtParserType::LEFT: {
       PdtLeftParser<Arc> pr(ifst_array, opts);
@@ -830,10 +829,10 @@ void Replace(
 // Variant where the only user-controlled arguments is the root ID.
 template <class Arc>
 void Replace(
-    const std::vector<std::pair<typename Arc::Label, const Fst<Arc> *>>
-        &ifst_array,
-    MutableFst<Arc> *ofst,
-    std::vector<std::pair<typename Arc::Label, typename Arc::Label>> *parens,
+    const std::vector<std::pair<typename Arc::Label, const Fst<Arc>*>>&
+        ifst_array,
+    MutableFst<Arc>* ofst,
+    std::vector<std::pair<typename Arc::Label, typename Arc::Label>>* parens,
     typename Arc::Label root) {
   PdtReplaceOptions<Arc> opts(root);
   Replace(ifst_array, ofst, parens, opts);

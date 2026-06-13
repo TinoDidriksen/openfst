@@ -25,7 +25,7 @@
 #include <limits>
 #include <string>
 
-#include <fst/log.h>
+#include <string_view>
 #include <fst/compose.h>       // For ComposeFilter.
 #include <fst/determinize.h>   // For DeterminizeType.
 #include <fst/encode.h>        // For kEncodeLabels (etc.).
@@ -41,22 +41,21 @@
 #include <fst/script/arcsort.h>         // For ArcSortType.
 #include <fst/script/map.h>             // For MapType.
 #include <fst/script/script-impl.h>     // For RandArcSelection.
-#include <string_view>
 
 namespace fst {
 namespace script {
 
 inline constexpr uint64_t kDefaultSeed = std::numeric_limits<uint64_t>::max();
 
-bool GetArcFilterType(std::string_view str, ArcFilterType *arc_filter_type);
+bool GetArcFilterType(std::string_view str, ArcFilterType* arc_filter_type);
 
-bool GetArcSortType(std::string_view str, ArcSortType *sort_type);
+bool GetArcSortType(std::string_view str, ArcSortType* sort_type);
 
-bool GetClosureType(std::string_view str, ClosureType *closure_type);
+bool GetClosureType(std::string_view str, ClosureType* closure_type);
 
-bool GetComposeFilter(std::string_view str, ComposeFilter *compose_filter);
+bool GetComposeFilter(std::string_view str, ComposeFilter* compose_filter);
 
-bool GetDeterminizeType(std::string_view str, DeterminizeType *det_type);
+bool GetDeterminizeType(std::string_view str, DeterminizeType* det_type);
 
 inline uint8_t GetEncodeFlags(bool encode_labels, bool encode_weights) {
   return (encode_labels ? kEncodeLabels : 0) |
@@ -64,11 +63,11 @@ inline uint8_t GetEncodeFlags(bool encode_labels, bool encode_weights) {
 }
 
 bool GetEpsNormalizeType(std::string_view str,
-                         EpsNormalizeType *eps_norm_type);
+                         EpsNormalizeType* eps_norm_type);
 
-bool GetMapType(std::string_view str, MapType *map_type);
+bool GetMapType(std::string_view str, MapType* map_type);
 
-bool GetProjectType(std::string_view str, ProjectType *project_type);
+bool GetProjectType(std::string_view str, ProjectType* project_type);
 
 inline uint8_t GetPushFlags(bool push_weights, bool push_labels,
                             bool remove_total_weight,
@@ -78,18 +77,18 @@ inline uint8_t GetPushFlags(bool push_weights, bool push_labels,
           (remove_common_affix ? kPushRemoveCommonAffix : 0));
 }
 
-bool GetQueueType(std::string_view str, QueueType *queue_type);
+bool GetQueueType(std::string_view str, QueueType* queue_type);
 
-bool GetRandArcSelection(std::string_view str, RandArcSelection *ras);
+bool GetRandArcSelection(std::string_view str, RandArcSelection* ras);
 
 bool GetReplaceLabelType(std::string_view str, bool epsilon_on_replace,
-                         ReplaceLabelType *rlt);
+                         ReplaceLabelType* rlt);
 
-bool GetReweightType(std::string_view str, ReweightType *reweight_type);
+bool GetReweightType(std::string_view str, ReweightType* reweight_type);
 
 uint64_t GetSeed(uint64_t seed);
 
-bool GetTokenType(std::string_view str, TokenType *token_type);
+bool GetTokenType(std::string_view str, TokenType* token_type);
 
 }  // namespace script
 }  // namespace fst

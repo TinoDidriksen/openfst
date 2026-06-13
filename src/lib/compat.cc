@@ -18,8 +18,10 @@
 
 #include <algorithm>
 #include <cctype>
+#include <cstddef>
 #include <string>
 #include <string_view>
+#include <utility>
 #include <vector>
 
 namespace fst {
@@ -102,7 +104,7 @@ std::string_view StripTrailingAsciiWhitespace(std::string_view full) {
   return full.substr(0, full.rend() - it);
 }
 
-void StripTrailingAsciiWhitespace(std::string *full) {
+void StripTrailingAsciiWhitespace(std::string* full) {
   auto it = std::find_if_not(full->rbegin(), full->rend(), IsAsciiSpace);
   full->erase(full->rend() - it);
 }

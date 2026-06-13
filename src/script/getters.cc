@@ -17,8 +17,10 @@
 
 #include <fst/script/getters.h>
 
-#include <string>
+#include <cstdint>
+#include <ctime>
 
+#include <string_view>
 #include <fst/compose.h>
 #include <fst/determinize.h>
 #include <fst/epsnormalize.h>
@@ -32,12 +34,11 @@
 #include <fst/script/arcsort.h>
 #include <fst/script/map.h>
 #include <fst/script/script-impl.h>
-#include <string_view>
 
 namespace fst {
 namespace script {
 
-bool GetArcFilterType(std::string_view str, ArcFilterType *arc_filter_type) {
+bool GetArcFilterType(std::string_view str, ArcFilterType* arc_filter_type) {
   if (str == "any") {
     *arc_filter_type = ArcFilterType::ANY;
   } else if (str == "epsilon") {
@@ -52,7 +53,7 @@ bool GetArcFilterType(std::string_view str, ArcFilterType *arc_filter_type) {
   return true;
 }
 
-bool GetArcSortType(std::string_view str, ArcSortType *sort_type) {
+bool GetArcSortType(std::string_view str, ArcSortType* sort_type) {
   if (str == "ilabel") {
     *sort_type = ArcSortType::ILABEL;
   } else if (str == "olabel") {
@@ -63,7 +64,7 @@ bool GetArcSortType(std::string_view str, ArcSortType *sort_type) {
   return true;
 }
 
-bool GetClosureType(std::string_view str, ClosureType *closure_type) {
+bool GetClosureType(std::string_view str, ClosureType* closure_type) {
   if (str == "star") {
     *closure_type = CLOSURE_STAR;
   } else if (str == "plus") {
@@ -74,7 +75,7 @@ bool GetClosureType(std::string_view str, ClosureType *closure_type) {
   return true;
 }
 
-bool GetComposeFilter(std::string_view str, ComposeFilter *compose_filter) {
+bool GetComposeFilter(std::string_view str, ComposeFilter* compose_filter) {
   if (str == "alt_sequence") {
     *compose_filter = ALT_SEQUENCE_FILTER;
   } else if (str == "auto") {
@@ -95,7 +96,7 @@ bool GetComposeFilter(std::string_view str, ComposeFilter *compose_filter) {
   return true;
 }
 
-bool GetDeterminizeType(std::string_view str, DeterminizeType *det_type) {
+bool GetDeterminizeType(std::string_view str, DeterminizeType* det_type) {
   if (str == "functional") {
     *det_type = DETERMINIZE_FUNCTIONAL;
   } else if (str == "nonfunctional") {
@@ -109,7 +110,7 @@ bool GetDeterminizeType(std::string_view str, DeterminizeType *det_type) {
 }
 
 bool GetEpsNormalizeType(std::string_view str,
-                         EpsNormalizeType *eps_norm_type) {
+                         EpsNormalizeType* eps_norm_type) {
   if (str == "input") {
     *eps_norm_type = EPS_NORM_INPUT;
   } else if (str == "output") {
@@ -120,7 +121,7 @@ bool GetEpsNormalizeType(std::string_view str,
   return true;
 }
 
-bool GetMapType(std::string_view str, MapType *map_type) {
+bool GetMapType(std::string_view str, MapType* map_type) {
   if (str == "arc_sum") {
     *map_type = MapType::ARC_SUM;
   } else if (str == "arc_unique") {
@@ -157,7 +158,7 @@ bool GetMapType(std::string_view str, MapType *map_type) {
   return true;
 }
 
-bool GetProjectType(std::string_view str, ProjectType *project_type) {
+bool GetProjectType(std::string_view str, ProjectType* project_type) {
   if (str == "input") {
     *project_type = ProjectType::INPUT;
   } else if (str == "output") {
@@ -168,7 +169,7 @@ bool GetProjectType(std::string_view str, ProjectType *project_type) {
   return true;
 }
 
-bool GetRandArcSelection(std::string_view str, RandArcSelection *ras) {
+bool GetRandArcSelection(std::string_view str, RandArcSelection* ras) {
   if (str == "uniform") {
     *ras = RandArcSelection::UNIFORM;
   } else if (str == "log_prob") {
@@ -181,7 +182,7 @@ bool GetRandArcSelection(std::string_view str, RandArcSelection *ras) {
   return true;
 }
 
-bool GetQueueType(std::string_view str, QueueType *queue_type) {
+bool GetQueueType(std::string_view str, QueueType* queue_type) {
   if (str == "auto") {
     *queue_type = AUTO_QUEUE;
   } else if (str == "fifo") {
@@ -201,7 +202,7 @@ bool GetQueueType(std::string_view str, QueueType *queue_type) {
 }
 
 bool GetReplaceLabelType(std::string_view str, bool epsilon_on_replace,
-                         ReplaceLabelType *rlt) {
+                         ReplaceLabelType* rlt) {
   if (epsilon_on_replace || str == "neither") {
     *rlt = REPLACE_LABEL_NEITHER;
   } else if (str == "input") {
@@ -216,7 +217,7 @@ bool GetReplaceLabelType(std::string_view str, bool epsilon_on_replace,
   return true;
 }
 
-bool GetReweightType(std::string_view str, ReweightType *reweight_type) {
+bool GetReweightType(std::string_view str, ReweightType* reweight_type) {
   if (str == "to_initial") {
     *reweight_type = REWEIGHT_TO_INITIAL;
   } else if (str == "to_final") {
@@ -231,7 +232,7 @@ uint64_t GetSeed(uint64_t seed) {
   return seed == kDefaultSeed ? time(nullptr) : seed;
 }
 
-bool GetTokenType(std::string_view str, TokenType *token_type) {
+bool GetTokenType(std::string_view str, TokenType* token_type) {
   if (str == "byte") {
     *token_type = TokenType::BYTE;
   } else if (str == "utf8") {

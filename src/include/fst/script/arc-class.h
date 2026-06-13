@@ -30,13 +30,13 @@ namespace script {
 
 struct ArcClass {
   template <class Arc>
-  explicit ArcClass(const Arc &arc)
+  explicit ArcClass(const Arc& arc)
       : ilabel(arc.ilabel),
         olabel(arc.olabel),
         weight(arc.weight),
         nextstate(arc.nextstate) {}
 
-  ArcClass(int64_t ilabel, int64_t olabel, const WeightClass &weight,
+  ArcClass(int64_t ilabel, int64_t olabel, const WeightClass& weight,
            int64_t nextstate)
       : ilabel(ilabel), olabel(olabel), weight(weight), nextstate(nextstate) {}
 

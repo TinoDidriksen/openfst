@@ -22,10 +22,11 @@
 #include <string>
 
 #include <fst/flags.h>
+#include <fst/flags.h>
 #include <fst/script/fst-class.h>
 #include <fst/script/synchronize.h>
 
-int fstsynchronize_main(int argc, char **argv) {
+int fstsynchronize_main(int argc, char** argv) {
   namespace s = fst::script;
   using fst::script::FstClass;
   using fst::script::VectorFstClass;

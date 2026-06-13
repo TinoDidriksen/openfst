@@ -32,13 +32,13 @@ namespace script {
 
 struct DeterminizeOptions {
   const float delta;
-  const WeightClass &weight_threshold;
+  const WeightClass& weight_threshold;
   const int64_t state_threshold;
   const int64_t subsequential_label;
   const DeterminizeType det_type;
   const bool increment_subsequential_label;
 
-  DeterminizeOptions(float delta, const WeightClass &weight_threshold,
+  DeterminizeOptions(float delta, const WeightClass& weight_threshold,
                      int64_t state_threshold = kNoStateId,
                      int64_t subsequential_label = 0,
                      DeterminizeType det_type = DETERMINIZE_FUNCTIONAL,
@@ -52,14 +52,14 @@ struct DeterminizeOptions {
 };
 
 using FstDeterminizeArgs =
-    std::tuple<const FstClass &, MutableFstClass *, const DeterminizeOptions &>;
+    std::tuple<const FstClass&, MutableFstClass*, const DeterminizeOptions&>;
 
 template <class Arc>
-void Determinize(FstDeterminizeArgs *args) {
+void Determinize(FstDeterminizeArgs* args) {
   using Weight = typename Arc::Weight;
-  const Fst<Arc> &ifst = *std::get<0>(*args).GetFst<Arc>();
-  MutableFst<Arc> *ofst = std::get<1>(*args)->GetMutableFst<Arc>();
-  const auto &opts = std::get<2>(*args);
+  const Fst<Arc>& ifst = *std::get<0>(*args).GetFst<Arc>();
+  MutableFst<Arc>* ofst = std::get<1>(*args)->GetMutableFst<Arc>();
+  const auto& opts = std::get<2>(*args);
   const auto weight_threshold = *opts.weight_threshold.GetWeight<Weight>();
   const fst::DeterminizeOptions<Arc> detargs(
       opts.delta, weight_threshold, opts.state_threshold,
@@ -68,8 +68,8 @@ void Determinize(FstDeterminizeArgs *args) {
   Determinize(ifst, ofst, detargs);
 }
 
-void Determinize(const FstClass &ifst, MutableFstClass *ofst,
-                 const DeterminizeOptions &opts);
+void Determinize(const FstClass& ifst, MutableFstClass* ofst,
+                 const DeterminizeOptions& opts);
 
 }  // namespace script
 }  // namespace fst

@@ -196,7 +196,7 @@ cpdef SymbolTable _read_SymbolTable_from_string(string state)
 cdef class _SymbolTableIterator:
 
   cdef SymbolTableView _table
-  cdef unique_ptr[fst.SymbolTableIterator] _siter
+  cdef unique_ptr[fst.SymbolTableIterator] _it
 
 
 # EncodeMapper.
@@ -210,6 +210,8 @@ cdef class EncodeMapper:
   cdef shared_ptr[fst.EncodeMapperClass] _mapper
 
   cpdef string arc_type(self)
+
+  cdef uint64_t _properties(self, uint64_t mask)
 
   cpdef string weight_type(self)
 
@@ -244,6 +246,11 @@ cdef class Fst:
 
   cdef shared_ptr[fst.FstClass] _fst
 
+  # copybara:strip_begin
+  @staticmethod
+  cdef string _server_render_svg(const string &)
+  # copybara:strip_end
+
   @staticmethod
   cdef string _local_render_svg(const string &)
 
@@ -269,7 +276,8 @@ cdef class Fst:
                   int32_t fontsize=?,
                   int32_t precision=?,
                   float_format=?,
-                  bool show_weight_one=?) except *
+                  bool show_weight_one=?,
+                  format=?) except *
 
   cpdef Weight final(self, int64_t state)
 
@@ -292,6 +300,8 @@ cdef class Fst:
                     bool acceptor=?,
                     bool show_weight_one=?,
                     missing_sym=?) except *
+
+  cdef uint64_t _properties(self, uint64_t mask, bool test)
 
   cpdef int64_t start(self)
 
@@ -422,7 +432,7 @@ cdef Arc _init_Arc(const fst.ArcClass &arc)
 cdef class _ArcIterator:
 
   cdef shared_ptr[fst.FstClass] _fst
-  cdef unique_ptr[fst.ArcIteratorClass] _aiter
+  cdef unique_ptr[fst.ArcIteratorClass] _it
 
   cpdef bool done(self)
 
@@ -433,16 +443,14 @@ cdef class _ArcIterator:
   cpdef void reset(self)
 
   cpdef void seek(self, size_t a)
-
-  cpdef void set_flags(self, uint8_t flags, uint8_t mask)
 
   cdef Arc _value(self)
 
 
-cdef class _MutableArcIterator:
+cdef class _MutableArcIterator(_ArcIterator):
 
   cdef shared_ptr[fst.MutableFstClass] _mfst
-  cdef unique_ptr[fst.MutableArcIteratorClass] _aiter
+  cdef unique_ptr[fst.MutableArcIteratorClass] _mit
 
   cpdef bool done(self)
 
@@ -454,9 +462,7 @@ cdef class _MutableArcIterator:
 
   cpdef void seek(self, size_t a)
 
-  cpdef void set_flags(self, uint8_t flags, uint8_t mask)
-
-  cdef void _set_value(self, Arc arc)
+  cpdef void set_value(self, Arc arc) except *
 
   cdef Arc _value(self)
 
@@ -464,7 +470,7 @@ cdef class _MutableArcIterator:
 cdef class _StateIterator:
 
   cdef shared_ptr[fst.FstClass] _fst
-  cdef unique_ptr[fst.StateIteratorClass] _siter
+  cdef unique_ptr[fst.StateIteratorClass] _it
 
   cpdef bool done(self)
 

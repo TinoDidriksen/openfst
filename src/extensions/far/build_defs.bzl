@@ -14,7 +14,24 @@
 #
 """Helper library to define BUILD rules for FAR manipulation."""
 
-def convert_far_types(name, far_in, far_out, far_type = None, fst_type = None, extra_args = None, **kwds):
+# copybara:strip_begin
+#
+# The open-sourcing helper tool converts `//third_party/openfst/static:far` target to the
+# corresponding operation-specific binaries. Hence, the variable names for
+# individual rules below are operation-specific for regular expressions to
+# match correctly.
+#
+# copybara:strip_end
+
+def convert_far_types(
+        name,
+        far_in,
+        far_out,
+        far_type = None,
+        fst_type = None,
+        far_binary_rule = None,
+        extra_args = None,
+        **kwds):
     """Converts the FAR type and/or FST types in a FAR, writing a new FAR.
 
     Args:
@@ -24,12 +41,18 @@ def convert_far_types(name, far_in, far_out, far_type = None, fst_type = None, e
       far_type: An optional string specifying the desired type of the FAR in far_out.
                 If None, the input FAR's type will be used.
       fst_type: An optional string specifying the desired type of the FSTs in far_out.
+      far_binary_rule: Allows specifying a custom far cc_binary target to perform the conversion.
+                       If specified, the given target must be compatible with the default far
+                       binary target ("//third_party/openfst/static:far").
       extra_args: Optional additional flags to pass to convert invocation.
+                # copybara:strip_begin
+                (Must be supported by //third_party/openfst/static:extensions; if not, add it.)
+                # copybara:strip_end
                 If None, each FST will retain its input type.
       **kwds: Attributes common to all BUILD rules, e.g., testonly, visibility.
     """
 
-    farconvert_rule = "@org_openfst//:farconvert"
+    farconvert_rule = far_binary_rule or "//third_party/openfst/static:far"
     farconvert_cmd = "$(location %s) " % farconvert_rule
     if not far_type and not fst_type:
         fail("No-op conversion for FAR %s." % far_in)
@@ -52,7 +75,7 @@ def convert_far_types(name, far_in, far_out, far_type = None, fst_type = None, e
         **kwds
     )
 
-def extract_fsts_from_far(name, far, fsts, **kwds):
+def extract_fsts_from_far(name, far, fsts, far_binary_rule = None, **kwds):
     """Given a FAR (FST archive), we'll extract individual FST files from it.
 
     Args:
@@ -60,10 +83,13 @@ def extract_fsts_from_far(name, far, fsts, **kwds):
       far: The source FAR from which we'll find the FSTs.
       fsts: A list of FSTs to extract from the far.  Each argument should be a
             filename with a '.fst' extension.
+      far_binary_rule: Allows specifying a custom far cc_binary target to perform the extraction.
+                       If specified, the given target must be compatible with the default far
+                       binary target ("//third_party/openfst/static:far").
       **kwds: Attributes common to all BUILD rules, e.g., testonly, visibility.
     """
 
-    farextract_rule = "//nlp/fst/static:far"
+    farextract_rule = far_binary_rule or "//third_party/openfst/static:far"
     fst_extension = ".fst"
 
     fst_prefixes = ""

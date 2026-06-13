@@ -16,6 +16,7 @@
 // finite-state transducer library.
 
 #include <fst/flags.h>
+#include <fst/flags.h>
 #include <fst/extensions/linear/linearscript.h>
 
 DECLARE_string(arc_type);
@@ -27,7 +28,7 @@ DECLARE_string(save_isymbols);
 DECLARE_string(save_fsymbols);
 DECLARE_string(save_osymbols);
 
-int fstlinear_main(int argc, char **argv) {
+int fstlinear_main(int argc, char** argv) {
   // TODO(wuke): more detailed usage
   SET_FLAGS(argv[0], &argc, &argv, true);
   fst::script::ValidateDelimiter();

@@ -22,6 +22,7 @@
 #include <string>
 
 #include <fst/flags.h>
+#include <fst/flags.h>
 #include <fst/log.h>
 #include <fst/script/arcsort.h>
 #include <fst/script/fst-class.h>
@@ -29,7 +30,7 @@
 
 DECLARE_string(sort_type);
 
-int fstarcsort_main(int argc, char **argv) {
+int fstarcsort_main(int argc, char** argv) {
   namespace s = fst::script;
   using fst::script::MutableFstClass;
 

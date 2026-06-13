@@ -17,16 +17,16 @@
 //
 // Extracts component FSTs from an finite-state archive.
 
+#include <cstdint>
 #include <memory>
 #include <string>
 #include <vector>
 
-#include <fst/log.h>
+#include <fst/flags.h>
 #include <fst/extensions/far/far-class.h>
 #include <fst/extensions/far/farscript.h>
 #include <fst/extensions/far/getters.h>
 #include <fst/util.h>
-#include <fst/script/arg-packs.h>
 
 DECLARE_string(filename_prefix);
 DECLARE_string(filename_suffix);
@@ -35,7 +35,7 @@ DECLARE_string(keys);
 DECLARE_string(key_separator);
 DECLARE_string(range_delimiter);
 
-int farextract_main(int argc, char **argv) {
+int farextract_main(int argc, char** argv) {
   namespace s = fst::script;
   using fst::script::FarReaderClass;
 
@@ -44,7 +44,6 @@ int farextract_main(int argc, char **argv) {
   usage += " [in1.far in2.far...]\n";
 
   SET_FLAGS(usage.c_str(), &argc, &argv, true);
-  s::ExpandArgs(argc, argv, &argc, &argv);
 
   std::vector<std::string> sources;
   for (int i = 1; i < argc; ++i) sources.push_back(argv[i]);

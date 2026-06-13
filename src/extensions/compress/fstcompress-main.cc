@@ -22,7 +22,7 @@
 #include <string>
 
 #include <fst/flags.h>
-#include <fst/log.h>
+#include <fst/flags.h>
 #include <fst/extensions/compress/compressscript.h>
 #include <fst/util.h>
 #include <fst/script/fst-class.h>
@@ -30,7 +30,7 @@
 DECLARE_string(arc_type);
 DECLARE_bool(decode);
 
-int fstcompress_main(int argc, char **argv) {
+int fstcompress_main(int argc, char** argv) {
   namespace s = fst::script;
   using fst::script::FstClass;
   using fst::script::VectorFstClass;

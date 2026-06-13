@@ -26,21 +26,21 @@
 namespace fst {
 namespace script {
 
-void ShortestDistance(const FstClass &fst, std::vector<WeightClass> *distance,
-                      const ShortestDistanceOptions &opts) {
+void ShortestDistance(const FstClass& fst, std::vector<WeightClass>* distance,
+                      const ShortestDistanceOptions& opts) {
   FstShortestDistanceArgs1 args{fst, distance, opts};
   Apply<Operation<FstShortestDistanceArgs1>>("ShortestDistance", fst.ArcType(),
                                              &args);
 }
 
-void ShortestDistance(const FstClass &fst, std::vector<WeightClass> *distance,
+void ShortestDistance(const FstClass& fst, std::vector<WeightClass>* distance,
                       bool reverse, double delta) {
   FstShortestDistanceArgs2 args{fst, distance, reverse, delta};
   Apply<Operation<FstShortestDistanceArgs2>>("ShortestDistance", fst.ArcType(),
                                              &args);
 }
 
-WeightClass ShortestDistance(const FstClass &fst, double delta) {
+WeightClass ShortestDistance(const FstClass& fst, double delta) {
   FstShortestDistanceInnerArgs3 iargs{fst, delta};
   FstShortestDistanceArgs3 args(iargs);
   Apply<Operation<FstShortestDistanceArgs3>>("ShortestDistance", fst.ArcType(),

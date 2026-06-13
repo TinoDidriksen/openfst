@@ -28,21 +28,21 @@
 namespace fst {
 namespace script {
 
-using FstComposeArgs = std::tuple<const FstClass &, const FstClass &,
-                                  MutableFstClass *, const ComposeOptions &>;
+using FstComposeArgs = std::tuple<const FstClass&, const FstClass&,
+                                  MutableFstClass*, const ComposeOptions&>;
 
 template <class Arc>
-void Compose(FstComposeArgs *args) {
-  const Fst<Arc> &ifst1 = *std::get<0>(*args).GetFst<Arc>();
-  const Fst<Arc> &ifst2 = *std::get<1>(*args).GetFst<Arc>();
-  MutableFst<Arc> *ofst = std::get<2>(*args)->GetMutableFst<Arc>();
-  const auto &opts = std::get<3>(*args);
+void Compose(FstComposeArgs* args) {
+  const Fst<Arc>& ifst1 = *std::get<0>(*args).GetFst<Arc>();
+  const Fst<Arc>& ifst2 = *std::get<1>(*args).GetFst<Arc>();
+  MutableFst<Arc>* ofst = std::get<2>(*args)->GetMutableFst<Arc>();
+  const auto& opts = std::get<3>(*args);
   Compose(ifst1, ifst2, ofst, opts);
 }
 
-void Compose(const FstClass &ifst1, const FstClass &ifst2,
-             MutableFstClass *ofst,
-             const ComposeOptions &opts = ComposeOptions());
+void Compose(const FstClass& ifst1, const FstClass& ifst2,
+             MutableFstClass* ofst,
+             const ComposeOptions& opts = ComposeOptions());
 
 }  // namespace script
 }  // namespace fst

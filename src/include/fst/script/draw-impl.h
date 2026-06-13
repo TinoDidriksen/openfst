@@ -27,17 +27,16 @@
 #include <sstream>
 #include <string>
 
-#include <fst/log.h>
+#include <string_view>
 #include <fst/fst.h>
 #include <fst/properties.h>
 #include <fst/symbol-table.h>
 #include <fst/util.h>
-#include <fst/script/fst-class.h>
-#include <string_view>
 
 namespace fst {
 
-// Print a binary FST in GraphViz textual format (helper class for fstdraw.cc).
+// Print a binary FST in GraphViz or D2 textual formats (helper class for
+// fstdraw.cc).
 // WARNING: Stand-alone use not recommend.
 template <class Arc>
 class FstDrawer {
@@ -46,12 +45,12 @@ class FstDrawer {
   using StateId = typename Arc::StateId;
   using Weight = typename Arc::Weight;
 
-  FstDrawer(const Fst<Arc> &fst, const SymbolTable *isyms,
-            const SymbolTable *osyms, const SymbolTable *ssyms, bool accep,
+  FstDrawer(const Fst<Arc>& fst, const SymbolTable* isyms,
+            const SymbolTable* osyms, const SymbolTable* ssyms, bool accep,
             std::string_view title, float width, float height, bool portrait,
             bool vertical, float ranksep, float nodesep, int fontsize,
-            int precision, std::string_view float_format,
-            bool show_weight_one)
+            int precision, std::string_view float_format, bool show_weight_one,
+            std::string_view format)
       : fst_(fst),
         isyms_(isyms),
         osyms_(osyms),
@@ -67,10 +66,22 @@ class FstDrawer {
         fontsize_(fontsize),
         precision_(precision),
         float_format_(float_format),
-        show_weight_one_(show_weight_one) {}
+        show_weight_one_(show_weight_one),
+        format_(format) {}
 
   // Draws FST to an output buffer.
-  void Draw(std::ostream &strm, std::string_view dest) {
+  void Draw(std::ostream& strm, std::string_view dest) {
+    if (format_ == "dot") {
+      DrawDot(strm, dest);
+    } else if (format_ == "d2") {
+      DrawD2(strm, dest);
+    } else {
+      FSTERROR() << "FstDrawer: Unknown format: " << format_;
+    }
+  }
+
+ private:
+  void DrawDot(std::ostream& strm, std::string_view dest) {
     SetStreamState(strm);
     dest_ = std::string(dest);
     const auto start = fst_.Start();
@@ -92,16 +103,38 @@ class FstDrawer {
     strm << "ranksep = \"" << ranksep_ << "\";\n"
          << "nodesep = \"" << nodesep_ << "\";\n";
     // Initial state first.
-    DrawState(strm, start);
+    DrawDotState(strm, start);
     for (StateIterator<Fst<Arc>> siter(fst_); !siter.Done(); siter.Next()) {
       const auto s = siter.Value();
-      if (s != start) DrawState(strm, s);
+      if (s != start) DrawDotState(strm, s);
     }
     strm << "}\n";
   }
 
- private:
-  void SetStreamState(std::ostream &strm) const {
+  void DrawD2(std::ostream& strm, std::string_view dest) {
+    SetStreamState(strm);
+    dest_ = std::string(dest);
+    const auto start = fst_.Start();
+    if (start == kNoStateId) return;
+    if (vertical_) {
+      strm << "direction: up\n";
+    } else {
+      strm << "direction: right\n";
+    }
+    if (!title_.empty()) strm << "title: \"" << title_ << "\"\n";
+    // All shapes are circles.
+    strm << "*: {\n"
+         << "  shape: circle\n"
+         << "}\n";
+    // Initial state first.
+    DrawD2State(strm, start);
+    for (StateIterator<Fst<Arc>> siter(fst_); !siter.Done(); siter.Next()) {
+      const auto s = siter.Value();
+      if (s != start) DrawD2State(strm, s);
+    }
+  }
+
+  void SetStreamState(std::ostream& strm) const {
     strm << std::setprecision(precision_);
     if (float_format_ == "e") strm << std::scientific;
     if (float_format_ == "f") strm << std::fixed;
@@ -119,7 +152,7 @@ class FstDrawer {
     return ns;
   }
 
-  std::string FormatId(StateId id, const SymbolTable *syms) const {
+  std::string FormatId(StateId id, const SymbolTable* syms) const {
     if (syms) {
       auto symbol = syms->Find(id);
       if (symbol.empty()) {
@@ -153,7 +186,7 @@ class FstDrawer {
     return Escape(ss.str());
   }
 
-  void DrawState(std::ostream &strm, StateId s) const {
+  void DrawDotState(std::ostream& strm, StateId s) const {
     strm << s << " [label = \"" << FormatStateId(s);
     const auto weight = fst_.Final(s);
     if (weight != Weight::Zero()) {
@@ -171,7 +204,7 @@ class FstDrawer {
     }
     strm << " fontsize = " << fontsize_ << "]\n";
     for (ArcIterator<Fst<Arc>> aiter(fst_, s); !aiter.Done(); aiter.Next()) {
-      const auto &arc = aiter.Value();
+      const auto& arc = aiter.Value();
       strm << "\t" << s << " -> " << arc.nextstate << " [label = \""
            << FormatILabel(arc.ilabel);
       if (!accep_) {
@@ -184,10 +217,41 @@ class FstDrawer {
     }
   }
 
-  const Fst<Arc> &fst_;
-  const SymbolTable *isyms_;  // ilabel symbol table.
-  const SymbolTable *osyms_;  // olabel symbol table.
-  const SymbolTable *ssyms_;  // slabel symbol table.
+  void DrawD2State(std::ostream& strm, StateId s) const {
+    strm << s << ": {\n";
+    strm << "  label: \"" << FormatStateId(s);
+    const auto weight = fst_.Final(s);
+    if (weight != Weight::Zero()) {
+      if (show_weight_one_ || (weight != Weight::One())) {
+        strm << "/" << FormatWeight(weight);
+      }
+      strm << "\"\n";
+      strm << "  style.double-border: true\n";
+    } else {
+      strm << "\"\n";
+    }
+    if (s == fst_.Start()) {
+      strm << "  style.bold: true\n";
+    }
+    strm << "}\n";
+    for (ArcIterator<Fst<Arc>> aiter(fst_, s); !aiter.Done(); aiter.Next()) {
+      const auto& arc = aiter.Value();
+      strm << s << " -> " << arc.nextstate << ": \""
+           << FormatILabel(arc.ilabel);
+      if (!accep_) {
+        strm << ":" << FormatOLabel(arc.olabel);
+      }
+      if (show_weight_one_ || (arc.weight != Weight::One())) {
+        strm << "/" << FormatWeight(arc.weight);
+      }
+      strm << "\"\n";
+    }
+  }
+
+  const Fst<Arc>& fst_;
+  const SymbolTable* isyms_;  // ilabel symbol table.
+  const SymbolTable* osyms_;  // olabel symbol table.
+  const SymbolTable* ssyms_;  // slabel symbol table.
   bool accep_;                // Print as acceptor when possible.
   std::string dest_;          // Drawn FST destination name.
 
@@ -202,9 +266,10 @@ class FstDrawer {
   int precision_;
   std::string float_format_;
   bool show_weight_one_;
+  std::string format_;
 
-  FstDrawer(const FstDrawer &) = delete;
-  FstDrawer &operator=(const FstDrawer &) = delete;
+  FstDrawer(const FstDrawer&) = delete;
+  FstDrawer& operator=(const FstDrawer&) = delete;
 };
 
 }  // namespace fst

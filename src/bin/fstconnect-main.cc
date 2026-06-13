@@ -23,10 +23,11 @@
 #include <string>
 
 #include <fst/flags.h>
+#include <fst/flags.h>
 #include <fst/script/connect.h>
 #include <fst/script/fst-class.h>
 
-int fstconnect_main(int argc, char **argv) {
+int fstconnect_main(int argc, char** argv) {
   namespace s = fst::script;
   using fst::script::FstClass;
   using fst::script::MutableFstClass;

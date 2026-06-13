@@ -17,10 +17,12 @@
 //
 // Determinizes an FST.
 
+#include <cstdint>
 #include <cstring>
 #include <memory>
 #include <string>
 
+#include <fst/flags.h>
 #include <fst/flags.h>
 #include <fst/log.h>
 #include <fst/determinize.h>
@@ -36,7 +38,7 @@ DECLARE_int64(subsequential_label);
 DECLARE_string(det_type);
 DECLARE_bool(increment_subsequential_label);
 
-int fstdeterminize_main(int argc, char **argv) {
+int fstdeterminize_main(int argc, char** argv) {
   namespace s = fst::script;
   using fst::DeterminizeType;
   using fst::script::FstClass;

@@ -22,18 +22,18 @@
 #include <string>
 
 #include <fst/flags.h>
+#include <fst/flags.h>
 #include <fst/log.h>
 #include <fst/extensions/far/far-class.h>
 #include <fst/extensions/far/far.h>
 #include <fst/extensions/far/farscript.h>
 #include <fst/extensions/far/getters.h>
 #include <fst/util.h>
-#include <fst/script/arg-packs.h>
 
 DECLARE_string(far_type);
 DECLARE_string(fst_type);
 
-int farconvert_main(int argc, char **argv) {
+int farconvert_main(int argc, char** argv) {
   namespace s = fst::script;
   using fst::script::FarReaderClass;
   using fst::script::FarWriterClass;
@@ -43,7 +43,6 @@ int farconvert_main(int argc, char **argv) {
   usage += " [in.far [out.far]]\n";
 
   SET_FLAGS(usage.c_str(), &argc, &argv, true);
-  s::ExpandArgs(argc, argv, &argc, &argv);
 
   if (argc > 3) {
     ShowUsage();

@@ -23,7 +23,6 @@
 #include <string>
 #include <utility>
 
-#include <fst/log.h>
 #include <fst/fst.h>
 #include <fst/register.h>
 #include <fst/symbol-table.h>
@@ -45,12 +44,12 @@ namespace script {
 // Be sure you understand why this is so before using this struct
 // for anything else!
 struct FstCompileInnerArgs {
-  std::istream &istrm;
-  const std::string &source;
-  const std::string &fst_type;
-  const fst::SymbolTable *isyms;
-  const fst::SymbolTable *osyms;
-  const fst::SymbolTable *ssyms;
+  std::istream& istrm;
+  const std::string& source;
+  const std::string& fst_type;
+  const fst::SymbolTable* isyms;
+  const fst::SymbolTable* osyms;
+  const fst::SymbolTable* ssyms;
   const bool accep;
   const bool ikeep;
   const bool okeep;
@@ -61,7 +60,7 @@ using FstCompileArgs =
     WithReturnValue<std::unique_ptr<FstClass>, FstCompileInnerArgs>;
 
 template <class Arc>
-void CompileInternal(FstCompileArgs *args) {
+void CompileInternal(FstCompileArgs* args) {
   using fst::Convert;
   using fst::Fst;
   using fst::FstCompiler;
@@ -84,16 +83,16 @@ void CompileInternal(FstCompileArgs *args) {
   args->retval = fst ? std::make_unique<FstClass>(std::move(fst)) : nullptr;
 }
 
-void Compile(std::istream &istrm, const std::string &source,
-             const std::string &dest, const std::string &fst_type,
-             const std::string &arc_type, const SymbolTable *isyms,
-             const SymbolTable *osyms, const SymbolTable *ssyms, bool accep,
+void Compile(std::istream& istrm, const std::string& source,
+             const std::string& dest, const std::string& fst_type,
+             const std::string& arc_type, const SymbolTable* isyms,
+             const SymbolTable* osyms, const SymbolTable* ssyms, bool accep,
              bool ikeep, bool okeep, bool nkeep);
 
 std::unique_ptr<FstClass> CompileInternal(
-    std::istream &istrm, const std::string &source, const std::string &fst_type,
-    const std::string &arc_type, const SymbolTable *isyms,
-    const SymbolTable *osyms, const SymbolTable *ssyms, bool accep, bool ikeep,
+    std::istream& istrm, const std::string& source, const std::string& fst_type,
+    const std::string& arc_type, const SymbolTable* isyms,
+    const SymbolTable* osyms, const SymbolTable* ssyms, bool accep, bool ikeep,
     bool okeep, bool nkeep);
 
 }  // namespace script

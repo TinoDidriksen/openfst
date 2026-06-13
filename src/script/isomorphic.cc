@@ -23,7 +23,7 @@
 namespace fst {
 namespace script {
 
-bool Isomorphic(const FstClass &fst1, const FstClass &fst2, float delta) {
+bool Isomorphic(const FstClass& fst1, const FstClass& fst2, float delta) {
   if (!internal::ArcTypesMatch(fst1, fst2, "Isomorphic")) return false;
   FstIsomorphicInnerArgs iargs{fst1, fst2, delta};
   FstIsomorphicArgs args(iargs);

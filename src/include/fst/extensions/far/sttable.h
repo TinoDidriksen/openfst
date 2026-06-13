@@ -31,12 +31,17 @@
 #include <istream>
 #include <memory>
 #include <string>
+#include <utility>
 #include <vector>
 
 #include <fst/log.h>
+#include <fst/status/status.h>
+#include <fst/status/statusor.h>
+#include <fst/compat.h>
+#include <string_view>
+#include <fst/file-stream-status.h>
 #include <fstream>
 #include <fst/util.h>
-#include <string_view>
 
 namespace fst {
 
@@ -53,8 +58,10 @@ template <class T, class Writer>
 class STTableWriter {
  public:
   explicit STTableWriter(std::string_view source)
-      : stream_(std::string(source),
-                std::ios_base::out | std::ios_base::binary),
+      : stream_(
+            // In portable mode, `std::string_view` is not supported.
+            // NOLINTNEXTLINE(google3-readability-redundant-string-conversions)
+            std::string(source), std::ios_base::out | std::ios_base::binary),
         error_(false) {
     WriteType(stream_, kSTTableMagicNumber);
     WriteType(stream_, kSTTableFileVersion);
@@ -65,7 +72,7 @@ class STTableWriter {
     }
   }
 
-  static STTableWriter<T, Writer> *Create(std::string_view source) {
+  static STTableWriter<T, Writer>* Create(std::string_view source) {
     if (source.empty()) {
       LOG(ERROR) << "STTableWriter: Writing to standard out unsupported.";
       return nullptr;
@@ -73,7 +80,7 @@ class STTableWriter {
     return new STTableWriter<T, Writer>(source);
   }
 
-  void Add(std::string_view key, const T &t) {
+  void Add(std::string_view key, const T& t) {
     if (key.empty()) {
       FSTERROR() << "STTableWriter::Add: Key empty: " << key;
       error_ = true;
@@ -99,11 +106,11 @@ class STTableWriter {
   Writer entry_writer_;
   std::ofstream stream_;
   std::vector<int64_t> positions_;  // Position in file of each key-entry pair.
-  std::string last_key_;          // Last key.
+  std::string last_key_;            // Last key.
   bool error_;
 
-  STTableWriter(const STTableWriter &) = delete;
-  STTableWriter &operator=(const STTableWriter &) = delete;
+  STTableWriter(const STTableWriter&) = delete;
+  STTableWriter& operator=(const STTableWriter&) = delete;
 };
 
 // String-type table reading class for object of type T using a functor Reader.
@@ -116,79 +123,56 @@ class STTableWriter {
 template <class T, class Reader>
 class STTableReader {
  public:
-  explicit STTableReader(const std::vector<std::string> &sources)
-      : sources_(sources), error_(false) {
-    compare_.reset(new Compare(&keys_));
-    keys_.resize(sources.size());
-    streams_.resize(sources.size(), nullptr);
-    positions_.resize(sources.size());
-    for (size_t i = 0; i < sources.size(); ++i) {
-      streams_[i] = new std::ifstream(
-          sources[i], std::ios_base::in | std::ios_base::binary);
-      if (streams_[i]->fail()) {
-        FSTERROR() << "STTableReader::STTableReader: Error reading file: "
-                   << sources[i];
-        error_ = true;
-        return;
-      }
-      int32_t magic_number = 0;
-      ReadType(*streams_[i], &magic_number);
-      int32_t file_version = 0;
-      ReadType(*streams_[i], &file_version);
-      if (magic_number != kSTTableMagicNumber) {
-        FSTERROR() << "STTableReader::STTableReader: Wrong file type: "
-                   << sources[i];
-        error_ = true;
-        return;
-      }
-      if (file_version != kSTTableFileVersion) {
-        FSTERROR() << "STTableReader::STTableReader: Wrong file version: "
-                   << sources[i];
-        error_ = true;
-        return;
-      }
-      int64_t num_entries;
-      streams_[i]->seekg(-static_cast<int>(sizeof(int64_t)),
-                         std::ios_base::end);
-      ReadType(*streams_[i], &num_entries);
-      if (num_entries > 0) {
-        streams_[i]->seekg(
-            -static_cast<int>(sizeof(int64_t)) * (num_entries + 1),
-            std::ios_base::end);
-        positions_[i].resize(num_entries);
-        for (size_t j = 0; (j < num_entries) && (!streams_[i]->fail()); ++j) {
-          ReadType(*streams_[i], &(positions_[i][j]));
-        }
-        streams_[i]->seekg(positions_[i][0]);
-        if (streams_[i]->fail()) {
-          FSTERROR() << "STTableReader::STTableReader: Error reading file: "
-                     << sources[i];
-          error_ = true;
-          return;
-        }
-      }
+  [[deprecated("Use OpenWithStatus instead.")]]  //
+  explicit STTableReader(std::vector<std::string> sources) {
+    ::fst::StatusOr<InitArgs> args = PrepareInitArgs(sources);
+    sources_ = std::move(sources);
+    if (args.ok()) {
+      streams_ = std::move(args->streams);
+      positions_ = std::move(args->positions);
+      keys_.resize(streams_.size());
+      error_ = false;
+      MakeHeap();
+    } else {
+      FSTERROR() << "STTableReader: " << args.status();
+      error_ = true;
     }
-    MakeHeap();
   }
 
-  ~STTableReader() {
-    for (auto &stream : streams_) delete stream;
-  }
-
-  static STTableReader<T, Reader> *Open(std::string_view source) {
+  static ::fst::StatusOr< std::unique_ptr<STTableReader<T, Reader>>>
+  OpenWithStatus(std::string_view source) {
     if (source.empty()) {
-      LOG(ERROR) << "STTableReader: Operation not supported on standard input";
-      return nullptr;
+      return ::fst::InvalidArgumentError(
+          "`source` must not be empty (reading from stdin in not supported)");
     }
-    std::vector<std::string> sources;
-    sources.push_back(std::string(source));
-    return new STTableReader<T, Reader>(sources);
+    return OpenWithStatus(std::vector<std::string>{{std::string(source)}});
   }
 
-  static STTableReader<T, Reader> *Open(
-      const std::vector<std::string> &sources) {
-    return new STTableReader<T, Reader>(sources);
+  // clang-format off
+  [[deprecated("Use OpenWithStatus instead.")]] 
+  static STTableReader<T, Reader>* Open(std::string_view source) {
+    auto reader = OpenWithStatus(source);
+    if (!reader.ok()) FSTERROR() << "STTableReader: " << reader.status();
+    return reader.ok() ? reader->release() : nullptr;
   }
+  // clang-format on
+
+  static ::fst::StatusOr< std::unique_ptr<STTableReader<T, Reader>>>
+  OpenWithStatus(std::vector<std::string> sources) {
+    ::fst::StatusOr<InitArgs> args = PrepareInitArgs(sources);
+    if (!args.ok()) return args.status();
+    return fst::WrapUnique(
+        new STTableReader<T, Reader>(std::move(sources), *std::move(args)));
+  }
+
+  // clang-format off
+  [[deprecated("Use OpenWithStatus instead.")]] 
+  static STTableReader<T, Reader>* Open(std::vector<std::string> sources) {
+    auto reader = OpenWithStatus(std::move(sources));
+    if (!reader.ok()) FSTERROR() << "STTableReader: " << reader.status();
+    return reader.ok() ? reader->release() : nullptr;
+  }
+  // clang-format on
 
   void Reset() {
     if (error_) return;
@@ -220,37 +204,44 @@ class STTableReader {
         error_ = true;
         return;
       }
-      std::push_heap(heap_.begin(), heap_.end(), *compare_);
+      std::push_heap(heap_.begin(), heap_.end(), Compare{&keys_});
     } else {
       heap_.pop_back();
     }
     if (!heap_.empty()) PopHeap();
   }
 
-  const std::string &GetKey() const { return keys_[current_]; }
+  const std::string& GetKey() const { return keys_[current_]; }
 
-  const T *GetEntry() const { return entry_.get(); }
+  const T* GetEntry() const { return entry_.get(); }
 
   bool Error() const { return error_; }
 
  private:
+  // Constructor arguments, in a separate struct because they're passed
+  // both from the factory function and the deprecated constructor.
+  struct InitArgs {
+    std::vector<std::unique_ptr<std::ifstream>> streams;
+    std::vector<std::vector<int64_t>> positions;
+  };
+
   // Comparison functor used to compare stream IDs in the heap.
   struct Compare {
-    explicit Compare(const std::vector<std::string> *keys) : keys(keys) {}
+    explicit Compare(const std::vector<std::string>* keys) : keys(keys) {}
 
     bool operator()(size_t i, size_t j) const {
       return (*keys)[i] > (*keys)[j];
     }
 
    private:
-    const std::vector<std::string> *keys;
+    const std::vector<std::string>* keys;
   };
 
   // Positions the stream at the position corresponding to the lower bound for
   // the specified key.
   void LowerBound(size_t id, std::string_view find_key) {
-    auto *strm = streams_[id];
-    const auto &positions = positions_[id];
+    auto* strm = streams_[id].get();
+    const auto& positions = positions_[id];
     if (positions.empty()) return;
     size_t low = 0;
     size_t high = positions.size() - 1;
@@ -293,7 +284,7 @@ class STTableReader {
       heap_.push_back(i);
     }
     if (heap_.empty()) return;
-    std::make_heap(heap_.begin(), heap_.end(), *compare_);
+    std::make_heap(heap_.begin(), heap_.end(), Compare{&keys_});
     PopHeap();
   }
 
@@ -301,7 +292,7 @@ class STTableReader {
   // current_ to the ID of that stream, and reads the current entry from that
   // stream.
   void PopHeap() {
-    std::pop_heap(heap_.begin(), heap_.end(), *compare_);
+    std::pop_heap(heap_.begin(), heap_.end(), Compare{&keys_});
     current_ = heap_.back();
     entry_.reset(entry_reader_(*streams_[current_]));
     if (!entry_) error_ = true;
@@ -312,15 +303,74 @@ class STTableReader {
     }
   }
 
+  // Opens the streams, reads the header information, and returns the
+  // constructor arguments.
+  static ::fst::StatusOr<InitArgs> PrepareInitArgs(
+      const std::vector<std::string> &sources) {
+    std::vector<std::unique_ptr<std::ifstream>> streams(sources.size());
+    std::vector<std::vector<int64_t>> positions(sources.size());
+    for (size_t i = 0; i < sources.size(); ++i) {
+      streams[i] = std::make_unique<std::ifstream>(
+          sources[i], std::ios_base::in | std::ios_base::binary);
+      if (const ::fst::Status status = GetFileStreamStatus(*streams[i]);
+          !status.ok()) {
+        return ::fst::Status(status.code(),
+                            fst::StrCat(status.message(), ":", sources[i]));
+      }
+      int32_t magic_number = 0;
+      ReadType(*streams[i], &magic_number);
+      int32_t file_version = 0;
+      ReadType(*streams[i], &file_version);
+      if (magic_number != kSTTableMagicNumber) {
+        return ::fst::InvalidArgumentError(
+            fst::StrCat("Wrong file type: ", sources[i], ", expected ",
+                         kSTTableMagicNumber, ", got ", magic_number));
+      }
+      if (file_version != kSTTableFileVersion) {
+        return ::fst::InvalidArgumentError(
+            fst::StrCat("Wrong file version: ", sources[i], ", expected ",
+                         kSTTableFileVersion, ", got ", file_version));
+      }
+      int64_t num_entries;
+      streams[i]->seekg(-static_cast<int>(sizeof(int64_t)), std::ios_base::end);
+      ReadType(*streams[i], &num_entries);
+      if (num_entries > 0) {
+        streams[i]->seekg(
+            -static_cast<int>(sizeof(int64_t)) * (num_entries + 1),
+            std::ios_base::end);
+        positions[i].resize(num_entries);
+        for (size_t j = 0; (j < num_entries) && (!streams[i]->fail()); ++j) {
+          ReadType(*streams[i], &(positions[i][j]));
+        }
+        streams[i]->seekg(positions[i][0]);
+        if (const ::fst::Status status = GetFileStreamStatus(*streams[i]);
+            !status.ok()) {
+          return ::fst::Status(status.code(),
+                              fst::StrCat(status.message(), ":", sources[i]));
+        }
+      }
+    }
+    return InitArgs{std::move(streams), std::move(positions)};
+  }
+
+  explicit STTableReader(std::vector<std::string>&& sources, InitArgs&& args)
+      : sources_(std::move(sources)),
+        streams_(std::move(args.streams)),
+        positions_(std::move(args.positions)),
+        keys_(sources_.size()),
+        error_(false) {
+    MakeHeap();
+  }
+
   Reader entry_reader_;
-  std::vector<std::istream *> streams_;        // Input streams.
-  std::vector<std::string> sources_;           // Corresponding file names.
+  std::vector<std::string> sources_;  // Input file names.
+  std::vector<std::unique_ptr<std::ifstream>>
+      streams_;                                  // Corresponding input streams.
   std::vector<std::vector<int64_t>> positions_;  // Index of positions.
   std::vector<std::string> keys_;  // Lowest unread key for each stream.
   std::vector<int64_t>
       heap_;         // Heap containing ID of streams with unread keys.
   int64_t current_;  // ID of current stream to be read.
-  std::unique_ptr<Compare> compare_;  // Functor comparing stream IDs.
   mutable std::unique_ptr<T> entry_;  // The currently read entry.
   bool error_;
 };
@@ -332,7 +382,7 @@ class STTableReader {
 //     void Read(std::istream &istrm, const string &source);
 //   };
 template <class Header>
-bool ReadSTTableHeader(const std::string &source, Header *header) {
+bool ReadSTTableHeader(const std::string& source, Header* header) {
   if (source.empty()) {
     LOG(ERROR) << "ReadSTTable: Can't read header from standard input";
     return false;

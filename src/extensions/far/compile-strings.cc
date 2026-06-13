@@ -23,11 +23,12 @@
 #include <string>
 
 #include <fst/flags.h>
-#include <fstream>
+#include <fst/status/status.h>
 #include <string_view>
+#include <fstream>
 
 DEFINE_string(far_field_separator, "\t",
-              "Set of characters used as a separator between printed fields");
+          "Set of characters used as a separator between printed fields");
 
 namespace fst {
 namespace internal {

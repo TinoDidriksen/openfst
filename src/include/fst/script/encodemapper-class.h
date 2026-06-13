@@ -26,13 +26,13 @@
 #include <string>
 #include <utility>
 
+#include <string_view>
 #include <fst/encode.h>
 #include <fst/generic-register.h>
 #include <fst/symbol-table.h>
 #include <fst/util.h>
 #include <fst/script/arc-class.h>
 #include <fst/script/fst-class.h>
-#include <string_view>
 
 // Scripting API support for EncodeMapper.
 
@@ -43,19 +43,19 @@ namespace script {
 class EncodeMapperImplBase {
  public:
   // Returns an encoded ArcClass.
-  virtual ArcClass operator()(const ArcClass &) = 0;
-  virtual const std::string &ArcType() const = 0;
-  virtual const std::string &WeightType() const = 0;
-  virtual EncodeMapperImplBase *Copy() const = 0;
+  virtual ArcClass operator()(const ArcClass&) = 0;
+  virtual const std::string& ArcType() const = 0;
+  virtual const std::string& WeightType() const = 0;
+  virtual EncodeMapperImplBase* Copy() const = 0;
   virtual uint8_t Flags() const = 0;
   virtual uint64_t Properties(uint64_t) = 0;
   virtual EncodeType Type() const = 0;
-  virtual bool Write(const std::string &) const = 0;
-  virtual bool Write(std::ostream &, const std::string &) const = 0;
-  virtual const SymbolTable *InputSymbols() const = 0;
-  virtual const SymbolTable *OutputSymbols() const = 0;
-  virtual void SetInputSymbols(const SymbolTable *) = 0;
-  virtual void SetOutputSymbols(const SymbolTable *) = 0;
+  virtual bool Write(const std::string&) const = 0;
+  virtual bool Write(std::ostream&, const std::string&) const = 0;
+  virtual const SymbolTable* InputSymbols() const = 0;
+  virtual const SymbolTable* OutputSymbols() const = 0;
+  virtual void SetInputSymbols(const SymbolTable*) = 0;
+  virtual void SetOutputSymbols(const SymbolTable*) = 0;
   virtual ~EncodeMapperImplBase() = default;
 };
 
@@ -63,16 +63,16 @@ class EncodeMapperImplBase {
 template <class Arc>
 class EncodeMapperClassImpl : public EncodeMapperImplBase {
  public:
-  explicit EncodeMapperClassImpl(const EncodeMapper<Arc> &mapper)
+  explicit EncodeMapperClassImpl(const EncodeMapper<Arc>& mapper)
       : mapper_(mapper) {}
 
-  ArcClass operator()(const ArcClass &a) final;
+  ArcClass operator()(const ArcClass& a) final;
 
-  const std::string &ArcType() const final { return Arc::Type(); }
+  const std::string& ArcType() const final { return Arc::Type(); }
 
-  const std::string &WeightType() const final { return Arc::Weight::Type(); }
+  const std::string& WeightType() const final { return Arc::Weight::Type(); }
 
-  EncodeMapperClassImpl<Arc> *Copy() const final {
+  EncodeMapperClassImpl<Arc>* Copy() const final {
     return new EncodeMapperClassImpl<Arc>(mapper_);
   }
 
@@ -84,42 +84,42 @@ class EncodeMapperClassImpl : public EncodeMapperImplBase {
 
   EncodeType Type() const final { return mapper_.Type(); }
 
-  bool Write(const std::string &source) const final {
+  bool Write(const std::string& source) const final {
     return mapper_.Write(source);
   }
 
-  bool Write(std::ostream &strm, const std::string &source) const final {
+  bool Write(std::ostream& strm, const std::string& source) const final {
     return mapper_.Write(strm, source);
   }
 
-  const SymbolTable *InputSymbols() const final {
+  const SymbolTable* InputSymbols() const final {
     return mapper_.InputSymbols();
   }
 
-  const SymbolTable *OutputSymbols() const final {
+  const SymbolTable* OutputSymbols() const final {
     return mapper_.OutputSymbols();
   }
 
-  void SetInputSymbols(const SymbolTable *syms) final {
+  void SetInputSymbols(const SymbolTable* syms) final {
     mapper_.SetInputSymbols(syms);
   }
 
-  void SetOutputSymbols(const SymbolTable *syms) final {
+  void SetOutputSymbols(const SymbolTable* syms) final {
     mapper_.SetOutputSymbols(syms);
   }
 
   ~EncodeMapperClassImpl() override = default;
 
-  const EncodeMapper<Arc> *GetImpl() const { return &mapper_; }
+  const EncodeMapper<Arc>* GetImpl() const { return &mapper_; }
 
-  EncodeMapper<Arc> *GetImpl() { return &mapper_; }
+  EncodeMapper<Arc>* GetImpl() { return &mapper_; }
 
  private:
   EncodeMapper<Arc> mapper_;
 };
 
 template <class Arc>
-inline ArcClass EncodeMapperClassImpl<Arc>::operator()(const ArcClass &a) {
+inline ArcClass EncodeMapperClassImpl<Arc>::operator()(const ArcClass& a) {
   const Arc arc(a.ilabel, a.olabel,
                 *(a.weight.GetWeight<typename Arc::Weight>()), a.nextstate);
   return ArcClass(mapper_(arc));
@@ -133,22 +133,22 @@ class EncodeMapperClass {
                     EncodeType type = ENCODE);
 
   template <class Arc>
-  explicit EncodeMapperClass(const EncodeMapper<Arc> &mapper)
+  explicit EncodeMapperClass(const EncodeMapper<Arc>& mapper)
       : impl_(std::make_unique<EncodeMapperClassImpl<Arc>>(mapper)) {}
 
-  EncodeMapperClass(const EncodeMapperClass &other)
+  EncodeMapperClass(const EncodeMapperClass& other)
       : impl_(other.impl_ == nullptr ? nullptr : other.impl_->Copy()) {}
 
-  EncodeMapperClass &operator=(const EncodeMapperClass &other) {
+  EncodeMapperClass& operator=(const EncodeMapperClass& other) {
     impl_.reset(other.impl_ == nullptr ? nullptr : other.impl_->Copy());
     return *this;
   }
 
-  ArcClass operator()(const ArcClass &arc) { return (*impl_)(arc); }
+  ArcClass operator()(const ArcClass& arc) { return (*impl_)(arc); }
 
-  const std::string &ArcType() const { return impl_->ArcType(); }
+  const std::string& ArcType() const { return impl_->ArcType(); }
 
-  const std::string &WeightType() const { return impl_->WeightType(); }
+  const std::string& WeightType() const { return impl_->WeightType(); }
 
   uint8_t Flags() const { return impl_->Flags(); }
 
@@ -156,48 +156,50 @@ class EncodeMapperClass {
 
   EncodeType Type() const { return impl_->Type(); }
 
-  static std::unique_ptr<EncodeMapperClass> Read(
-      const std::string &source);
+  static  std::unique_ptr<EncodeMapperClass> Read(
+      const std::string& source);
 
-  static std::unique_ptr<EncodeMapperClass> Read(
-      std::istream &strm, const std::string &source);
+  static  std::unique_ptr<EncodeMapperClass> Read(
+      std::istream& strm, const std::string& source);
 
-  bool Write(const std::string &source) const { return impl_->Write(source); }
+  bool Write(const std::string& source) const { return impl_->Write(source); }
 
-  bool Write(std::ostream &strm, const std::string &source) const {
+  bool Write(std::ostream& strm, const std::string& source) const {
     return impl_->Write(strm, source);
   }
 
-  const SymbolTable *InputSymbols() const { return impl_->InputSymbols(); }
+  const SymbolTable* InputSymbols() const { return impl_->InputSymbols(); }
 
-  const SymbolTable *OutputSymbols() const { return impl_->OutputSymbols(); }
+  const SymbolTable* OutputSymbols() const { return impl_->OutputSymbols(); }
 
-  void SetInputSymbols(const SymbolTable *syms) {
+  void SetInputSymbols(const SymbolTable* syms) {
     impl_->SetInputSymbols(syms);
   }
 
-  void SetOutputSymbols(const SymbolTable *syms) {
+  void SetOutputSymbols(const SymbolTable* syms) {
     impl_->SetOutputSymbols(syms);
   }
 
   // Implementation stuff.
 
   template <class Arc>
-  EncodeMapper<Arc> *GetEncodeMapper() {
+  EncodeMapper<Arc>* GetEncodeMapper() {
     if (Arc::Type() != ArcType()) {
       return nullptr;
     } else {
-      auto *typed_impl = down_cast<EncodeMapperClassImpl<Arc> *>(impl_.get());
+      auto* typed_impl =
+          down_cast<EncodeMapperClassImpl<Arc>*>(impl_.get());
       return typed_impl->GetImpl();
     }
   }
 
   template <class Arc>
-  const EncodeMapper<Arc> *GetEncodeMapper() const {
+  const EncodeMapper<Arc>* GetEncodeMapper() const {
     if (Arc::Type() != ArcType()) {
       return nullptr;
     } else {
-      auto *typed_impl = down_cast<EncodeMapperClassImpl<Arc> *>(impl_.get());
+      auto* typed_impl =
+          down_cast<EncodeMapperClassImpl<Arc>*>(impl_.get());
       return typed_impl->GetImpl();
     }
   }
@@ -205,7 +207,7 @@ class EncodeMapperClass {
   // Required for registration.
 
   template <class Arc>
-  static std::unique_ptr<EncodeMapperClass> Read(std::istream &strm,
+  static std::unique_ptr<EncodeMapperClass> Read(std::istream& strm,
                                                  std::string_view source) {
     std::unique_ptr<EncodeMapper<Arc>> mapper(
         EncodeMapper<Arc>::Read(strm, source));
@@ -223,9 +225,9 @@ class EncodeMapperClass {
   explicit EncodeMapperClass(std::unique_ptr<EncodeMapperImplBase> impl)
       : impl_(std::move(impl)) {}
 
-  const EncodeMapperImplBase *GetImpl() const { return impl_.get(); }
+  const EncodeMapperImplBase* GetImpl() const { return impl_.get(); }
 
-  EncodeMapperImplBase *GetImpl() { return impl_.get(); }
+  EncodeMapperImplBase* GetImpl() { return impl_.get(); }
 
   std::unique_ptr<EncodeMapperImplBase> impl_;
 };
@@ -272,7 +274,7 @@ class EncodeMapperClassIORegister
 // Struct containing everything needed to register a particular type
 struct EncodeMapperClassIORegistration {
   using Reader = std::unique_ptr<EncodeMapperClass> (*)(
-      std::istream &stream, std::string_view source);
+      std::istream& stream, std::string_view source);
 
   using Creator = std::unique_ptr<EncodeMapperImplBase> (*)(uint8_t flags,
                                                             EncodeType type);

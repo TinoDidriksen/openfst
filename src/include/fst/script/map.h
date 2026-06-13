@@ -37,7 +37,7 @@ namespace script {
 
 template <class M>
 std::unique_ptr<Fst<typename M::ToArc>> ArcMap(
-    const Fst<typename M::FromArc> &fst, const M &mapper) {
+    const Fst<typename M::FromArc>& fst, const M& mapper) {
   using ToArc = typename M::ToArc;
   auto ofst = std::make_unique<VectorFst<ToArc>>();
   ArcMap(fst, ofst.get(), mapper);
@@ -46,7 +46,7 @@ std::unique_ptr<Fst<typename M::ToArc>> ArcMap(
 
 template <class M>
 std::unique_ptr<Fst<typename M::ToArc>> StateMap(
-    const Fst<typename M::FromArc> &fst, const M &mapper) {
+    const Fst<typename M::FromArc>& fst, const M& mapper) {
   using ToArc = typename M::ToArc;
   auto ofst = std::make_unique<VectorFst<ToArc>>();
   StateMap(fst, ofst.get(), mapper);
@@ -72,14 +72,14 @@ enum class MapType : uint8_t {
 };
 
 using FstMapInnerArgs =
-    std::tuple<const FstClass &, MapType, float, double, const WeightClass &>;
+    std::tuple<const FstClass&, MapType, float, double, const WeightClass&>;
 
 using FstMapArgs = WithReturnValue<std::unique_ptr<FstClass>, FstMapInnerArgs>;
 
 template <class Arc>
-void Map(FstMapArgs *args) {
+void Map(FstMapArgs* args) {
   using Weight = typename Arc::Weight;
-  const Fst<Arc> &ifst = *std::get<0>(args->args).GetFst<Arc>();
+  const Fst<Arc>& ifst = *std::get<0>(args->args).GetFst<Arc>();
   const auto map_type = std::get<1>(args->args);
   switch (map_type) {
     case MapType::ARC_SUM: {
@@ -164,10 +164,10 @@ void Map(FstMapArgs *args) {
   }
 }
 
-std::unique_ptr<FstClass> Map(const FstClass &ifst,
-                                              MapType map_type, float delta,
-                                              double power,
-                                              const WeightClass &weight);
+ std::unique_ptr<FstClass> Map(const FstClass& ifst,
+                                            MapType map_type, float delta,
+                                            double power,
+                                            const WeightClass& weight);
 
 }  // namespace script
 }  // namespace fst

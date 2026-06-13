@@ -25,11 +25,11 @@ namespace fst {
 namespace script {
 
 template <class Arc>
-void Invert(MutableFstClass *fst) {
+void Invert(MutableFstClass* fst) {
   Invert(fst->GetMutableFst<Arc>());
 }
 
-void Invert(MutableFstClass *fst);
+void Invert(MutableFstClass* fst);
 
 }  // namespace script
 }  // namespace fst

@@ -22,6 +22,7 @@
 #include <string>
 
 #include <fst/flags.h>
+#include <fst/flags.h>
 #include <fst/script/decode.h>
 #include <fst/script/encode.h>
 #include <fst/script/encodemapper-class.h>
@@ -33,7 +34,7 @@ DECLARE_bool(encode_labels);
 DECLARE_bool(encode_weights);
 DECLARE_bool(encode_reuse);
 
-int fstencode_main(int argc, char **argv) {
+int fstencode_main(int argc, char** argv) {
   namespace s = fst::script;
   using fst::script::EncodeMapperClass;
   using fst::script::MutableFstClass;

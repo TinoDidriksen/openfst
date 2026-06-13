@@ -23,7 +23,7 @@
 namespace fst {
 namespace script {
 
-void Invert(MutableFstClass *fst) {
+void Invert(MutableFstClass* fst) {
   Apply<Operation<MutableFstClass>>("Invert", fst->ArcType(), fst);
 }
 

@@ -26,6 +26,7 @@
 #include <vector>
 
 #include <fst/flags.h>
+#include <fst/flags.h>
 #include <fst/log.h>
 #include <fst/extensions/mpdt/mpdtscript.h>
 #include <fst/extensions/mpdt/read_write_utils.h>
@@ -33,7 +34,7 @@
 
 DECLARE_string(mpdt_parentheses);
 
-int mpdtinfo_main(int argc, char **argv) {
+int mpdtinfo_main(int argc, char** argv) {
   namespace s = fst::script;
   using fst::ReadLabelTriples;
   using fst::script::FstClass;

@@ -15,14 +15,16 @@
 // See www.openfst.org for extensive documentation on this weighted
 // finite-state transducer library.
 //
-// Draws a binary FSTs in the Graphviz dot text format.
+// Draws a binary FSTs in the Graphviz dot or D2 text formats.
 
+#include <cstdint>
 #include <cstring>
 #include <iostream>
 #include <memory>
 #include <ostream>
 #include <string>
 
+#include <fst/flags.h>
 #include <fst/flags.h>
 #include <fst/log.h>
 #include <fstream>
@@ -46,13 +48,15 @@ DECLARE_double(height);
 DECLARE_double(width);
 DECLARE_double(nodesep);
 DECLARE_double(ranksep);
+DECLARE_string(format);
 
-int fstdraw_main(int argc, char **argv) {
+int fstdraw_main(int argc, char** argv) {
   namespace s = fst::script;
   using fst::SymbolTable;
   using fst::script::FstClass;
 
-  std::string usage = "Prints out binary FSTs in dot text format.\n\n  Usage: ";
+  std::string usage =
+      "Prints out binary FSTs in dot or D2 format.\n\n  Usage: ";
   usage += argv[0];
   usage += " [binary.fst [text.dot]]\n";
 
@@ -78,7 +82,7 @@ int fstdraw_main(int argc, char **argv) {
       return 1;
     }
   }
-  std::ostream &ostrm = fstrm.is_open() ? fstrm : std::cout;
+  std::ostream& ostrm = fstrm.is_open() ? fstrm : std::cout;
 
   std::unique_ptr<const SymbolTable> isyms;
   if (!FST_FLAGS_isymbols.empty() && !FST_FLAGS_numeric) {
@@ -121,7 +125,8 @@ int fstdraw_main(int argc, char **argv) {
           FST_FLAGS_ranksep, FST_FLAGS_nodesep,
           FST_FLAGS_fontsize, FST_FLAGS_precision,
           FST_FLAGS_float_format,
-          FST_FLAGS_show_weight_one, ostrm, dest);
+          FST_FLAGS_show_weight_one, FST_FLAGS_format,
+          ostrm, dest);
 
   return 0;
 }

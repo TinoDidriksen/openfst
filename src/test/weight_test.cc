@@ -21,7 +21,6 @@
 
 #include <cstddef>
 #include <cstdint>
-#include <string>
 #include <utility>
 
 #include <fst/flags.h>
@@ -41,37 +40,8 @@
 DEFINE_uint64(seed, 403, "random seed");
 DEFINE_int32(repeat, 10000, "number of test repetitions");
 
+namespace fst {
 namespace {
-
-using fst::Adder;
-using fst::ExpectationWeight;
-using fst::GALLIC;
-using fst::GallicWeight;
-using fst::LexicographicWeight;
-using fst::LogWeight;
-using fst::LogWeightTpl;
-using fst::MinMaxWeight;
-using fst::MinMaxWeightTpl;
-using fst::NaturalLess;
-using fst::PowerWeight;
-using fst::ProductWeight;
-using fst::RealWeight;
-using fst::RealWeightTpl;
-using fst::SET_BOOLEAN;
-using fst::SET_INTERSECT_UNION;
-using fst::SET_UNION_INTERSECT;
-using fst::SetWeight;
-using fst::SignedLogWeight;
-using fst::SignedLogWeightTpl;
-using fst::SparsePowerWeight;
-using fst::STRING_RIGHT;
-using fst::StringWeight;
-using fst::TropicalWeight;
-using fst::TropicalWeightTpl;
-using fst::UnionWeight;
-using fst::WeightConvert;
-using fst::WeightGenerate;
-using fst::WeightTester;
 
 template <class T>
 void TestTemplatedWeights(uint64_t seed, int repeat) {
@@ -169,21 +139,27 @@ void TestWeightMove(FromWeight w) {
 }
 
 template <class Weight>
-void TestImplicitConversion() {
+void TestWeightConstructorsFromScalar() {
   // Only test a few of the operations; assumes they are implemented with the
   // same pattern.
-  CHECK(Weight(2.0f) == 2.0f);
-  CHECK(Weight(2.0) == 2.0);
-  CHECK(2.0f == Weight(2.0f));
-  CHECK(2.0 == Weight(2.0));
+  CHECK_EQ(Weight(2.0f), Weight(2.0f));
+  CHECK_EQ(Weight(2.0f), Weight(2.0));
+  CHECK_EQ(2.0f, Weight(2.0f).Value());
+  CHECK_EQ(2.0, Weight(2.0).Value());
+}
 
-  CHECK_EQ(Weight::Zero(), Times(Weight::Zero(), 3.0f));
-  CHECK_EQ(Weight::Zero(), Times(Weight::Zero(), 3.0));
-  CHECK_EQ(Weight::Zero(), Times(3.0, Weight::Zero()));
+template <class Weight>
+void TestZeroAnnihilates() {
+  CHECK_EQ(Weight::Zero(), Times(Weight::Zero(), Weight(3.0f)));
+  CHECK_EQ(Weight::Zero(), Times(Weight::Zero(), Weight(3.0)));
+  CHECK_EQ(Weight::Zero(), Times(Weight(3.0), Weight::Zero()));
+}
 
-  CHECK_EQ(Weight(3.0), Plus(Weight::Zero(), 3.0f));
-  CHECK_EQ(Weight(3.0), Plus(Weight::Zero(), 3.0));
-  CHECK_EQ(Weight(3.0), Plus(3.0, Weight::Zero()));
+template <class Weight>
+void TestZeroIsAdditiveIdentity() {
+  CHECK_EQ(Weight(3.0), Plus(Weight::Zero(), Weight(3.0f)));
+  CHECK_EQ(Weight(3.0), Plus(Weight::Zero(), Weight(3.0)));
+  CHECK_EQ(Weight(3.0), Plus(Weight(3.0), Weight::Zero()));
 }
 
 void TestPowerWeightGetSetValue() {
@@ -287,11 +263,7 @@ void TestFloatEqualityIsReflexive() {
   CHECK(FloatEqualityIsReflexive(test_value));
 }
 
-}  // namespace
-
-int main(int argc, char **argv) {
-  SET_FLAGS(argv[0], &argc, &argv, true);
-
+void RunTest() {
   TestTemplatedWeights<float>(FST_FLAGS_seed,
                               FST_FLAGS_repeat);
   TestTemplatedWeights<double>(FST_FLAGS_seed,
@@ -305,13 +277,14 @@ int main(int argc, char **argv) {
 
   // Makes sure type names for templated weights are consistent.
   CHECK_EQ(TropicalWeight::Type(), "tropical");
-  CHECK(TropicalWeightTpl<double>::Type() != TropicalWeightTpl<float>::Type());
+  CHECK_NE(TropicalWeightTpl<double>::Type(),
+            TropicalWeightTpl<float>::Type());
   CHECK_EQ(LogWeight::Type(), "log");
-  CHECK(LogWeightTpl<double>::Type() != LogWeightTpl<float>::Type());
+  CHECK_NE(LogWeightTpl<double>::Type(), LogWeightTpl<float>::Type());
   CHECK_EQ(RealWeight::Type(), "real");
-  CHECK(RealWeightTpl<double>::Type() != RealWeightTpl<float>::Type());
-  TropicalWeightTpl<double> w(2.0);
-  TropicalWeight tw(2.0);
+  CHECK_NE(RealWeightTpl<double>::Type(), RealWeightTpl<float>::Type());
+  TropicalWeightTpl<double> w(2.0L);
+  TropicalWeight tw(2.0F);
   CHECK_EQ(w.Value(), tw.Value());
 
   TestAdder<TropicalWeight>(1000);
@@ -319,12 +292,22 @@ int main(int argc, char **argv) {
   TestAdder<RealWeight>(1000);
   TestSignedAdder<SignedLogWeight>(1000);
 
-  TestImplicitConversion<TropicalWeight>();
-  TestImplicitConversion<LogWeight>();
-  TestImplicitConversion<RealWeight>();
-  TestImplicitConversion<MinMaxWeight>();
+  TestWeightConstructorsFromScalar<TropicalWeight>();
+  TestWeightConstructorsFromScalar<LogWeight>();
+  TestWeightConstructorsFromScalar<RealWeight>();
+  TestWeightConstructorsFromScalar<MinMaxWeight>();
 
-  TestWeightConversion<TropicalWeight, LogWeight>(2.0);
+  TestZeroAnnihilates<TropicalWeight>();
+  TestZeroAnnihilates<LogWeight>();
+  TestZeroAnnihilates<RealWeight>();
+  TestZeroAnnihilates<MinMaxWeight>();
+
+  TestZeroIsAdditiveIdentity<TropicalWeight>();
+  TestZeroIsAdditiveIdentity<LogWeight>();
+  TestZeroIsAdditiveIdentity<RealWeight>();
+  TestZeroIsAdditiveIdentity<MinMaxWeight>();
+
+  TestWeightConversion<TropicalWeight, LogWeight>(TropicalWeight(2.0));
 
   using LeftStringWeight = StringWeight<int>;
   WeightGenerate<LeftStringWeight> left_string_generate(
@@ -460,16 +443,17 @@ int main(int argc, char **argv) {
       log_log_sparse_expectation_generate);
 
   struct UnionWeightOptions {
-    using Compare = NaturalLess<TropicalWeight>;
+    // These are used, but getting a `-Wunused-local-typedef` false-positive.
+    // Suppress with `[[maybe_unused]]`.
+    using Compare [[maybe_unused]] = NaturalLess<TropicalWeight>;
+    using ReverseOptions [[maybe_unused]] = UnionWeightOptions;
 
     struct Merge {
-      TropicalWeight operator()(const TropicalWeight &w1,
-                                const TropicalWeight &w2) const {
+      TropicalWeight operator()(const TropicalWeight& w1,
+                                const TropicalWeight& w2) const {
         return w1;
       }
     };
-
-    using ReverseOptions = UnionWeightOptions;
   };
 
   using TropicalUnionWeight = UnionWeight<TropicalWeight, UnionWeightOptions>;
@@ -521,6 +505,13 @@ int main(int argc, char **argv) {
   TestSparsePowerWeightGetSetValue();
 
   TestFloatEqualityIsReflexive();
+}
 
+}  // namespace
+}  // namespace fst
+
+int main(int argc, char** argv) {
+  SET_FLAGS(argv[0], &argc, &argv, true);
+  fst::RunTest();
   return 0;
 }

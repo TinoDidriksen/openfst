@@ -28,9 +28,9 @@
 namespace fst {
 namespace script {
 
-void Replace(const std::vector<std::pair<int64_t, const FstClass *>> &pairs,
-             MutableFstClass *ofst, const ReplaceOptions &opts) {
-  for (const auto &pair : pairs) {
+void Replace(const std::vector<std::pair<int64_t, const FstClass*>>& pairs,
+             MutableFstClass* ofst, const ReplaceOptions& opts) {
+  for (const auto& pair : pairs) {
     if (!internal::ArcTypesMatch(*pair.second, *ofst, "Replace")) {
       ofst->SetProperties(kError, kError);
       return;

@@ -17,10 +17,12 @@
 //
 // Disambiguates an FST.
 
+#include <cstdint>
 #include <cstring>
 #include <memory>
 #include <string>
 
+#include <fst/flags.h>
 #include <fst/flags.h>
 #include <fst/script/disambiguate.h>
 #include <fst/script/fst-class.h>
@@ -31,7 +33,7 @@ DECLARE_int64(nstate);
 DECLARE_string(weight);
 DECLARE_int64(subsequential_label);
 
-int fstdisambiguate_main(int argc, char **argv) {
+int fstdisambiguate_main(int argc, char** argv) {
   namespace s = fst::script;
   using fst::script::FstClass;
   using fst::script::VectorFstClass;

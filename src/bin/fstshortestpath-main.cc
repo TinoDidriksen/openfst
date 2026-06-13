@@ -17,10 +17,12 @@
 //
 // Find shortest path(s) in an FST.
 
+#include <cstdint>
 #include <cstring>
 #include <memory>
 #include <string>
 
+#include <fst/flags.h>
 #include <fst/flags.h>
 #include <fst/log.h>
 #include <fst/queue.h>
@@ -36,7 +38,7 @@ DECLARE_string(queue_type);
 DECLARE_bool(unique);
 DECLARE_string(weight);
 
-int fstshortestpath_main(int argc, char **argv) {
+int fstshortestpath_main(int argc, char** argv) {
   namespace s = fst::script;
   using fst::QueueType;
   using fst::script::FstClass;

@@ -29,18 +29,18 @@
 namespace fst {
 namespace script {
 
-using FstEqualInnerArgs = std::tuple<const FstClass &, const FstClass &, float>;
+using FstEqualInnerArgs = std::tuple<const FstClass&, const FstClass&, float>;
 
 using FstEqualArgs = WithReturnValue<bool, FstEqualInnerArgs>;
 
 template <class Arc>
-void Equal(FstEqualArgs *args) {
-  const Fst<Arc> &fst1 = *std::get<0>(args->args).GetFst<Arc>();
-  const Fst<Arc> &fst2 = *std::get<1>(args->args).GetFst<Arc>();
+void Equal(FstEqualArgs* args) {
+  const Fst<Arc>& fst1 = *std::get<0>(args->args).GetFst<Arc>();
+  const Fst<Arc>& fst2 = *std::get<1>(args->args).GetFst<Arc>();
   args->retval = Equal(fst1, fst2, std::get<2>(args->args));
 }
 
-bool Equal(const FstClass &fst1, const FstClass &fst2, float delta = kDelta);
+bool Equal(const FstClass& fst1, const FstClass& fst2, float delta = kDelta);
 
 }  // namespace script
 }  // namespace fst

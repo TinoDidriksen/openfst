@@ -25,7 +25,7 @@
 namespace fst {
 namespace script {
 
-void Encode(MutableFstClass *fst, EncodeMapperClass *mapper) {
+void Encode(MutableFstClass* fst, EncodeMapperClass* mapper) {
   if (!internal::ArcTypesMatch(*fst, *mapper, "Encode")) {
     fst->SetProperties(kError, kError);
     return;

@@ -31,7 +31,7 @@
 namespace fst {
 namespace script {
 
-std::string LoadArcTypeFromFar(const std::string &far_source) {
+std::string LoadArcTypeFromFar(const std::string& far_source) {
   FarHeader hdr;
   if (!hdr.Read(far_source)) {
     LOG(ERROR) << "Error reading FAR: " << far_source;
@@ -40,7 +40,7 @@ std::string LoadArcTypeFromFar(const std::string &far_source) {
   return hdr.ArcType();
 }
 
-std::string LoadArcTypeFromFst(const std::string &fst_source) {
+std::string LoadArcTypeFromFst(const std::string& fst_source) {
   FstHeader hdr;
   std::ifstream in(fst_source, std::ios_base::in | std::ios_base::binary);
   if (!hdr.Read(in, fst_source)) {

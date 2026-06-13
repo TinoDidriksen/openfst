@@ -45,7 +45,7 @@ class StateIteratorImplBase {
 template <class Arc>
 class StateIteratorClassImpl : public StateIteratorImplBase {
  public:
-  explicit StateIteratorClassImpl(const Fst<Arc> &fst) : siter_(fst) {}
+  explicit StateIteratorClassImpl(const Fst<Arc>& fst) : siter_(fst) {}
 
   bool Done() const final { return siter_.Done(); }
 
@@ -64,15 +64,15 @@ class StateIteratorClassImpl : public StateIteratorImplBase {
 class StateIteratorClass;
 
 using InitStateIteratorClassArgs =
-    std::pair<const FstClass &, StateIteratorClass *>;
+    std::pair<const FstClass&, StateIteratorClass*>;
 
 // Untemplated user-facing class holding a templated pimpl.
 class StateIteratorClass {
  public:
-  explicit StateIteratorClass(const FstClass &fst);
+  explicit StateIteratorClass(const FstClass& fst);
 
   template <class Arc>
-  explicit StateIteratorClass(const Fst<Arc> &fst)
+  explicit StateIteratorClass(const Fst<Arc>& fst)
       : impl_(std::make_unique<StateIteratorClassImpl<Arc>>(fst)) {}
 
   bool Done() const { return impl_->Done(); }
@@ -84,15 +84,15 @@ class StateIteratorClass {
   void Reset() { impl_->Reset(); }
 
   template <class Arc>
-  friend void InitStateIteratorClass(InitStateIteratorClassArgs *args);
+  friend void InitStateIteratorClass(InitStateIteratorClassArgs* args);
 
  private:
   std::unique_ptr<StateIteratorImplBase> impl_;
 };
 
 template <class Arc>
-void InitStateIteratorClass(InitStateIteratorClassArgs *args) {
-  const Fst<Arc> &fst = *std::get<0>(*args).GetFst<Arc>();
+void InitStateIteratorClass(InitStateIteratorClassArgs* args) {
+  const Fst<Arc>& fst = *std::get<0>(*args).GetFst<Arc>();
   std::get<1>(*args)->impl_ =
       std::make_unique<StateIteratorClassImpl<Arc>>(fst);
 }

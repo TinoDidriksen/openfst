@@ -22,6 +22,7 @@
 #include <string>
 
 #include <fst/flags.h>
+#include <fst/flags.h>
 #include <fst/log.h>
 #include <fst/rational.h>
 #include <fst/script/closure.h>
@@ -30,7 +31,7 @@
 
 DECLARE_string(closure_type);
 
-int fstclosure_main(int argc, char **argv) {
+int fstclosure_main(int argc, char** argv) {
   namespace s = fst::script;
   using fst::ClosureType;
   using fst::script::MutableFstClass;

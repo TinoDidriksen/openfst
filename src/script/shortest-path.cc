@@ -24,8 +24,8 @@
 namespace fst {
 namespace script {
 
-void ShortestPath(const FstClass &ifst, MutableFstClass *ofst,
-                  const ShortestPathOptions &opts) {
+void ShortestPath(const FstClass& ifst, MutableFstClass* ofst,
+                  const ShortestPathOptions& opts) {
   if (!internal::ArcTypesMatch(ifst, *ofst, "ShortestPath")) {
     ofst->SetProperties(kError, kError);
     return;

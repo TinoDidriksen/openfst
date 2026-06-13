@@ -24,7 +24,7 @@
 namespace fst {
 namespace script {
 
-void Minimize(MutableFstClass *ofst1, MutableFstClass * ofst2,
+void Minimize(MutableFstClass* ofst1, MutableFstClass*  ofst2,
               float delta, bool allow_nondet) {
   if (ofst2 && !internal::ArcTypesMatch(*ofst1, *ofst2, "Minimize")) {
     ofst1->SetProperties(kError, kError);

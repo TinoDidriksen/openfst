@@ -27,10 +27,10 @@
 namespace fst {
 namespace script {
 
-std::unique_ptr<FstClass> Map(const FstClass &ifst,
-                                              MapType map_type, float delta,
-                                              double power,
-                                              const WeightClass &weight) {
+ std::unique_ptr<FstClass> Map(const FstClass& ifst,
+                                            MapType map_type, float delta,
+                                            double power,
+                                            const WeightClass& weight) {
   if (!ifst.WeightTypesMatch(weight, "Map")) return nullptr;
   FstMapInnerArgs iargs{ifst, map_type, delta, power, weight};
   FstMapArgs args(iargs);

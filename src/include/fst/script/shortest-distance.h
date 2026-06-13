@@ -24,7 +24,6 @@
 #include <type_traits>
 #include <vector>
 
-#include <fst/log.h>
 #include <fst/arcfilter.h>
 #include <fst/fst.h>
 #include <fst/queue.h>
@@ -63,8 +62,8 @@ template <class Arc, class Queue, class ArcFilter>
 struct QueueConstructor {
   using Weight = typename Arc::Weight;
 
-  static std::unique_ptr<Queue> Construct(const Fst<Arc> &,
-                                          const std::vector<Weight> *) {
+  static std::unique_ptr<Queue> Construct(const Fst<Arc>&,
+                                          const std::vector<Weight>*) {
     return std::make_unique<Queue>();
   }
 };
@@ -78,7 +77,7 @@ struct QueueConstructor<Arc, AutoQueue<typename Arc::StateId>, ArcFilter> {
 
   //  template<class Arc, class ArcFilter>
   static std::unique_ptr<AutoQueue<StateId>> Construct(
-      const Fst<Arc> &fst, const std::vector<Weight> *distance) {
+      const Fst<Arc>& fst, const std::vector<Weight>* distance) {
     return std::make_unique<AutoQueue<StateId>>(fst, distance, ArcFilter());
   }
 };
@@ -91,7 +90,7 @@ struct QueueConstructor<
   using Weight = typename Arc::Weight;
 
   static std::unique_ptr<NaturalShortestFirstQueue<StateId, Weight>> Construct(
-      const Fst<Arc> &, const std::vector<Weight> *distance) {
+      const Fst<Arc>&, const std::vector<Weight>* distance) {
     return std::make_unique<NaturalShortestFirstQueue<StateId, Weight>>(
         *distance);
   }
@@ -103,15 +102,15 @@ struct QueueConstructor<Arc, TopOrderQueue<typename Arc::StateId>, ArcFilter> {
   using Weight = typename Arc::Weight;
 
   static std::unique_ptr<TopOrderQueue<StateId>> Construct(
-      const Fst<Arc> &fst, const std::vector<Weight> *) {
+      const Fst<Arc>& fst, const std::vector<Weight>*) {
     return std::make_unique<TopOrderQueue<StateId>>(fst, ArcFilter());
   }
 };
 
 template <class Arc, class Queue, class ArcFilter>
-void ShortestDistance(const Fst<Arc> &fst,
-                      std::vector<typename Arc::Weight> *distance,
-                      const ShortestDistanceOptions &opts) {
+void ShortestDistance(const Fst<Arc>& fst,
+                      std::vector<typename Arc::Weight>* distance,
+                      const ShortestDistanceOptions& opts) {
   std::unique_ptr<Queue> queue(
       QueueConstructor<Arc, Queue, ArcFilter>::Construct(fst, distance));
   const fst::ShortestDistanceOptions<Arc, Queue, ArcFilter> sopts(
@@ -120,9 +119,9 @@ void ShortestDistance(const Fst<Arc> &fst,
 }
 
 template <class Arc, class Queue>
-void ShortestDistance(const Fst<Arc> &fst,
-                      std::vector<typename Arc::Weight> *distance,
-                      const ShortestDistanceOptions &opts) {
+void ShortestDistance(const Fst<Arc>& fst,
+                      std::vector<typename Arc::Weight>* distance,
+                      const ShortestDistanceOptions& opts) {
   switch (opts.arc_filter_type) {
     case ArcFilterType::ANY: {
       ShortestDistance<Arc, Queue, AnyArcFilter<Arc>>(fst, distance, opts);
@@ -156,15 +155,15 @@ void ShortestDistance(const Fst<Arc> &fst,
 }  // namespace internal
 
 using FstShortestDistanceArgs1 =
-    std::tuple<const FstClass &, std::vector<WeightClass> *,
-               const ShortestDistanceOptions &>;
+    std::tuple<const FstClass&, std::vector<WeightClass>*,
+               const ShortestDistanceOptions&>;
 
 template <class Arc>
-void ShortestDistance(FstShortestDistanceArgs1 *args) {
+void ShortestDistance(FstShortestDistanceArgs1* args) {
   using StateId = typename Arc::StateId;
   using Weight = typename Arc::Weight;
-  const Fst<Arc> &fst = *std::get<0>(*args).GetFst<Arc>();
-  const auto &opts = std::get<2>(*args);
+  const Fst<Arc>& fst = *std::get<0>(*args).GetFst<Arc>();
+  const auto& opts = std::get<2>(*args);
   std::vector<Weight> typed_distance;
   switch (opts.queue_type) {
     case AUTO_QUEUE: {
@@ -214,37 +213,36 @@ void ShortestDistance(FstShortestDistanceArgs1 *args) {
 }
 
 using FstShortestDistanceArgs2 =
-    std::tuple<const FstClass &, std::vector<WeightClass> *, bool, double>;
+    std::tuple<const FstClass&, std::vector<WeightClass>*, bool, double>;
 
 template <class Arc>
-void ShortestDistance(FstShortestDistanceArgs2 *args) {
+void ShortestDistance(FstShortestDistanceArgs2* args) {
   using Weight = typename Arc::Weight;
-  const Fst<Arc> &fst = *std::get<0>(*args).GetFst<Arc>();
+  const Fst<Arc>& fst = *std::get<0>(*args).GetFst<Arc>();
   std::vector<Weight> typed_distance;
   ShortestDistance(fst, &typed_distance, std::get<2>(*args),
                    std::get<3>(*args));
   internal::CopyWeights(typed_distance, std::get<1>(*args));
 }
 
-using FstShortestDistanceInnerArgs3 = std::tuple<const FstClass &, double>;
+using FstShortestDistanceInnerArgs3 = std::tuple<const FstClass&, double>;
 
 using FstShortestDistanceArgs3 =
     WithReturnValue<WeightClass, FstShortestDistanceInnerArgs3>;
 
 template <class Arc>
-void ShortestDistance(FstShortestDistanceArgs3 *args) {
-  const Fst<Arc> &fst = *std::get<0>(args->args).GetFst<Arc>();
+void ShortestDistance(FstShortestDistanceArgs3* args) {
+  const Fst<Arc>& fst = *std::get<0>(args->args).GetFst<Arc>();
   args->retval = WeightClass(ShortestDistance(fst, std::get<1>(args->args)));
 }
 
-void ShortestDistance(const FstClass &fst, std::vector<WeightClass> *distance,
-                      const ShortestDistanceOptions &opts);
+void ShortestDistance(const FstClass& fst, std::vector<WeightClass>* distance,
+                      const ShortestDistanceOptions& opts);
 
-void ShortestDistance(const FstClass &ifst, std::vector<WeightClass> *distance,
-                      bool reverse = false,
-                      double delta = fst::kShortestDelta);
+void ShortestDistance(const FstClass& ifst, std::vector<WeightClass>* distance,
+                      bool reverse = false, double delta = fst::kShortestDelta);
 
-WeightClass ShortestDistance(const FstClass &ifst,
+WeightClass ShortestDistance(const FstClass& ifst,
                              double delta = fst::kShortestDelta);
 
 }  // namespace script

@@ -19,6 +19,7 @@
 #include <string>
 
 #include <fst/flags.h>
+#include <fst/flags.h>
 #include <fst/log.h>
 #include <fst/extensions/linear/loglinear-apply.h>
 #include <fst/fst.h>
@@ -26,7 +27,7 @@
 
 DECLARE_bool(normalize);
 
-int fstloglinearapply_main(int argc, char **argv) {
+int fstloglinearapply_main(int argc, char** argv) {
   std::string usage =
       "Applies an FST to another FST, treating the second as a log-linear "
       "model.\n\n  "
@@ -51,16 +52,15 @@ int fstloglinearapply_main(int argc, char **argv) {
     return 1;
   }
 
-  fst::StdFst *ifst1 = fst::StdFst::Read(in_name);
+  fst::StdFst* ifst1 = fst::StdFst::Read(in_name);
   if (!ifst1) return 1;
 
-  fst::StdFst *ifst2 = fst::StdFst::Read(linear_name);
+  fst::StdFst* ifst2 = fst::StdFst::Read(linear_name);
   if (!ifst2) return 1;
 
   fst::StdVectorFst ofst;
 
-  fst::LogLinearApply(*ifst1, *ifst2, &ofst,
-                          FST_FLAGS_normalize);
+  fst::LogLinearApply(*ifst1, *ifst2, &ofst, FST_FLAGS_normalize);
 
   return !ofst.Write(out_name);
 }

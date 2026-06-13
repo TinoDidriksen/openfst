@@ -20,6 +20,6 @@
 
 DEFINE_double(delta, fst::kDelta, "Comparison/quantization delta");
 
-int fstisomorphic_main(int argc, char **argv);
+int fstisomorphic_main(int argc, char** argv);
 
-int main(int argc, char **argv) { return fstisomorphic_main(argc, argv); }
+int main(int argc, char** argv) { return fstisomorphic_main(argc, argv); }

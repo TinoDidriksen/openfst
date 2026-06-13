@@ -22,13 +22,13 @@
 #include <string>
 
 #include <fst/flags.h>
+#include <fst/flags.h>
 #include <fst/log.h>
 #include <fst/extensions/far/far-class.h>
 #include <fst/extensions/far/far.h>
 #include <fst/extensions/far/farscript.h>
 #include <fst/extensions/far/getters.h>
 #include <fst/util.h>
-#include <fst/script/arg-packs.h>
 #include <fst/script/encodemapper-class.h>
 #include <fst/script/getters.h>
 
@@ -38,7 +38,7 @@ DECLARE_bool(encode_weights);
 DECLARE_bool(encode_reuse);
 DECLARE_string(far_type);
 
-int farencode_main(int argc, char **argv) {
+int farencode_main(int argc, char** argv) {
   namespace s = fst::script;
   using fst::script::EncodeMapperClass;
   using fst::script::FarReaderClass;

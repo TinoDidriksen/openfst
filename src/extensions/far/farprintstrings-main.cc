@@ -17,10 +17,12 @@
 //
 // Outputs as strings the string FSTs in a finite-state archive.
 
+#include <cstdint>
 #include <memory>
 #include <string>
 #include <vector>
 
+#include <fst/flags.h>
 #include <fst/log.h>
 #include <fst/extensions/far/far-class.h>
 #include <fst/extensions/far/far.h>
@@ -28,7 +30,6 @@
 #include <fst/extensions/far/getters.h>
 #include <fst/string.h>
 #include <fst/util.h>
-#include <fst/script/arg-packs.h>
 #include <fst/script/getters.h>
 
 DECLARE_string(filename_prefix);
@@ -43,7 +44,7 @@ DECLARE_string(token_type);
 DECLARE_string(symbols);
 DECLARE_bool(initial_symbols);
 
-int farprintstrings_main(int argc, char **argv) {
+int farprintstrings_main(int argc, char** argv) {
   namespace s = fst::script;
   using fst::script::FarReaderClass;
 
@@ -52,7 +53,6 @@ int farprintstrings_main(int argc, char **argv) {
   usage += " [in1.far in2.far ...]\n";
 
   SET_FLAGS(usage.c_str(), &argc, &argv, true);
-  s::ExpandArgs(argc, argv, &argc, &argv);
 
   std::vector<std::string> sources;
   for (int i = 1; i < argc; ++i) sources.push_back(argv[i]);

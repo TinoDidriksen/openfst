@@ -15,6 +15,8 @@
 // See www.openfst.org for extensive documentation on this weighted
 // finite-state transducer library.
 
+#include <string>
+
 #include <fst/flags.h>
 
 DEFINE_bool(decode, false, "Decode labels and/or weights");
@@ -22,10 +24,10 @@ DEFINE_bool(encode_labels, false, "Encode output labels");
 DEFINE_bool(encode_weights, false, "Encode weights");
 DEFINE_bool(encode_reuse, false, "Re-use existing mapper");
 DEFINE_string(far_type, "default",
-              "FAR file format type: one of: \"default\", \"fst\", "
-              "\"stlist\", \"sttable\"; "
-              "the input FAR type is used if \"default\"");
+          "FAR file format type: one of: \"default\", \"fst\", "
+          "\"stlist\", \"sttable\"; "
+          "the input FAR type is used if \"default\"");
 
-int farencode_main(int argc, char **argv);
+int farencode_main(int argc, char** argv);
 
-int main(int argc, char **argv) { return farencode_main(argc, argv); }
+int main(int argc, char** argv) { return farencode_main(argc, argv); }

@@ -24,13 +24,14 @@
 #include <string>
 
 #include <fst/flags.h>
+#include <fst/flags.h>
 #include <fst/log.h>
 #include <fst/script/fst-class.h>
 #include <fst/script/isomorphic.h>
 
 DECLARE_double(delta);
 
-int fstisomorphic_main(int argc, char **argv) {
+int fstisomorphic_main(int argc, char** argv) {
   namespace s = fst::script;
   using fst::script::FstClass;
 

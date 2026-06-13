@@ -17,21 +17,20 @@
 
 #include <memory>
 
+#include <string_view>
 #include <fst/extensions/far/far.h>
-#include <fst/extensions/far/getters.h>
 #include <fst/extensions/far/map-reduce.h>
 #include <fst/encode.h>
 #include <fst/fst.h>
 #include <fst/vector-fst.h>
-#include <string_view>
 
 namespace fst {
 
 template <class Arc>
-void Encode(FarReader<Arc> &reader, FarWriter<Arc> &writer,
-            EncodeMapper<Arc> *mapper) {
+void Encode(FarReader<Arc>& reader, FarWriter<Arc>& writer,
+            EncodeMapper<Arc>* mapper) {
   internal::Map(reader, writer,
-                [mapper](std::string_view key, const Fst<Arc> *ifst) {
+                [mapper](std::string_view key, const Fst<Arc>* ifst) {
                   auto ofst = std::make_unique<VectorFst<Arc>>(*ifst);
                   Encode(ofst.get(), mapper);
                   return ofst;
@@ -39,10 +38,10 @@ void Encode(FarReader<Arc> &reader, FarWriter<Arc> &writer,
 }
 
 template <class Arc>
-void Decode(FarReader<Arc> &reader, FarWriter<Arc> &writer,
-            const EncodeMapper<Arc> &mapper) {
+void Decode(FarReader<Arc>& reader, FarWriter<Arc>& writer,
+            const EncodeMapper<Arc>& mapper) {
   internal::Map(reader, writer,
-                [&mapper](std::string_view key, const Fst<Arc> *ifst) {
+                [&mapper](std::string_view key, const Fst<Arc>* ifst) {
                   auto ofst = std::make_unique<VectorFst<Arc>>(*ifst);
                   Decode(ofst.get(), mapper);
                   return ofst;

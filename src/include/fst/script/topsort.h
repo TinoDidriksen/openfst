@@ -25,14 +25,14 @@
 namespace fst {
 namespace script {
 
-using FstTopSortArgs = WithReturnValue<bool, MutableFstClass *>;
+using FstTopSortArgs = WithReturnValue<bool, MutableFstClass*>;
 
 template <class Arc>
-void TopSort(FstTopSortArgs *args) {
+void TopSort(FstTopSortArgs* args) {
   args->retval = TopSort(args->args->GetMutableFst<Arc>());
 }
 
-bool TopSort(MutableFstClass *fst);
+bool TopSort(MutableFstClass* fst);
 
 }  // namespace script
 }  // namespace fst

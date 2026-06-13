@@ -23,10 +23,10 @@
 #include <ostream>
 #include <string>
 
+#include <string_view>
 #include <fst/fst.h>
 #include <fst/properties.h>
 #include <fst/script/arcfilter-impl.h>
-#include <string_view>
 
 namespace fst {
 
@@ -34,7 +34,7 @@ namespace fst {
 constexpr int kWidth = 50;
 
 void FstInfo::Info() const {
-  std::ostream &ostrm = std::cout;
+  std::ostream& ostrm = std::cout;
   const auto old = ostrm.setf(std::ios::left);
   ostrm.width(kWidth);
   ostrm << "fst type" << FstType() << std::endl;
@@ -102,15 +102,15 @@ void FstInfo::Info() const {
   ostrm << numscc_label << NumScc() << std::endl;
   ostrm.width(kWidth);
   ostrm << "input matcher"
-        << (InputMatchType() == MATCH_INPUT
-                ? 'y'
-                : InputMatchType() == MATCH_NONE ? 'n' : '?')
+        << (InputMatchType() == MATCH_INPUT  ? 'y'
+            : InputMatchType() == MATCH_NONE ? 'n'
+                                             : '?')
         << std::endl;
   ostrm.width(kWidth);
   ostrm << "output matcher"
-        << (OutputMatchType() == MATCH_OUTPUT
-                ? 'y'
-                : OutputMatchType() == MATCH_NONE ? 'n' : '?')
+        << (OutputMatchType() == MATCH_OUTPUT ? 'y'
+            : OutputMatchType() == MATCH_NONE ? 'n'
+                                              : '?')
         << std::endl;
   ostrm.width(kWidth);
   ostrm << "input lookahead" << (InputLookAhead() ? 'y' : 'n') << std::endl;
@@ -120,7 +120,7 @@ void FstInfo::Info() const {
   ostrm.setf(old);
 }
 
-void PrintProperties(std::ostream &ostrm, const uint64_t properties) {
+void PrintProperties(std::ostream& ostrm, const uint64_t properties) {
   uint64_t prop = 1;
   for (auto i = 0; i < 64; ++i, prop <<= 1) {
     if (prop & kBinaryProperties) {
@@ -140,7 +140,7 @@ void PrintProperties(std::ostream &ostrm, const uint64_t properties) {
   }
 }
 
-void PrintHeader(std::ostream &ostrm, const FstHeader &header) {
+void PrintHeader(std::ostream& ostrm, const FstHeader& header) {
   const auto old = ostrm.setf(std::ios::left);
   ostrm.width(kWidth);
   ostrm << "fst type" << header.FstType() << std::endl;

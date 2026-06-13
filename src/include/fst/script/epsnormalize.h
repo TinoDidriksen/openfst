@@ -29,16 +29,16 @@ namespace fst {
 namespace script {
 
 using FstEpsNormalizeArgs =
-    std::tuple<const FstClass &, MutableFstClass *, EpsNormalizeType>;
+    std::tuple<const FstClass&, MutableFstClass*, EpsNormalizeType>;
 
 template <class Arc>
-void EpsNormalize(FstEpsNormalizeArgs *args) {
-  const Fst<Arc> &ifst = *std::get<0>(*args).GetFst<Arc>();
-  MutableFst<Arc> *ofst = std::get<1>(*args)->GetMutableFst<Arc>();
+void EpsNormalize(FstEpsNormalizeArgs* args) {
+  const Fst<Arc>& ifst = *std::get<0>(*args).GetFst<Arc>();
+  MutableFst<Arc>* ofst = std::get<1>(*args)->GetMutableFst<Arc>();
   EpsNormalize(ifst, ofst, std::get<2>(*args));
 }
 
-void EpsNormalize(const FstClass &ifst, MutableFstClass *ofst,
+void EpsNormalize(const FstClass& ifst, MutableFstClass* ofst,
                   EpsNormalizeType norm_type = EPS_NORM_INPUT);
 
 }  // namespace script

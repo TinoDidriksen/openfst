@@ -23,7 +23,7 @@
 namespace fst {
 namespace script {
 
-bool TopSort(MutableFstClass *fst) {
+bool TopSort(MutableFstClass* fst) {
   FstTopSortArgs args(fst);
   Apply<Operation<FstTopSortArgs>>("TopSort", fst->ArcType(), &args);
   return args.retval;

@@ -29,21 +29,16 @@
 #include <utility>
 #include <vector>
 
-#include <fst/log.h>
 #include <fst/extensions/pdt/compose.h>
 #include <fst/extensions/pdt/expand.h>
 #include <fst/extensions/pdt/info.h>
 #include <fst/extensions/pdt/replace.h>
-#include <fst/extensions/pdt/reverse.h>
 #include <fst/extensions/pdt/shortest-path.h>
-#include <fst/compose.h>  // for ComposeOptions
 #include <fst/fst.h>
 #include <fst/mutable-fst.h>
 #include <fst/queue.h>
 #include <fst/util.h>
-#include <fst/script/arg-packs.h>
 #include <fst/script/fst-class.h>
-#include <fst/script/fstscript.h>
 #include <fst/script/script-impl.h>
 #include <fst/script/shortest-path.h>
 #include <fst/script/weight-class.h>
@@ -52,15 +47,15 @@ namespace fst {
 namespace script {
 
 using PdtComposeArgs =
-    std::tuple<const FstClass &, const FstClass &,
-               const std::vector<std::pair<int64_t, int64_t>> &,
-               MutableFstClass *, const PdtComposeOptions &, bool>;
+    std::tuple<const FstClass&, const FstClass&,
+               const std::vector<std::pair<int64_t, int64_t>>&,
+               MutableFstClass*, const PdtComposeOptions&, bool>;
 
 template <class Arc>
-void Compose(PdtComposeArgs *args) {
-  const Fst<Arc> &ifst1 = *(std::get<0>(*args).GetFst<Arc>());
-  const Fst<Arc> &ifst2 = *(std::get<1>(*args).GetFst<Arc>());
-  MutableFst<Arc> *ofst = std::get<3>(*args)->GetMutableFst<Arc>();
+void Compose(PdtComposeArgs* args) {
+  const Fst<Arc>& ifst1 = *(std::get<0>(*args).GetFst<Arc>());
+  const Fst<Arc>& ifst2 = *(std::get<1>(*args).GetFst<Arc>());
+  MutableFst<Arc>* ofst = std::get<3>(*args)->GetMutableFst<Arc>();
   // In case Arc::Label is not the same as FstClass::Label, we make a
   // copy. Truncation may occur if FstClass::Label has more precision than
   // Arc::Label.
@@ -75,29 +70,28 @@ void Compose(PdtComposeArgs *args) {
   }
 }
 
-void Compose(const FstClass &ifst1, const FstClass &ifst2,
-             const std::vector<std::pair<int64_t, int64_t>> &parens,
-             MutableFstClass *ofst, const PdtComposeOptions &opts,
+void Compose(const FstClass& ifst1, const FstClass& ifst2,
+             const std::vector<std::pair<int64_t, int64_t>>& parens,
+             MutableFstClass* ofst, const PdtComposeOptions& opts,
              bool left_pdt);
 
 struct PdtExpandOptions {
   bool connect;
   bool keep_parentheses;
-  const WeightClass &weight_threshold;
+  const WeightClass& weight_threshold;
 
-  PdtExpandOptions(bool c, bool k, const WeightClass &w)
+  PdtExpandOptions(bool c, bool k, const WeightClass& w)
       : connect(c), keep_parentheses(k), weight_threshold(w) {}
 };
 
 using PdtExpandArgs =
-    std::tuple<const FstClass &,
-               const std::vector<std::pair<int64_t, int64_t>> &,
-               MutableFstClass *, const PdtExpandOptions &>;
+    std::tuple<const FstClass&, const std::vector<std::pair<int64_t, int64_t>>&,
+               MutableFstClass*, const PdtExpandOptions&>;
 
 template <class Arc>
-void Expand(PdtExpandArgs *args) {
-  const Fst<Arc> &fst = *(std::get<0>(*args).GetFst<Arc>());
-  MutableFst<Arc> *ofst = std::get<2>(*args)->GetMutableFst<Arc>();
+void Expand(PdtExpandArgs* args) {
+  const Fst<Arc>& fst = *(std::get<0>(*args).GetFst<Arc>());
+  MutableFst<Arc>* ofst = std::get<2>(*args)->GetMutableFst<Arc>();
   // In case Arc::Label is not the same as FstClass::Label, we make a
   // copy. Truncation may occur if FstClass::Label has more precision than
   // Arc::Label.
@@ -112,32 +106,32 @@ void Expand(PdtExpandArgs *args) {
                    .weight_threshold.GetWeight<typename Arc::Weight>())));
 }
 
-void Expand(const FstClass &ifst,
-            const std::vector<std::pair<int64_t, int64_t>> &parens,
-            MutableFstClass *ofst, const PdtExpandOptions &opts);
+void Expand(const FstClass& ifst,
+            const std::vector<std::pair<int64_t, int64_t>>& parens,
+            MutableFstClass* ofst, const PdtExpandOptions& opts);
 
-void Expand(const FstClass &ifst,
-            const std::vector<std::pair<int64_t, int64_t>> &parens,
-            MutableFstClass *ofst, bool connect, bool keep_parentheses,
-            const WeightClass &weight_threshold);
+void Expand(const FstClass& ifst,
+            const std::vector<std::pair<int64_t, int64_t>>& parens,
+            MutableFstClass* ofst, bool connect, bool keep_parentheses,
+            const WeightClass& weight_threshold);
 
 using PdtReplaceArgs =
-    std::tuple<const std::vector<std::pair<int64_t, const FstClass *>> &,
-               MutableFstClass *, std::vector<std::pair<int64_t, int64_t>> *,
-               int64_t, PdtParserType, int64_t, const std::string &,
-               const std::string &>;
+    std::tuple<const std::vector<std::pair<int64_t, const FstClass*>>&,
+               MutableFstClass*, std::vector<std::pair<int64_t, int64_t>>*,
+               int64_t, PdtParserType, int64_t, const std::string&,
+               const std::string&>;
 
 template <class Arc>
-void Replace(PdtReplaceArgs *args) {
-  const auto &untyped_pairs = std::get<0>(*args);
+void Replace(PdtReplaceArgs* args) {
+  const auto& untyped_pairs = std::get<0>(*args);
   auto size = untyped_pairs.size();
-  std::vector<std::pair<typename Arc::Label, const Fst<Arc> *>> typed_pairs(
+  std::vector<std::pair<typename Arc::Label, const Fst<Arc>*>> typed_pairs(
       size);
   for (size_t i = 0; i < size; ++i) {
     typed_pairs[i].first = untyped_pairs[i].first;
     typed_pairs[i].second = untyped_pairs[i].second->GetFst<Arc>();
   }
-  MutableFst<Arc> *ofst = std::get<1>(*args)->GetMutableFst<Arc>();
+  MutableFst<Arc>* ofst = std::get<1>(*args)->GetMutableFst<Arc>();
   std::vector<std::pair<typename Arc::Label, typename Arc::Label>> typed_parens;
   const PdtReplaceOptions<Arc> opts(std::get<3>(*args), std::get<4>(*args),
                                     std::get<5>(*args), std::get<6>(*args),
@@ -149,23 +143,22 @@ void Replace(PdtReplaceArgs *args) {
             std::get<2>(*args)->begin());
 }
 
-void Replace(const std::vector<std::pair<int64_t, const FstClass *>> &pairs,
-             MutableFstClass *ofst,
-             std::vector<std::pair<int64_t, int64_t>> *parens, int64_t root,
+void Replace(const std::vector<std::pair<int64_t, const FstClass*>>& pairs,
+             MutableFstClass* ofst,
+             std::vector<std::pair<int64_t, int64_t>>* parens, int64_t root,
              PdtParserType parser_type = PdtParserType::LEFT,
              int64_t start_paren_labels = kNoLabel,
-             const std::string &left_paren_prefix = "(_",
-             const std::string &right_paren_prefix = "_)");
+             const std::string& left_paren_prefix = "(_",
+             const std::string& right_paren_prefix = "_)");
 
 using PdtReverseArgs =
-    std::tuple<const FstClass &,
-               const std::vector<std::pair<int64_t, int64_t>> &,
-               MutableFstClass *>;
+    std::tuple<const FstClass&, const std::vector<std::pair<int64_t, int64_t>>&,
+               MutableFstClass*>;
 
 template <class Arc>
-void Reverse(PdtReverseArgs *args) {
-  const Fst<Arc> &fst = *(std::get<0>(*args).GetFst<Arc>());
-  MutableFst<Arc> *ofst = std::get<2>(*args)->GetMutableFst<Arc>();
+void Reverse(PdtReverseArgs* args) {
+  const Fst<Arc>& fst = *(std::get<0>(*args).GetFst<Arc>());
+  MutableFst<Arc>* ofst = std::get<2>(*args)->GetMutableFst<Arc>();
   // In case Arc::Label is not the same as FstClass::Label, we make a
   // copy. Truncation may occur if FstClass::Label has more precision than
   // Arc::Label.
@@ -176,9 +169,9 @@ void Reverse(PdtReverseArgs *args) {
   Reverse(fst, typed_parens, ofst);
 }
 
-void Reverse(const FstClass &ifst,
-             const std::vector<std::pair<int64_t, int64_t>> &,
-             MutableFstClass *ofst);
+void Reverse(const FstClass& ifst,
+             const std::vector<std::pair<int64_t, int64_t>>&,
+             MutableFstClass* ofst);
 
 // PDT SHORTESTPATH
 
@@ -193,15 +186,14 @@ struct PdtShortestPathOptions {
 };
 
 using PdtShortestPathArgs =
-    std::tuple<const FstClass &,
-               const std::vector<std::pair<int64_t, int64_t>> &,
-               MutableFstClass *, const PdtShortestPathOptions &>;
+    std::tuple<const FstClass&, const std::vector<std::pair<int64_t, int64_t>>&,
+               MutableFstClass*, const PdtShortestPathOptions&>;
 
 template <class Arc>
-void ShortestPath(PdtShortestPathArgs *args) {
-  const Fst<Arc> &fst = *(std::get<0>(*args).GetFst<Arc>());
-  MutableFst<Arc> *ofst = std::get<2>(*args)->GetMutableFst<Arc>();
-  const PdtShortestPathOptions &opts = std::get<3>(*args);
+void ShortestPath(PdtShortestPathArgs* args) {
+  const Fst<Arc>& fst = *(std::get<0>(*args).GetFst<Arc>());
+  MutableFst<Arc>* ofst = std::get<2>(*args)->GetMutableFst<Arc>();
+  const PdtShortestPathOptions& opts = std::get<3>(*args);
   // In case Arc::Label is not the same as FstClass::Label, we make a
   // copy. Truncation may occur if FstClass::Label has more precision than
   // Arc::Label.
@@ -216,21 +208,21 @@ void ShortestPath(PdtShortestPathArgs *args) {
     case FIFO_QUEUE: {
       using Queue = FifoQueue<typename Arc::StateId>;
       fst::PdtShortestPathOptions<Arc, Queue> spopts(opts.keep_parentheses,
-                                                         opts.path_gc);
+                                                     opts.path_gc);
       ShortestPath(fst, typed_parens, ofst, spopts);
       return;
     }
     case LIFO_QUEUE: {
       using Queue = LifoQueue<typename Arc::StateId>;
       fst::PdtShortestPathOptions<Arc, Queue> spopts(opts.keep_parentheses,
-                                                         opts.path_gc);
+                                                     opts.path_gc);
       ShortestPath(fst, typed_parens, ofst, spopts);
       return;
     }
     case STATE_ORDER_QUEUE: {
       using Queue = StateOrderQueue<typename Arc::StateId>;
       fst::PdtShortestPathOptions<Arc, Queue> spopts(opts.keep_parentheses,
-                                                         opts.path_gc);
+                                                     opts.path_gc);
       ShortestPath(fst, typed_parens, ofst, spopts);
       return;
     }
@@ -238,19 +230,19 @@ void ShortestPath(PdtShortestPathArgs *args) {
 }
 
 void ShortestPath(
-    const FstClass &ifst,
-    const std::vector<std::pair<int64_t, int64_t>> &parens,
-    MutableFstClass *ofst,
-    const PdtShortestPathOptions &opts = PdtShortestPathOptions());
+    const FstClass& ifst,
+    const std::vector<std::pair<int64_t, int64_t>>& parens,
+    MutableFstClass* ofst,
+    const PdtShortestPathOptions& opts = PdtShortestPathOptions());
 
 // PRINT INFO
 
-using PdtInfoArgs = std::pair<const FstClass &,
-                              const std::vector<std::pair<int64_t, int64_t>> &>;
+using PdtInfoArgs =
+    std::pair<const FstClass&, const std::vector<std::pair<int64_t, int64_t>>&>;
 
 template <class Arc>
-void Info(PdtInfoArgs *args) {
-  const Fst<Arc> &fst = *(std::get<0>(*args).GetFst<Arc>());
+void Info(PdtInfoArgs* args) {
+  const Fst<Arc>& fst = *(std::get<0>(*args).GetFst<Arc>());
   // In case Arc::Label is not the same as FstClass::Label, we make a
   // copy. Truncation may occur if FstClass::Label has more precision than
   // Arc::Label.
@@ -262,8 +254,8 @@ void Info(PdtInfoArgs *args) {
   pdtinfo.Print();
 }
 
-void Info(const FstClass &ifst,
-          const std::vector<std::pair<int64_t, int64_t>> &parens);
+void Info(const FstClass& ifst,
+          const std::vector<std::pair<int64_t, int64_t>>& parens);
 
 }  // namespace script
 }  // namespace fst

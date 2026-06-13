@@ -25,6 +25,7 @@
 #include <vector>
 
 #include <fst/flags.h>
+#include <fst/flags.h>
 #include <fst/log.h>
 #include <fst/extensions/pdt/pdtscript.h>
 #include <fst/queue.h>
@@ -36,7 +37,7 @@ DECLARE_string(queue_type);
 DECLARE_bool(path_gc);
 DECLARE_string(pdt_parentheses);
 
-int pdtshortestpath_main(int argc, char **argv) {
+int pdtshortestpath_main(int argc, char** argv) {
   namespace s = fst::script;
   using fst::QueueType;
   using fst::ReadLabelPairs;

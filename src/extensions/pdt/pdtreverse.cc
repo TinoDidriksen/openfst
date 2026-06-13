@@ -17,10 +17,12 @@
 //
 // Reverses a PDT.
 
+#include <string>
+
 #include <fst/flags.h>
 
 DEFINE_string(pdt_parentheses, "", "PDT parenthesis label pairs");
 
-int pdtreverse_main(int argc, char **argv);
+int pdtreverse_main(int argc, char** argv);
 
-int main(int argc, char **argv) { return pdtreverse_main(argc, argv); }
+int main(int argc, char** argv) { return pdtreverse_main(argc, argv); }

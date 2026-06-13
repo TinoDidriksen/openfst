@@ -25,6 +25,7 @@
 #include <vector>
 
 #include <fst/flags.h>
+#include <fst/flags.h>
 #include <fst/log.h>
 #include <fst/extensions/pdt/compose.h>
 #include <fst/extensions/pdt/getters.h>
@@ -37,7 +38,7 @@ DECLARE_bool(left_pdt);
 DECLARE_bool(connect);
 DECLARE_string(compose_filter);
 
-int pdtcompose_main(int argc, char **argv) {
+int pdtcompose_main(int argc, char** argv) {
   namespace s = fst::script;
   using fst::PdtComposeFilter;
   using fst::PdtComposeOptions;

@@ -19,23 +19,23 @@
 #define FST_EXTENSIONS_FAR_EQUAL_H_
 
 #include <fst/log.h>
+#include <string_view>
 #include <fst/extensions/far/far.h>
 #include <fst/extensions/far/map-reduce.h>
 #include <fst/equal.h>
 #include <fst/fst.h>
 #include <fst/weight.h>
-#include <string_view>
 
 namespace fst {
 
 template <class Arc>
-bool Equal(FarReader<Arc> &reader1, FarReader<Arc> &reader2,
+bool Equal(FarReader<Arc>& reader1, FarReader<Arc>& reader2,
            float delta = kDelta, std::string_view begin_key = "",
            std::string_view end_key = "") {
   return internal::MapAllReduce(
       reader1, reader2,
-      [delta](std::string_view key, const Fst<Arc> *fst1,
-              const Fst<Arc> *fst2) {
+      [delta](std::string_view key, const Fst<Arc>* fst1,
+              const Fst<Arc>* fst2) {
         if (!Equal(*fst1, *fst2, delta)) {
           LOG(ERROR) << "Equal: FSTs for key " << key << " are not equal";
           return false;

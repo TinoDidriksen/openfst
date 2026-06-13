@@ -23,26 +23,25 @@
 #include <vector>
 
 #include <fst/log.h>
+#include <string_view>
 #include <fst/extensions/far/far.h>
 #include <fst/extensions/far/script-impl.h>
 #include <fst/arc.h>
-#include <fst/error-weight.h>
 #include <fst/script/script-impl.h>
-#include <string_view>
 
 namespace fst {
 namespace script {
 
 // FarReaderClass.
 
-std::unique_ptr<FarReaderClass> FarReaderClass::Open(
+ std::unique_ptr<FarReaderClass> FarReaderClass::Open(
     std::string_view source) {
   const std::vector<std::string> sources{std::string(source)};
   return FarReaderClass::Open(sources);
 }
 
-std::unique_ptr<FarReaderClass> FarReaderClass::Open(
-    const std::vector<std::string> &sources) {
+ std::unique_ptr<FarReaderClass> FarReaderClass::Open(
+    const std::vector<std::string>& sources) {
   if (sources.empty()) {
     LOG(ERROR) << "FarReaderClass::Open: No files specified";
     return nullptr;
@@ -70,7 +69,7 @@ REGISTER_FST_OPERATION(OpenFarReaderClass, ErrorArc, OpenFarReaderClassArgs);
 // FarWriterClass.
 
 std::unique_ptr<FarWriterClass> FarWriterClass::Create(
-    const std::string &source, const std::string &arc_type, FarType type) {
+    const std::string& source, const std::string& arc_type, FarType type) {
   CreateFarWriterClassInnerArgs iargs(source, type);
   CreateFarWriterClassArgs args(iargs);
   args.retval = nullptr;

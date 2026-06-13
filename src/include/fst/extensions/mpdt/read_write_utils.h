@@ -16,29 +16,29 @@
 // finite-state transducer library.
 //
 // Definition of ReadLabelTriples based on ReadLabelPairs, like that in
-// nlp/fst/lib/util.h for pairs, and similarly for WriteLabelTriples.
+// `third_party/openfst/lib/util.h` for pairs, and similarly for
+// WriteLabelTriples.
 
 #ifndef FST_EXTENSIONS_MPDT_READ_WRITE_UTILS_H_
 #define FST_EXTENSIONS_MPDT_READ_WRITE_UTILS_H_
 
 #include <cstddef>
-#include <istream>
 #include <string>
 #include <utility>
 #include <vector>
 
 #include <fst/log.h>
+#include <string_view>
 #include <fstream>
 #include <fst/util.h>
-#include <string_view>
 
 namespace fst {
 
 // Returns true on success.
 template <typename Label>
-bool ReadLabelTriples(const std::string &source,
-                      std::vector<std::pair<Label, Label>> *pairs,
-                      std::vector<Label> *assignments) {
+bool ReadLabelTriples(const std::string& source,
+                      std::vector<std::pair<Label, Label>>* pairs,
+                      std::vector<Label>* assignments) {
   std::ifstream fstrm(source);
   if (!fstrm) {
     LOG(ERROR) << "ReadIntTriples: Can't open file: " << source;
@@ -75,9 +75,9 @@ bool ReadLabelTriples(const std::string &source,
 
 // Returns true on success.
 template <typename Label>
-bool WriteLabelTriples(const std::string &source,
-                       const std::vector<std::pair<Label, Label>> &pairs,
-                       const std::vector<Label> &assignments) {
+bool WriteLabelTriples(const std::string& source,
+                       const std::vector<std::pair<Label, Label>>& pairs,
+                       const std::vector<Label>& assignments) {
   if (pairs.size() != assignments.size()) {
     LOG(ERROR) << "WriteLabelTriples: Pairs and assignments of different sizes";
     return false;

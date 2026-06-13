@@ -1,4 +1,24 @@
 OpenFst: Release 1.8
+   * Add D2 (Declarative Diagramming, https://d2lang.com/) support to
+     fstdraw (1.8.5)
+   * Add `fst::HashOf` for hashing (1.8.5)
+   * Use `std::string_view` in `FstDrawArgs` (1.8.5)
+   * Remove "clear to size" argument from `CompactHashBiTable::Clear` and
+     `HashBiTable::Clear` (1.8.5)
+   * Change `LogProbArcSelector` to sample from [0, 1] and perform arc
+     selection in the neglog domain (1.8.5)
+   * Discourage use of `Cast` (which is undefined behavior) in favor of
+     `ArcMapFst` (1.8.5)
+   * Add *FarReader::OpenWithStatus, and supporting fst::Status and
+     fst::StatusOr (1.8.5)
+   * Add SymbolTable::WriteTextWithStatus (1.8.5)
+   * Make Weight constructors explicit (1.8.5)
+   * Add operator<<(ostream&, const ArcTpl&) (1.8.5)
+   * Fixes typo in `pywrapfst` type stubs, adding missing underscore a flag
+     constant changing the name of `pywrapfst.ArcIteratorFlags.ARC_ILABEL_VALUE`
+     to `pywrapfst.ArcIteratorFlags.ARC_I_LABEL_VALUE`, matching the underlying
+     implementation and consistent with `ARC_O_LABEL_VALUE` and the
+     module-scoped `pywrapfst.ARC_I_LABEL_VALUE` (1.8.x)
    * Adds `NumStatesIfKnown()` method to `FstClass` in script layer and
      `num_states_if_known()` to `Fst` in Python layer, exposing library-layer
      `Fst::NumStatesIfKnown()` (1.8.4)

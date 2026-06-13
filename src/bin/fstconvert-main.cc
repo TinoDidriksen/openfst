@@ -22,12 +22,13 @@
 #include <string>
 
 #include <fst/flags.h>
+#include <fst/flags.h>
 #include <fst/script/convert.h>
 #include <fst/script/fst-class.h>
 
 DECLARE_string(fst_type);
 
-int fstconvert_main(int argc, char **argv) {
+int fstconvert_main(int argc, char** argv) {
   namespace s = fst::script;
   using fst::script::FstClass;
 

@@ -26,7 +26,7 @@
 namespace fst {
 namespace script {
 
-void Concat(MutableFstClass *fst1, const FstClass &fst2) {
+void Concat(MutableFstClass* fst1, const FstClass& fst2) {
   if (!internal::ArcTypesMatch(*fst1, fst2, "Concat")) {
     fst1->SetProperties(kError, kError);
     return;
@@ -35,7 +35,7 @@ void Concat(MutableFstClass *fst1, const FstClass &fst2) {
   Apply<Operation<FstConcatArgs1>>("Concat", fst1->ArcType(), &args);
 }
 
-void Concat(const FstClass &fst1, MutableFstClass *fst2) {
+void Concat(const FstClass& fst1, MutableFstClass* fst2) {
   if (!internal::ArcTypesMatch(fst1, *fst2, "Concat")) {
     fst2->SetProperties(kError, kError);
     return;
@@ -44,8 +44,8 @@ void Concat(const FstClass &fst1, MutableFstClass *fst2) {
   Apply<Operation<FstConcatArgs2>>("Concat", fst2->ArcType(), &args);
 }
 
-void Concat(const std::vector<FstClass *> &fsts1, MutableFstClass *fst2) {
-  for (const auto *fst1 : fsts1) {
+void Concat(const std::vector<FstClass*>& fsts1, MutableFstClass* fst2) {
+  for (const auto* fst1 : fsts1) {
     if (!internal::ArcTypesMatch(*fst1, *fst2, "Concat")) {
       fst2->SetProperties(kError, kError);
       return;

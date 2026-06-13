@@ -30,22 +30,22 @@
 namespace fst {
 namespace script {
 
-using FstConvertInnerArgs = std::pair<const FstClass &, const std::string &>;
+using FstConvertInnerArgs = std::pair<const FstClass&, const std::string&>;
 
 using FstConvertArgs =
     WithReturnValue<std::unique_ptr<FstClass>, FstConvertInnerArgs>;
 
 template <class Arc>
-void Convert(FstConvertArgs *args) {
-  const Fst<Arc> &fst = *std::get<0>(args->args).GetFst<Arc>();
-  const std::string &new_type = std::get<1>(args->args);
+void Convert(FstConvertArgs* args) {
+  const Fst<Arc>& fst = *std::get<0>(args->args).GetFst<Arc>();
+  const std::string& new_type = std::get<1>(args->args);
   std::unique_ptr<Fst<Arc>> result(Convert(fst, new_type));
   args->retval =
       result ? std::make_unique<FstClass>(std::move(result)) : nullptr;
 }
 
-std::unique_ptr<FstClass> Convert(const FstClass &fst,
-                                  const std::string &new_type);
+std::unique_ptr<FstClass> Convert(const FstClass& fst,
+                                  const std::string& new_type);
 
 }  // namespace script
 }  // namespace fst

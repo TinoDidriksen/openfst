@@ -28,7 +28,6 @@
 #include <ostream>
 #include <sstream>
 #include <string>
-#include <vector>
 
 #include <fst/flags.h>
 #include <fst/log.h>
@@ -43,12 +42,12 @@ DECLARE_string(far_field_separator);
 namespace fst {
 
 template <class Arc>
-void PrintStrings(FarReader<Arc> &reader, FarEntryType entry_type,
-                  TokenType token_type, const std::string &begin_key,
-                  const std::string &end_key, bool print_key, bool print_weight,
-                  const std::string &symbols_source, bool initial_symbols,
-                  int32_t generate_sources, const std::string &source_prefix,
-                  const std::string &source_suffix) {
+void PrintStrings(FarReader<Arc>& reader, FarEntryType entry_type,
+                  TokenType token_type, const std::string& begin_key,
+                  const std::string& end_key, bool print_key, bool print_weight,
+                  const std::string& symbols_source, bool initial_symbols,
+                  int32_t generate_sources, const std::string& source_prefix,
+                  const std::string& source_suffix) {
   std::unique_ptr<const SymbolTable> syms;
   if (!symbols_source.empty()) {
     syms.reset(SymbolTable::ReadText(symbols_source,
@@ -63,7 +62,7 @@ void PrintStrings(FarReader<Arc> &reader, FarEntryType entry_type,
   std::string okey;
   int nrep = 0;
   for (int i = 1; !reader.Done(); reader.Next(), ++i) {
-    const auto &key = reader.GetKey();
+    const auto& key = reader.GetKey();
     if (!end_key.empty() && end_key < key) break;
     if (okey == key) {
       ++nrep;
@@ -71,7 +70,7 @@ void PrintStrings(FarReader<Arc> &reader, FarEntryType entry_type,
       nrep = 0;
     }
     okey = key;
-    const auto *fst = reader.GetFst();
+    const auto* fst = reader.GetFst();
     if (i == 1 && initial_symbols && !syms && fst->InputSymbols()) {
       syms.reset(fst->InputSymbols()->Copy());
     }

@@ -25,6 +25,7 @@
 #include <vector>
 
 #include <fst/flags.h>
+#include <fst/flags.h>
 #include <fst/log.h>
 #include <fst/replace-util.h>
 #include <fst/script/fst-class.h>
@@ -37,7 +38,7 @@ DECLARE_string(return_arc_labeling);
 DECLARE_int64(return_label);
 DECLARE_bool(epsilon_on_replace);
 
-int fstreplace_main(int argc, char **argv) {
+int fstreplace_main(int argc, char** argv) {
   namespace s = fst::script;
   using fst::ReplaceLabelType;
   using fst::script::FstClass;
@@ -63,7 +64,12 @@ int fstreplace_main(int argc, char **argv) {
     if (!ifst) return 1;
     // Note that if the root label is beyond the range of the underlying FST's
     // labels, truncation will occur.
-    const auto label = atoll(argv[i + 1]);
+    int64_t label;
+    if (!fst::SimpleAtoi(argv[i + 1], &label)) {
+      LOG(ERROR) << argv[0] << ": Failed to convert \"" << argv[i + 1]
+                 << "\" to integer";
+      return 1;
+    }
     pairs.emplace_back(label, std::move(ifst));
   }
 
@@ -82,7 +88,7 @@ int fstreplace_main(int argc, char **argv) {
                << "label type: " << FST_FLAGS_return_arc_labeling;
   }
   if (pairs.empty()) {
-    LOG(ERROR) << argv[0] << "At least one replace pair must be provided.";
+    LOG(ERROR) << argv[0] << ": At least one replace pair must be provided.";
     return 1;
   }
   const auto root = pairs.front().first;

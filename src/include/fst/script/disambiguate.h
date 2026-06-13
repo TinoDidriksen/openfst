@@ -33,11 +33,11 @@ namespace script {
 
 struct DisambiguateOptions {
   const float delta;
-  const WeightClass &weight_threshold;
+  const WeightClass& weight_threshold;
   const int64_t state_threshold;
   const int64_t subsequential_label;
 
-  DisambiguateOptions(float delta, const WeightClass &weight_threshold,
+  DisambiguateOptions(float delta, const WeightClass& weight_threshold,
                       int64_t state_threshold = kNoStateId,
                       int64_t subsequential_label = 0)
       : delta(delta),
@@ -46,24 +46,24 @@ struct DisambiguateOptions {
         subsequential_label(subsequential_label) {}
 };
 
-using FstDisambiguateArgs = std::tuple<const FstClass &, MutableFstClass *,
-                                       const DisambiguateOptions &>;
+using FstDisambiguateArgs =
+    std::tuple<const FstClass&, MutableFstClass*, const DisambiguateOptions&>;
 
 template <class Arc>
-void Disambiguate(FstDisambiguateArgs *args) {
+void Disambiguate(FstDisambiguateArgs* args) {
   using Weight = typename Arc::Weight;
-  const Fst<Arc> &ifst = *std::get<0>(*args).GetFst<Arc>();
-  MutableFst<Arc> *ofst = std::get<1>(*args)->GetMutableFst<Arc>();
-  const auto &opts = std::get<2>(*args);
+  const Fst<Arc>& ifst = *std::get<0>(*args).GetFst<Arc>();
+  MutableFst<Arc>* ofst = std::get<1>(*args)->GetMutableFst<Arc>();
+  const auto& opts = std::get<2>(*args);
   const auto weight_threshold = *opts.weight_threshold.GetWeight<Weight>();
   const fst::DisambiguateOptions<Arc> disargs(opts.delta, weight_threshold,
-                                                  opts.state_threshold,
-                                                  opts.subsequential_label);
+                                              opts.state_threshold,
+                                              opts.subsequential_label);
   Disambiguate(ifst, ofst, disargs);
 }
 
-void Disambiguate(const FstClass &ifst, MutableFstClass *ofst,
-                  const DisambiguateOptions &opts);
+void Disambiguate(const FstClass& ifst, MutableFstClass* ofst,
+                  const DisambiguateOptions& opts);
 
 }  // namespace script
 }  // namespace fst

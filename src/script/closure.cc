@@ -24,7 +24,7 @@
 namespace fst {
 namespace script {
 
-void Closure(MutableFstClass *fst, ClosureType closure_type) {
+void Closure(MutableFstClass* fst, ClosureType closure_type) {
   FstClosureArgs args{fst, closure_type};
   Apply<Operation<FstClosureArgs>>("Closure", fst->ArcType(), &args);
 }

@@ -22,6 +22,7 @@
 #include <string>
 
 #include <fst/flags.h>
+#include <fst/flags.h>
 #include <fst/log.h>
 #include <fst/epsnormalize.h>
 #include <fst/script/epsnormalize.h>
@@ -30,7 +31,7 @@
 
 DECLARE_string(eps_norm_type);
 
-int fstepsnormalize_main(int argc, char **argv) {
+int fstepsnormalize_main(int argc, char** argv) {
   namespace s = fst::script;
   using fst::EpsNormalizeType;
   using fst::script::FstClass;

@@ -26,17 +26,17 @@
 #include <vector>
 
 #include <fst/log.h>
+#include <string_view>
 #include <fstream>
 #include <fst/util.h>
 #include <fst/script/weight-class.h>
-#include <string_view>
 
 namespace fst {
 namespace script {
 
 // Reads vector of weights; returns true on success.
-bool ReadPotentials(std::string_view weight_type, const std::string &source,
-                    std::vector<WeightClass> *potentials) {
+bool ReadPotentials(std::string_view weight_type, const std::string& source,
+                    std::vector<WeightClass>* potentials) {
   std::ifstream istrm(source);
   if (!istrm) {
     LOG(ERROR) << "ReadPotentials: Can't open file: " << source;
@@ -67,7 +67,7 @@ bool ReadPotentials(std::string_view weight_type, const std::string &source,
 }
 
 // Writes vector of weights; returns true on success.
-bool WritePotentials(const std::string &source,
+bool WritePotentials(const std::string& source,
                      const std::vector<WeightClass> &potentials) {
   std::ofstream ostrm;
   if (!source.empty()) {
@@ -77,7 +77,7 @@ bool WritePotentials(const std::string &source,
       return false;
     }
   }
-  std::ostream &strm = ostrm.is_open() ? ostrm : std::cout;
+  std::ostream& strm = ostrm.is_open() ? ostrm : std::cout;
   strm.precision(9);
   for (size_t s = 0; s < potentials.size(); ++s) {
     strm << s << "\t" << potentials[s] << "\n";

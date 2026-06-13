@@ -24,8 +24,8 @@
 namespace fst {
 namespace script {
 
-void Determinize(const FstClass &ifst, MutableFstClass *ofst,
-                 const DeterminizeOptions &opts) {
+void Determinize(const FstClass& ifst, MutableFstClass* ofst,
+                 const DeterminizeOptions& opts) {
   if (!internal::ArcTypesMatch(ifst, *ofst, "Determinize") ||
       !ofst->WeightTypesMatch(opts.weight_threshold, "Determinize")) {
     ofst->SetProperties(kError, kError);

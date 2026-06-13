@@ -22,6 +22,7 @@
 #include <string>
 
 #include <fst/flags.h>
+#include <fst/flags.h>
 #include <fst/log.h>
 #include <fst/compose.h>
 #include <fst/script/compose.h>
@@ -31,7 +32,7 @@
 DECLARE_string(compose_filter);
 DECLARE_bool(connect);
 
-int fstcompose_main(int argc, char **argv) {
+int fstcompose_main(int argc, char** argv) {
   namespace s = fst::script;
   using fst::ComposeFilter;
   using fst::ComposeOptions;

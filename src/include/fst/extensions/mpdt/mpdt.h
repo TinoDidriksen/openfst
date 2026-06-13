@@ -22,7 +22,6 @@
 
 #include <sys/types.h>
 
-#include <algorithm>
 #include <array>
 #include <cstddef>
 #include <cstdint>
@@ -33,12 +32,10 @@
 #include <vector>
 
 #include <fst/compat.h>
-#include <fst/log.h>
+#include <unordered_map>
 #include <fst/extensions/pdt/pdt.h>
 #include <fst/fst.h>
 #include <fst/util.h>
-#include <unordered_map>
-#include <optional>
 
 namespace fst {
 
@@ -67,7 +64,7 @@ class KeyPair {
  public:
   KeyPair(Level level, size_t id) : level_(level), underlying_id_(id) {}
 
-  inline bool operator==(const KeyPair &rhs) const {
+  inline bool operator==(const KeyPair& rhs) const {
     return level_ == rhs.level_ && underlying_id_ == rhs.underlying_id_;
   }
 
@@ -79,7 +76,7 @@ class KeyPair {
 
 template <typename Level>
 struct KeyPairHasher {
-  inline size_t operator()(const KeyPair<Level> &keypair) const {
+  inline size_t operator()(const KeyPair<Level>& keypair) const {
     return std::hash<Level>()(keypair.level_) ^
            (std::hash<size_t>()(keypair.underlying_id_) << 1);
   }
@@ -93,12 +90,12 @@ class MPdtStack {
   using Config = StackConfig<StackId, Level, nlevels>;
   using ConfigToStackId = std::map<Config, StackId>;
 
-  MPdtStack(const std::vector<std::pair<Label, Label>> &parens,
-            const std::vector<Level> &assignments);
+  MPdtStack(const std::vector<std::pair<Label, Label>>& parens,
+            const std::vector<Level>& assignments);
 
   ~MPdtStack() = default;
 
-  MPdtStack(const MPdtStack &other)
+  MPdtStack(const MPdtStack& other)
       : error_(other.error_),
         min_paren_(other.min_paren_),
         max_paren_(other.max_paren_),
@@ -111,14 +108,14 @@ class MPdtStack {
         next_stack_id_(other.next_stack_id_),
         stacks_(other.stacks_) {}
 
-  MPdtStack &operator=(const MPdtStack &other) {
+  MPdtStack& operator=(const MPdtStack& other) {
     *this = MPdtStack(other);
     return *this;
   }
 
-  MPdtStack(MPdtStack &&) = default;
+  MPdtStack(MPdtStack&&) = default;
 
-  MPdtStack &operator=(MPdtStack &&) = default;
+  MPdtStack& operator=(MPdtStack&&) = default;
 
   StackId Find(StackId stack_id, Label label);
 
@@ -155,7 +152,7 @@ class MPdtStack {
   // label.
   // This function maps a configuration of those to the stack ID the caller
   // sees.
-  inline StackId ExternalStackId(const Config &config) {
+  inline StackId ExternalStackId(const Config& config) {
     const auto it = config_to_stack_id_map_.find(config);
     StackId result;
     if (it == config_to_stack_id_map_.end()) {
@@ -178,11 +175,11 @@ class MPdtStack {
     return it->second;
   }
 
-  inline bool Empty(const Config &config, Level level) const {
+  inline bool Empty(const Config& config, Level level) const {
     return config[level] <= 0;
   }
 
-  inline bool AllEmpty(const Config &config) {
+  inline bool AllEmpty(const Config& config) {
     for (Level level = 0; level < nlevels; ++level) {
       if (!Empty(config, level)) return false;
     }
@@ -210,8 +207,8 @@ class MPdtStack {
 
 template <typename StackId, typename Level, Level nlevels, MPdtType restrict>
 MPdtStack<StackId, Level, nlevels, restrict>::MPdtStack(
-    const std::vector<std::pair<Level, Level>> &parens,  // NB: Label = Level.
-    const std::vector<Level> &assignments)
+    const std::vector<std::pair<Level, Level>>& parens,  // NB: Label = Level.
+    const std::vector<Level>& assignments)
     : error_(false),
       min_paren_(kNoLabel),
       max_paren_(kNoLabel),
@@ -233,7 +230,7 @@ MPdtStack<StackId, Level, nlevels, restrict>::MPdtStack(
       error_ = true;
       return;
     }
-    const auto &pair = parens[i];
+    const auto& pair = parens[i];
     vectors[level].push_back(pair);
     paren_levels_[pair.first] = level;
     paren_levels_[pair.second] = level;

@@ -19,6 +19,7 @@
 
 #include <fst/test/algo_test.h>
 
+#include <cstdint>
 #include <random>
 
 #include <fst/flags.h>
@@ -41,12 +42,12 @@ DEFINE_int32(repeat, 25, "number of test repetitions");
 
 namespace {
 
-using fst::AlgoTester;
-using fst::WeightGenerate;
+using ::fst::AlgoTester;
+using ::fst::WeightGenerate;
 
 }  // namespace
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   SetFlag(&FST_FLAGS_fst_verify_properties, true);
   SET_FLAGS(argv[0], &argc, &argv, true);
 
@@ -83,9 +84,9 @@ int main(int argc, char **argv) {
   using fst::ArcTpl;
   using fst::PowerWeight;
   using fst::TropicalWeight;
-  using Arc = ArcTpl<PowerWeight<TropicalWeight, 3>>;
+  using Arc = ArcTpl<PowerWeight<TropicalWeight, 3> >;
 #else
-  #error "Must have one of the TEST_* macros defined."
+#error "Must have one of the TEST_* macros defined."
 #endif
   WeightGenerate<Arc::Weight> weight_generator(FST_FLAGS_seed,
                                                /*allow_zero=*/false);

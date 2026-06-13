@@ -20,6 +20,7 @@
 #include <string>
 #include <vector>
 
+#include <fst/flags.h>
 #include <fst/extensions/far/farscript.h>
 #include <fst/extensions/far/getters.h>
 #include <fst/extensions/far/script-impl.h>
@@ -28,7 +29,7 @@ DECLARE_string(begin_key);
 DECLARE_string(end_key);
 DECLARE_bool(list_fsts);
 
-int farinfo_main(int argc, char **argv) {
+int farinfo_main(int argc, char** argv) {
   namespace s = fst::script;
 
   std::string usage = "Prints information about an FST archive.\n\n  Usage:";
@@ -37,7 +38,6 @@ int farinfo_main(int argc, char **argv) {
   usage += "  Flags: begin_key end_key list_fsts";
 
   SET_FLAGS(usage.c_str(), &argc, &argv, true);
-  s::ExpandArgs(argc, argv, &argc, &argv);
 
   std::vector<std::string> sources;
   for (int i = 1; i < argc; ++i) sources.push_back(argv[i]);

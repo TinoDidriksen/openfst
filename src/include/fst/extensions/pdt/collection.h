@@ -23,10 +23,8 @@
 #include <sys/types.h>
 
 #include <cstddef>
-#include <functional>
 #include <vector>
 
-#include <fst/log.h>
 #include <fst/bi-table.h>
 
 namespace fst {
@@ -44,17 +42,16 @@ class Collection {
 
     Node() : node_id(kNoNodeId), element(T()) {}
 
-    Node(I i, const T &t) : node_id(i), element(t) {}
+    Node(I i, const T& t) : node_id(i), element(t) {}
 
-    bool operator==(const Node &n) const {
+    bool operator==(const Node& n) const {
       return n.node_id == node_id && n.element == element;
     }
   };
 
   struct NodeHash {
-    size_t operator()(const Node &n) const {
-      static constexpr auto kPrime = 7853;
-      return n.node_id + hash_(n.element) * kPrime;
+    size_t operator()(const Node& n) const {
+      return HashOf(n.node_id, n.element);
     }
   };
 
@@ -62,12 +59,12 @@ class Collection {
 
   class SetIterator {
    public:
-    SetIterator(I id, Node node, NodeTable *node_table)
+    SetIterator(I id, Node node, NodeTable* node_table)
         : id_(id), node_(node), node_table_(node_table) {}
 
     bool Done() const { return id_ == kNoNodeId; }
 
-    const T &Element() const { return node_.element; }
+    const T& Element() const { return node_.element; }
 
     void Next() {
       id_ = node_.node_id;
@@ -77,14 +74,14 @@ class Collection {
    private:
     I id_;       // Iterator set node ID.
     Node node_;  // Iterator set node.
-    NodeTable *node_table_;
+    NodeTable* node_table_;
   };
 
   Collection() = default;
 
   // Looks up integer ID from ordered multi-se, and if it doesn't exist and
   // insert is true, then adds it. Otherwise returns -1.
-  I FindId(const std::vector<T> &set, bool insert = true) {
+  I FindId(const std::vector<T>& set, bool insert = true) {
     I node_id = kNoNodeId;
     for (ssize_t i = set.size() - 1; i >= 0; --i) {
       Node node(node_id, set[i]);
@@ -108,13 +105,9 @@ class Collection {
 
  private:
   static constexpr I kNoNodeId = -1;
-  static const std::hash<T> hash_;
 
   NodeTable node_table_;
 };
-
-template <class I, class T>
-const std::hash<T> Collection<I, T>::hash_ = {};
 
 }  // namespace fst
 

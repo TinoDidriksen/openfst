@@ -18,8 +18,8 @@
 // Definitions of 'scriptable' versions of mpdt operations, that is,
 // those that can be called with FstClass-type arguments.
 //
-// See comments in nlp/fst/script/script-impl.h for how the registration
-// mechanism allows these to work with various arc types.
+// See comments in `third_party/openfst/script/script-impl.h` for how the
+// registration mechanism allows these to work with various arc types.
 
 #include <fst/extensions/mpdt/mpdtscript.h>
 
@@ -35,10 +35,10 @@
 namespace fst {
 namespace script {
 
-void Compose(const FstClass &ifst1, const FstClass &ifst2,
-             const std::vector<std::pair<int64_t, int64_t>> &parens,
-             const std::vector<int64_t> &assignments, MutableFstClass *ofst,
-             const MPdtComposeOptions &copts, bool left_pdt) {
+void Compose(const FstClass& ifst1, const FstClass& ifst2,
+             const std::vector<std::pair<int64_t, int64_t>>& parens,
+             const std::vector<int64_t>& assignments, MutableFstClass* ofst,
+             const MPdtComposeOptions& copts, bool left_pdt) {
   if (!internal::ArcTypesMatch(ifst1, ifst2, "Compose") ||
       !internal::ArcTypesMatch(ifst1, *ofst, "Compose"))
     return;
@@ -49,35 +49,35 @@ void Compose(const FstClass &ifst1, const FstClass &ifst2,
 
 REGISTER_FST_OPERATION_3ARCS(Compose, MPdtComposeArgs);
 
-void Expand(const FstClass &ifst,
-            const std::vector<std::pair<int64_t, int64_t>> &parens,
-            const std::vector<int64_t> &assignments, MutableFstClass *ofst,
-            const MPdtExpandOptions &opts) {
+void Expand(const FstClass& ifst,
+            const std::vector<std::pair<int64_t, int64_t>>& parens,
+            const std::vector<int64_t>& assignments, MutableFstClass* ofst,
+            const MPdtExpandOptions& opts) {
   MPdtExpandArgs args{ifst, parens, assignments, ofst, opts};
   Apply<Operation<MPdtExpandArgs>>("Expand", ifst.ArcType(), &args);
 }
 
 REGISTER_FST_OPERATION_3ARCS(Expand, MPdtExpandArgs);
 
-void Expand(const FstClass &ifst,
-            const std::vector<std::pair<int64_t, int64_t>> &parens,
-            const std::vector<int64_t> &assignments, MutableFstClass *ofst,
+void Expand(const FstClass& ifst,
+            const std::vector<std::pair<int64_t, int64_t>>& parens,
+            const std::vector<int64_t>& assignments, MutableFstClass* ofst,
             bool connect) {
   Expand(ifst, parens, assignments, ofst, MPdtExpandOptions(connect));
 }
 
-void Reverse(const FstClass &ifst,
-             const std::vector<std::pair<int64_t, int64_t>> &parens,
-             std::vector<int64_t> *assignments, MutableFstClass *ofst) {
+void Reverse(const FstClass& ifst,
+             const std::vector<std::pair<int64_t, int64_t>>& parens,
+             std::vector<int64_t>* assignments, MutableFstClass* ofst) {
   MPdtReverseArgs args{ifst, parens, assignments, ofst};
   Apply<Operation<MPdtReverseArgs>>("Reverse", ifst.ArcType(), &args);
 }
 
 REGISTER_FST_OPERATION_3ARCS(Reverse, MPdtReverseArgs);
 
-void Info(const FstClass &ifst,
-          const std::vector<std::pair<int64_t, int64_t>> &parens,
-          const std::vector<int64_t> &assignments) {
+void Info(const FstClass& ifst,
+          const std::vector<std::pair<int64_t, int64_t>>& parens,
+          const std::vector<int64_t>& assignments) {
   MPdtInfoArgs args{ifst, parens, assignments};
   Apply<Operation<MPdtInfoArgs>>("Info", ifst.ArcType(), &args);
 }

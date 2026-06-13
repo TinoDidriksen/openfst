@@ -18,12 +18,11 @@
 // A generic (string,type) list file format.
 //
 // This is a stripped-down version of STTable that does not support the Find()
-// operation but that does support reading/writting from standard in/out.
+// operation but that does support reading/writing from standard in/out.
 
 #ifndef FST_EXTENSIONS_FAR_STLIST_H_
 #define FST_EXTENSIONS_FAR_STLIST_H_
 
-#include <algorithm>
 #include <cstddef>
 #include <cstdint>
 #include <functional>
@@ -38,9 +37,9 @@
 #include <vector>
 
 #include <fst/log.h>
+#include <string_view>
 #include <fstream>
 #include <fst/util.h>
-#include <string_view>
 
 namespace fst {
 
@@ -57,11 +56,14 @@ template <class T, class Writer>
 class STListWriter {
  public:
   explicit STListWriter(std::string_view source)
-      : stream_(source.empty()
-                    ? &std::cout
-                    : new std::ofstream(
-                          std::string(source),
-                          std::ios_base::out | std::ios_base::binary)),
+      : stream_(
+            source.empty()
+                ? &std::cout
+                : new std::ofstream(
+                      // In portable mode, `std::string_view` is not supported.
+                      // NOLINTNEXTLINE(google3-readability-redundant-string-conversions)
+                      std::string(source),
+                      std::ios_base::out | std::ios_base::binary)),
         error_(false) {
     WriteType(*stream_, kSTListMagicNumber);
     WriteType(*stream_, kSTListFileVersion);
@@ -72,11 +74,11 @@ class STListWriter {
     }
   }
 
-  static STListWriter<T, Writer> *Create(std::string_view source) {
+  static STListWriter<T, Writer>* Create(std::string_view source) {
     return new STListWriter<T, Writer>(source);
   }
 
-  void Add(std::string_view key, const T &t) {
+  void Add(std::string_view key, const T& t) {
     if (key.empty()) {
       FSTERROR() << "STListWriter::Add: Key empty: " << key;
       error_ = true;
@@ -85,8 +87,7 @@ class STListWriter {
       error_ = true;
     }
     if (error_) return;
-    // TODO(jrosenstock,glebm): Use assign(key) when C++17 is required
-    last_key_.assign(key.data(), key.size());
+    last_key_.assign(key);
     WriteType(*stream_, key);
     entry_writer_(*stream_, t);
   }
@@ -100,12 +101,12 @@ class STListWriter {
 
  private:
   Writer entry_writer_;
-  std::ostream *stream_;  // Output stream.
+  std::ostream* stream_;  // Output stream.
   std::string last_key_;  // Last key.
   bool error_;
 
-  STListWriter(const STListWriter &) = delete;
-  STListWriter &operator=(const STListWriter &) = delete;
+  STListWriter(const STListWriter&) = delete;
+  STListWriter& operator=(const STListWriter&) = delete;
 };
 
 // String-type list reading class for object of type T using a functor Reader.
@@ -117,12 +118,12 @@ class STListWriter {
 template <class T, class Reader>
 class STListReader {
  public:
-  explicit STListReader(const std::vector<std::string> &sources)
-      : sources_(sources), error_(false) {
-    streams_.resize(sources.size(), nullptr);
+  explicit STListReader(std::vector<std::string> sources)
+      : sources_(std::move(sources)), error_(false) {
+    streams_.resize(sources_.size(), nullptr);
     bool has_stdin = false;
-    for (size_t i = 0; i < sources.size(); ++i) {
-      if (sources[i].empty()) {
+    for (size_t i = 0; i < sources_.size(); ++i) {
+      if (sources_[i].empty()) {
         if (!has_stdin) {
           streams_[i] = &std::cin;
           sources_[i] = "stdin";
@@ -135,10 +136,10 @@ class STListReader {
         }
       } else {
         streams_[i] = new std::ifstream(
-            sources[i], std::ios_base::in | std::ios_base::binary);
+            sources_[i], std::ios_base::in | std::ios_base::binary);
         if (streams_[i]->fail()) {
           FSTERROR() << "STListReader::STListReader: Error reading file: "
-                     << sources[i];
+                     << sources_[i];
           error_ = true;
           return;
         }
@@ -149,13 +150,13 @@ class STListReader {
       ReadType(*streams_[i], &file_version);
       if (magic_number != kSTListMagicNumber) {
         FSTERROR() << "STListReader::STListReader: Wrong file type: "
-                   << sources[i];
+                   << sources_[i];
         error_ = true;
         return;
       }
       if (file_version != kSTListFileVersion) {
         FSTERROR() << "STListReader::STListReader: Wrong file version: "
-                   << sources[i];
+                   << sources_[i];
         error_ = true;
         return;
       }
@@ -179,20 +180,19 @@ class STListReader {
   }
 
   ~STListReader() {
-    for (auto &stream : streams_) {
+    for (auto& stream : streams_) {
       if (stream != &std::cin) delete stream;
     }
   }
 
-  static STListReader<T, Reader> *Open(std::string_view source) {
+  static STListReader<T, Reader>* Open(std::string_view source) {
     std::vector<std::string> sources;
     sources.push_back(std::string(source));
     return new STListReader<T, Reader>(sources);
   }
 
-  static STListReader<T, Reader> *Open(
-      const std::vector<std::string> &sources) {
-    return new STListReader<T, Reader>(sources);
+  static STListReader<T, Reader>* Open(std::vector<std::string> sources) {
+    return new STListReader<T, Reader>(std::move(sources));
   }
 
   void Reset() {
@@ -231,16 +231,16 @@ class STListReader {
     }
   }
 
-  const std::string &GetKey() const { return heap_.top().first; }
+  const std::string& GetKey() const { return heap_.top().first; }
 
-  const T *GetEntry() const { return entry_.get(); }
+  const T* GetEntry() const { return entry_.get(); }
 
   bool Error() const { return error_; }
 
  private:
-  Reader entry_reader_;                  // Read functor.
-  std::vector<std::istream *> streams_;  // Input streams.
-  std::vector<std::string> sources_;     // Corresponding sources.
+  Reader entry_reader_;                 // Read functor.
+  std::vector<std::istream*> streams_;  // Input streams.
+  std::vector<std::string> sources_;    // Corresponding sources.
   std::priority_queue<std::pair<std::string, size_t>,
                       std::vector<std::pair<std::string, size_t>>,
                       std::greater<std::pair<std::string, size_t>>>
@@ -248,8 +248,8 @@ class STListReader {
   mutable std::unique_ptr<T> entry_;  // The currently read entry.
   bool error_;
 
-  STListReader(const STListReader &) = delete;
-  STListReader &operator=(const STListReader &) = delete;
+  STListReader(const STListReader&) = delete;
+  STListReader& operator=(const STListReader&) = delete;
 };
 
 // String-type list header reading function, templated on the entry header type.
@@ -259,7 +259,7 @@ class STListReader {
 //    void Read(std::istream &strm, const string &source);
 //  };
 template <class Header>
-bool ReadSTListHeader(const std::string &source, Header *header) {
+bool ReadSTListHeader(const std::string& source, Header* header) {
   if (source.empty()) {
     LOG(ERROR) << "ReadSTListHeader: Can't read header from standard input";
     return false;

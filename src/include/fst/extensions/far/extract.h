@@ -23,22 +23,21 @@
 #include <cstddef>
 #include <cstdint>
 #include <iomanip>
-#include <memory>
 #include <sstream>
 #include <string>
 #include <vector>
 
 #include <fst/log.h>
+#include <fst/log.h>
+#include <string_view>
 #include <fst/extensions/far/far.h>
 #include <fst/fst.h>
-#include <fst/util.h>
-#include <string_view>
 
 namespace fst {
 
 template <class Arc>
-inline void FarWriteFst(const Fst<Arc> *fst, std::string_view key,
-                        std::string *okey, int *nrep, int32_t generate_sources,
+inline void FarWriteFst(const Fst<Arc>* fst, std::string_view key,
+                        std::string* okey, int* nrep, int32_t generate_sources,
                         int i, std::string_view source_prefix,
                         std::string_view source_suffix) {
   DCHECK_NE(fst, nullptr);
@@ -63,8 +62,8 @@ inline void FarWriteFst(const Fst<Arc> *fst, std::string_view key,
 }
 
 template <class Arc>
-void Extract(FarReader<Arc> &reader, int32_t generate_sources,
-             const std::string &keys, std::string_view key_separator,
+void Extract(FarReader<Arc>& reader, int32_t generate_sources,
+             const std::string& keys, std::string_view key_separator,
              std::string_view range_delimiter, std::string_view source_prefix,
              std::string_view source_suffix) {
   std::string okey;
@@ -84,7 +83,7 @@ void Extract(FarReader<Arc> &reader, int32_t generate_sources,
           LOG(ERROR) << "Extract: Cannot find key " << key;
           return;
         }
-        const auto *fst = reader.GetFst();
+        const auto* fst = reader.GetFst();
         FarWriteFst(fst, key, &okey, &nrep, generate_sources, i, source_prefix,
                     source_suffix);
       } else if (range_vector.size() == 2) {  // A legal range
@@ -99,9 +98,9 @@ void Extract(FarReader<Arc> &reader, int32_t generate_sources,
           return;
         }
         for (; !reader.Done(); reader.Next(), ++i) {
-          const auto &ikey = reader.GetKey();
+          const auto& ikey = reader.GetKey();
           if (end_key < ikey) break;
-          const auto *fst = reader.GetFst();
+          const auto* fst = reader.GetFst();
           FarWriteFst(fst, ikey, &okey, &nrep, generate_sources, i,
                       source_prefix, source_suffix);
         }
@@ -114,8 +113,8 @@ void Extract(FarReader<Arc> &reader, int32_t generate_sources,
   }
   // Nothing specified, so just extracts everything.
   for (size_t i = 1; !reader.Done(); reader.Next(), ++i) {
-    const auto &key = reader.GetKey();
-    const auto *fst = reader.GetFst();
+    const auto& key = reader.GetKey();
+    const auto* fst = reader.GetFst();
     FarWriteFst(fst, key, &okey, &nrep, generate_sources, i, source_prefix,
                 source_suffix);
   }

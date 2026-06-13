@@ -17,12 +17,13 @@
 //
 // Compiles a set of stings as FSTs and stores them in a finite-state archive.
 
+#include <cstdint>
 #include <cstring>
-#include <istream>
 #include <memory>
 #include <string>
 #include <vector>
 
+#include <fst/flags.h>
 #include <fst/log.h>
 #include <fst/extensions/far/far-class.h>
 #include <fst/extensions/far/far.h>
@@ -31,7 +32,6 @@
 #include <fstream>
 #include <fst/string.h>
 #include <fst/util.h>
-#include <fst/script/arg-packs.h>
 #include <fst/script/getters.h>
 
 DECLARE_string(key_prefix);
@@ -48,7 +48,7 @@ DECLARE_bool(file_list_input);
 DECLARE_bool(keep_symbols);
 DECLARE_bool(initial_symbols);
 
-int farcompilestrings_main(int argc, char **argv) {
+int farcompilestrings_main(int argc, char** argv) {
   namespace s = fst::script;
   using fst::script::FarWriterClass;
 
@@ -58,7 +58,6 @@ int farcompilestrings_main(int argc, char **argv) {
   usage += " [in1.txt [[in2.txt ...] out.far]]\n";
 
   SET_FLAGS(usage.c_str(), &argc, &argv, true);
-  s::ExpandArgs(argc, argv, &argc, &argv);
 
   std::vector<std::string> sources;
   if (FST_FLAGS_file_list_input) {
@@ -119,8 +118,8 @@ int farcompilestrings_main(int argc, char **argv) {
       sources, *writer, fst_type, FST_FLAGS_generate_keys,
       entry_type, token_type, FST_FLAGS_symbols,
       FST_FLAGS_unknown_symbol, FST_FLAGS_keep_symbols,
-      FST_FLAGS_initial_symbols,
-      FST_FLAGS_key_prefix, FST_FLAGS_key_suffix);
+      FST_FLAGS_initial_symbols, FST_FLAGS_key_prefix,
+      FST_FLAGS_key_suffix);
 
   if (writer->Error()) {
     FSTERROR() << "Error writing FAR: " << out_far;

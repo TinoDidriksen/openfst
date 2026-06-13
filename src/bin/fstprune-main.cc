@@ -17,10 +17,12 @@
 //
 // Prunes states and arcs of an FST w.r.t. the shortest path weight.
 
+#include <cstdint>
 #include <cstring>
 #include <memory>
 #include <string>
 
+#include <fst/flags.h>
 #include <fst/flags.h>
 #include <fst/script/fst-class.h>
 #include <fst/script/prune.h>
@@ -30,7 +32,7 @@ DECLARE_double(delta);
 DECLARE_int64(nstate);
 DECLARE_string(weight);
 
-int fstprune_main(int argc, char **argv) {
+int fstprune_main(int argc, char** argv) {
   namespace s = fst::script;
   using fst::script::MutableFstClass;
   using fst::script::WeightClass;

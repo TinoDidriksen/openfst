@@ -23,16 +23,13 @@
 #include <sys/types.h>
 
 #include <cstddef>
-#include <map>
-#include <set>
 #include <utility>
 #include <vector>
 
 #include <fst/compat.h>
-#include <fst/log.h>
+#include <unordered_map>
 #include <fst/fst.h>
 #include <fst/state-table.h>
-#include <unordered_map>
 
 namespace fst {
 
@@ -55,10 +52,10 @@ class PdtStack {
     StackNode(StackId p, size_t i) : parent_id(p), paren_id(i) {}
   };
 
-  explicit PdtStack(const std::vector<std::pair<Label, Label>> &parens)
+  explicit PdtStack(const std::vector<std::pair<Label, Label>>& parens)
       : parens_(parens), min_paren_(kNoLabel), max_paren_(kNoLabel) {
     for (size_t i = 0; i < parens.size(); ++i) {
-      const auto &pair = parens[i];
+      const auto& pair = parens[i];
       paren_map_[pair.first] = i;
       paren_map_[pair.second] = i;
       if (min_paren_ == kNoLabel || pair.first < min_paren_) {
@@ -89,14 +86,14 @@ class PdtStack {
     const auto paren_id = it->second;
     // Open paren.
     if (label == parens_[paren_id].first) {
-      auto &child_id = child_map_[std::make_pair(stack_id, label)];
+      auto& child_id = child_map_[std::make_pair(stack_id, label)];
       if (child_id == 0) {  // Child not found; pushes label.
         child_id = nodes_.size();
         nodes_.push_back(StackNode(stack_id, paren_id));
       }
       return child_id;
     }
-    const auto &node = nodes_[stack_id];
+    const auto& node = nodes_[stack_id];
     // Matching close paren.
     if (paren_id == node.paren_id) return node.parent_id;
     // Non-matching close paren.
@@ -118,7 +115,7 @@ class PdtStack {
 
  private:
   struct ChildHash {
-    size_t operator()(const std::pair<StackId, Label> &pair) const {
+    size_t operator()(const std::pair<StackId, Label>& pair) const {
       static constexpr size_t prime = 7853;
       return static_cast<size_t>(pair.first) +
              static_cast<size_t>(pair.second) * prime;
@@ -149,8 +146,8 @@ struct PdtStateTuple {
 
 // Equality of PDT state tuples.
 template <typename S, typename K>
-inline bool operator==(const PdtStateTuple<S, K> &x,
-                       const PdtStateTuple<S, K> &y) {
+inline bool operator==(const PdtStateTuple<S, K>& x,
+                       const PdtStateTuple<S, K>& y) {
   if (&x == &y) return true;
   return x.state_id == y.state_id && x.stack_id == y.stack_id;
 }
@@ -159,7 +156,7 @@ inline bool operator==(const PdtStateTuple<S, K> &x,
 template <class T>
 class PdtStateHash {
  public:
-  size_t operator()(const T &tuple) const {
+  size_t operator()(const T& tuple) const {
     static constexpr auto prime = 7853;
     return tuple.state_id + tuple.stack_id * prime;
   }
@@ -173,10 +170,10 @@ class PdtStateTable : public CompactHashStateTable<
  public:
   PdtStateTable() = default;
 
-  PdtStateTable(const PdtStateTable &other) {}
+  PdtStateTable(const PdtStateTable& other) {}
 
  private:
-  PdtStateTable &operator=(const PdtStateTable &) = delete;
+  PdtStateTable& operator=(const PdtStateTable&) = delete;
 };
 
 }  // namespace fst

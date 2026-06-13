@@ -20,13 +20,9 @@
 #ifndef FST_EXTENSIONS_FAR_MAP_REDUCE_H_
 #define FST_EXTENSIONS_FAR_MAP_REDUCE_H_
 
-#include <string>
-
 #include <fst/log.h>
-#include <fst/extensions/far/far.h>
-#include <fst/arc.h>
-#include <fst/fst.h>
 #include <string_view>
+#include <fst/extensions/far/far.h>
 
 namespace fst {
 namespace internal {
@@ -46,9 +42,9 @@ namespace internal {
 // The caller is responsible for rewinding the reader afterwards, if desired,
 // and for checking the error bit of the reader and writer.
 template <class Arc, class Functor>
-void Map(FarReader<Arc> &reader, FarWriter<Arc> &writer, Functor functor) {
+void Map(FarReader<Arc>& reader, FarWriter<Arc>& writer, Functor functor) {
   for (; !reader.Done(); reader.Next()) {
-    const auto &key = reader.GetKey();
+    const auto& key = reader.GetKey();
     const auto fst = functor(key, reader.GetFst());
     if (!fst) return;
     writer.Add(key, *fst);
@@ -68,7 +64,7 @@ void Map(FarReader<Arc> &reader, FarWriter<Arc> &writer, Functor functor) {
 // The caller is responsible for rewinding the readers afterwards, if desired,
 // and for checking the error bits of the readers.
 template <class Arc, class Functor>
-bool MapAllReduce(FarReader<Arc> &reader1, FarReader<Arc> &reader2,
+bool MapAllReduce(FarReader<Arc>& reader1, FarReader<Arc>& reader2,
                   Functor functor, std::string_view begin_key = "",
                   std::string_view end_key = "") {
   if (!begin_key.empty()) {
@@ -84,8 +80,8 @@ bool MapAllReduce(FarReader<Arc> &reader1, FarReader<Arc> &reader2,
     }
   }
   for (; !reader1.Done() && !reader2.Done(); reader1.Next(), reader2.Next()) {
-    const auto &key1 = reader1.GetKey();
-    const auto &key2 = reader2.GetKey();
+    const auto& key1 = reader1.GetKey();
+    const auto& key2 = reader2.GetKey();
     if (!end_key.empty() && end_key < key1 && end_key < key2) {
       return true;
     }

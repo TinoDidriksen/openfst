@@ -34,17 +34,17 @@ namespace fst {
 namespace script {
 
 using FstRandEquivalentInnerArgs =
-    std::tuple<const FstClass &, const FstClass &, int32_t,
-               const RandGenOptions<RandArcSelection> &, float, uint64_t>;
+    std::tuple<const FstClass&, const FstClass&, int32_t,
+               const RandGenOptions<RandArcSelection>&, float, uint64_t>;
 
 using FstRandEquivalentArgs = WithReturnValue<bool, FstRandEquivalentInnerArgs>;
 
 template <class Arc>
-void RandEquivalent(FstRandEquivalentArgs *args) {
-  const Fst<Arc> &fst1 = *std::get<0>(args->args).GetFst<Arc>();
-  const Fst<Arc> &fst2 = *std::get<1>(args->args).GetFst<Arc>();
+void RandEquivalent(FstRandEquivalentArgs* args) {
+  const Fst<Arc>& fst1 = *std::get<0>(args->args).GetFst<Arc>();
+  const Fst<Arc>& fst2 = *std::get<1>(args->args).GetFst<Arc>();
   const int32_t npath = std::get<2>(args->args);
-  const auto &opts = std::get<3>(args->args);
+  const auto& opts = std::get<3>(args->args);
   const float delta = std::get<4>(args->args);
   const uint64_t seed = std::get<5>(args->args);
   switch (opts.selector) {
@@ -73,8 +73,8 @@ void RandEquivalent(FstRandEquivalentArgs *args) {
 }
 
 bool RandEquivalent(
-    const FstClass &fst1, const FstClass &fst2, int32_t npath = 1,
-    const RandGenOptions<RandArcSelection> &opts =
+    const FstClass& fst1, const FstClass& fst2, int32_t npath = 1,
+    const RandGenOptions<RandArcSelection>& opts =
         RandGenOptions<RandArcSelection>(RandArcSelection::UNIFORM),
     float delta = kDelta, uint64_t seed = std::random_device()());
 

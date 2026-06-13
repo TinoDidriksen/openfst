@@ -23,7 +23,7 @@
 namespace fst {
 namespace script {
 
-void ArcSort(MutableFstClass *fst, ArcSortType sort_type) {
+void ArcSort(MutableFstClass* fst, ArcSortType sort_type) {
   FstArcSortArgs args{fst, sort_type};
   Apply<Operation<FstArcSortArgs>>("ArcSort", fst->ArcType(), &args);
 }

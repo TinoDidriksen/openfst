@@ -17,11 +17,13 @@
 //
 // Find shortest distances in an FST.
 
+#include <cstdint>
 #include <cstring>
 #include <memory>
 #include <string>
 #include <vector>
 
+#include <fst/flags.h>
 #include <fst/flags.h>
 #include <fst/log.h>
 #include <fst/queue.h>
@@ -37,7 +39,7 @@ DECLARE_double(delta);
 DECLARE_int64(nstate);
 DECLARE_string(queue_type);
 
-int fstshortestdistance_main(int argc, char **argv) {
+int fstshortestdistance_main(int argc, char** argv) {
   namespace s = fst::script;
   using fst::AUTO_QUEUE;
   using fst::QueueType;

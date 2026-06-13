@@ -27,8 +27,8 @@
 namespace fst {
 namespace script {
 
-std::unique_ptr<FstClass> Convert(const FstClass &ifst,
-                                  const std::string &new_type) {
+std::unique_ptr<FstClass> Convert(const FstClass& ifst,
+                                  const std::string& new_type) {
   FstConvertInnerArgs iargs{ifst, new_type};
   FstConvertArgs args(iargs);
   Apply<Operation<FstConvertArgs>>("Convert", ifst.ArcType(), &args);

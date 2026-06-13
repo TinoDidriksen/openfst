@@ -20,6 +20,6 @@
 
 DEFINE_bool(normalize, true, "Normalize to get posterior");
 
-int fstloglinearapply_main(int argc, char **argv);
+int fstloglinearapply_main(int argc, char** argv);
 
-int main(int argc, char **argv) { return fstloglinearapply_main(argc, argv); }
+int main(int argc, char** argv) { return fstloglinearapply_main(argc, argv); }

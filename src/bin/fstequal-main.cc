@@ -22,13 +22,14 @@
 #include <string>
 
 #include <fst/flags.h>
+#include <fst/flags.h>
 #include <fst/log.h>
 #include <fst/script/equal.h>
 #include <fst/script/fst-class.h>
 
 DECLARE_double(delta);
 
-int fstequal_main(int argc, char **argv) {
+int fstequal_main(int argc, char** argv) {
   namespace s = fst::script;
   using fst::script::FstClass;
 

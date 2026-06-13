@@ -23,7 +23,7 @@
 namespace fst {
 namespace script {
 
-bool Equal(const FstClass &fst1, const FstClass &fst2, float delta) {
+bool Equal(const FstClass& fst1, const FstClass& fst2, float delta) {
   if (!internal::ArcTypesMatch(fst1, fst2, "Equal")) return false;
   FstEqualInnerArgs iargs{fst1, fst2, delta};
   FstEqualArgs args(iargs);

@@ -25,13 +25,11 @@
 #include <utility>
 #include <vector>
 
-#include <fst/log.h>
+#include <string_view>
 #include <fst/extensions/far/far.h>
 #include <fst/util.h>
 #include <fst/script/arg-packs.h>
 #include <fst/script/fst-class.h>
-#include <fst/script/fstscript.h>
-#include <string_view>
 
 namespace fst {
 namespace script {
@@ -42,12 +40,12 @@ namespace script {
 // See the FarReader interface in far.h for the exact semantics.
 class FarReaderImplBase {
  public:
-  virtual const std::string &ArcType() const = 0;
+  virtual const std::string& ArcType() const = 0;
   virtual bool Done() const = 0;
   virtual bool Error() const = 0;
-  virtual const std::string &GetKey() const = 0;
-  virtual const FstClass *GetFstClass() const = 0;
-  virtual bool Find(const std::string &key) = 0;
+  virtual const std::string& GetKey() const = 0;
+  virtual const FstClass* GetFstClass() const = 0;
+  virtual bool Find(const std::string& key) = 0;
   virtual void Next() = 0;
   virtual void Reset() = 0;
   virtual FarType Type() const = 0;
@@ -64,20 +62,20 @@ class FarReaderClassImpl : public FarReaderImplBase {
   explicit FarReaderClassImpl(const std::vector<std::string> &sources)
       : reader_(FarReader<Arc>::Open(sources)) {}
 
-  const std::string &ArcType() const final { return Arc::Type(); }
+  const std::string& ArcType() const final { return Arc::Type(); }
 
   bool Done() const final { return reader_->Done(); }
 
   bool Error() const final { return reader_->Error(); }
 
-  bool Find(const std::string &key) final { return reader_->Find(key); }
+  bool Find(const std::string& key) final { return reader_->Find(key); }
 
-  const FstClass *GetFstClass() const final {
+  const FstClass* GetFstClass() const final {
     fstc_ = std::make_unique<FstClass>(*reader_->GetFst());
     return fstc_.get();
   }
 
-  const std::string &GetKey() const final { return reader_->GetKey(); }
+  const std::string& GetKey() const final { return reader_->GetKey(); }
 
   void Next() final { return reader_->Next(); }
 
@@ -85,9 +83,9 @@ class FarReaderClassImpl : public FarReaderImplBase {
 
   FarType Type() const final { return reader_->Type(); }
 
-  const FarReader<Arc> *GetFarReader() const { return reader_.get(); }
+  const FarReader<Arc>* GetFarReader() const { return reader_.get(); }
 
-  FarReader<Arc> *GetFarReader() { return reader_.get(); }
+  FarReader<Arc>* GetFarReader() { return reader_.get(); }
 
  private:
   std::unique_ptr<FarReader<Arc>> reader_;
@@ -96,14 +94,13 @@ class FarReaderClassImpl : public FarReaderImplBase {
 
 class FarReaderClass;
 
-using OpenFarReaderClassArgs =
-    WithReturnValue<std::unique_ptr<FarReaderClass>,
-                    const std::vector<std::string> &>;
+using OpenFarReaderClassArgs = WithReturnValue<std::unique_ptr<FarReaderClass>,
+                                               const std::vector<std::string>&>;
 
 // Untemplated user-facing class holding a templated pimpl.
 class FarReaderClass {
  public:
-  const std::string &ArcType() const { return impl_->ArcType(); }
+  const std::string& ArcType() const { return impl_->ArcType(); }
 
   bool Done() const { return impl_->Done(); }
 
@@ -111,11 +108,11 @@ class FarReaderClass {
   // Attempting to call any other function will result in null dereference.
   bool Error() const { return (impl_) ? impl_->Error() : true; }
 
-  bool Find(const std::string &key) { return impl_->Find(key); }
+  bool Find(const std::string& key) { return impl_->Find(key); }
 
-  const FstClass *GetFstClass() const { return impl_->GetFstClass(); }
+  const FstClass* GetFstClass() const { return impl_->GetFstClass(); }
 
-  const std::string &GetKey() const { return impl_->GetKey(); }
+  const std::string& GetKey() const { return impl_->GetKey(); }
 
   void Next() { impl_->Next(); }
 
@@ -124,31 +121,31 @@ class FarReaderClass {
   FarType Type() const { return impl_->Type(); }
 
   template <class Arc>
-  const FarReader<Arc> *GetFarReader() const {
+  const FarReader<Arc>* GetFarReader() const {
     if (Arc::Type() != ArcType()) return nullptr;
-    const FarReaderClassImpl<Arc> *typed_impl =
-        down_cast<FarReaderClassImpl<Arc> *>(impl_.get());
+    const FarReaderClassImpl<Arc>* typed_impl =
+        down_cast<FarReaderClassImpl<Arc>*>(impl_.get());
     return typed_impl->GetFarReader();
   }
 
   template <class Arc>
-  FarReader<Arc> *GetFarReader() {
+  FarReader<Arc>* GetFarReader() {
     if (Arc::Type() != ArcType()) return nullptr;
-    FarReaderClassImpl<Arc> *typed_impl =
-        down_cast<FarReaderClassImpl<Arc> *>(impl_.get());
+    FarReaderClassImpl<Arc>* typed_impl =
+        down_cast<FarReaderClassImpl<Arc>*>(impl_.get());
     return typed_impl->GetFarReader();
   }
 
   template <class Arc>
-  friend void OpenFarReaderClass(OpenFarReaderClassArgs *args);
+  friend void OpenFarReaderClass(OpenFarReaderClassArgs* args);
 
   // Defined in the CC.
 
-  static std::unique_ptr<FarReaderClass> Open(
+  static  std::unique_ptr<FarReaderClass> Open(
       std::string_view source);
 
-  static std::unique_ptr<FarReaderClass> Open(
-      const std::vector<std::string> &sources);
+  static  std::unique_ptr<FarReaderClass> Open(
+      const std::vector<std::string>& sources);
 
  private:
   template <class Arc>
@@ -162,7 +159,7 @@ class FarReaderClass {
 // static method FarReaderClass::Open instead.
 
 template <class Arc>
-void OpenFarReaderClass(OpenFarReaderClassArgs *args) {
+void OpenFarReaderClass(OpenFarReaderClassArgs* args) {
   auto impl = std::make_unique<FarReaderClassImpl<Arc>>(args->args);
   if (impl->GetFarReader() == nullptr) {
     // Underlying reader failed to open, so return failure here, too.
@@ -179,8 +176,8 @@ class FarWriterImplBase {
  public:
   // Unlike the lower-level library, this returns a boolean to signal failure
   // due to non-conformant arc types.
-  virtual bool Add(const std::string &key, const FstClass &fst) = 0;
-  virtual const std::string &ArcType() const = 0;
+  virtual bool Add(const std::string& key, const FstClass& fst) = 0;
+  virtual const std::string& ArcType() const = 0;
   virtual bool Error() const = 0;
   virtual FarType Type() const = 0;
   virtual ~FarWriterImplBase() = default;
@@ -194,7 +191,7 @@ class FarWriterClassImpl : public FarWriterImplBase {
                               FarType type = FarType::DEFAULT)
       : writer_(FarWriter<Arc>::Create(source, type)) {}
 
-  bool Add(const std::string &key, const FstClass &fst) final {
+  bool Add(const std::string& key, const FstClass& fst) final {
     if (ArcType() != fst.ArcType()) {
       FSTERROR() << "Cannot write FST with " << fst.ArcType() << " arcs to "
                  << "FAR with " << ArcType() << " arcs";
@@ -204,15 +201,15 @@ class FarWriterClassImpl : public FarWriterImplBase {
     return true;
   }
 
-  const std::string &ArcType() const final { return Arc::Type(); }
+  const std::string& ArcType() const final { return Arc::Type(); }
 
   bool Error() const final { return writer_->Error(); }
 
   FarType Type() const final { return writer_->Type(); }
 
-  const FarWriter<Arc> *GetFarWriter() const { return writer_.get(); }
+  const FarWriter<Arc>* GetFarWriter() const { return writer_.get(); }
 
-  FarWriter<Arc> *GetFarWriter() { return writer_.get(); }
+  FarWriter<Arc>* GetFarWriter() { return writer_.get(); }
 
  private:
   std::unique_ptr<FarWriter<Arc>> writer_;
@@ -220,7 +217,7 @@ class FarWriterClassImpl : public FarWriterImplBase {
 
 class FarWriterClass;
 
-using CreateFarWriterClassInnerArgs = std::pair<const std::string &, FarType>;
+using CreateFarWriterClassInnerArgs = std::pair<const std::string&, FarType>;
 
 using CreateFarWriterClassArgs =
     WithReturnValue<std::unique_ptr<FarWriterClass>,
@@ -230,10 +227,10 @@ using CreateFarWriterClassArgs =
 class FarWriterClass {
  public:
   static std::unique_ptr<FarWriterClass> Create(
-      const std::string &source, const std::string &arc_type,
+      const std::string& source, const std::string& arc_type,
       FarType type = FarType::DEFAULT);
 
-  bool Add(const std::string &key, const FstClass &fst) {
+  bool Add(const std::string& key, const FstClass& fst) {
     return impl_->Add(key, fst);
   }
 
@@ -241,28 +238,28 @@ class FarWriterClass {
   // Attempting to call any other function will result in null dereference.
   bool Error() const { return (impl_) ? impl_->Error() : true; }
 
-  const std::string &ArcType() const { return impl_->ArcType(); }
+  const std::string& ArcType() const { return impl_->ArcType(); }
 
   FarType Type() const { return impl_->Type(); }
 
   template <class Arc>
-  const FarWriter<Arc> *GetFarWriter() const {
+  const FarWriter<Arc>* GetFarWriter() const {
     if (Arc::Type() != ArcType()) return nullptr;
-    const FarWriterClassImpl<Arc> *typed_impl =
-        down_cast<FarWriterClassImpl<Arc> *>(impl_.get());
+    const FarWriterClassImpl<Arc>* typed_impl =
+        down_cast<FarWriterClassImpl<Arc>*>(impl_.get());
     return typed_impl->GetFarWriter();
   }
 
   template <class Arc>
-  FarWriter<Arc> *GetFarWriter() {
+  FarWriter<Arc>* GetFarWriter() {
     if (Arc::Type() != ArcType()) return nullptr;
-    FarWriterClassImpl<Arc> *typed_impl =
-        down_cast<FarWriterClassImpl<Arc> *>(impl_.get());
+    FarWriterClassImpl<Arc>* typed_impl =
+        down_cast<FarWriterClassImpl<Arc>*>(impl_.get());
     return typed_impl->GetFarWriter();
   }
 
   template <class Arc>
-  friend void CreateFarWriterClass(CreateFarWriterClassArgs *args);
+  friend void CreateFarWriterClass(CreateFarWriterClassArgs* args);
 
  private:
   template <class Arc>
@@ -275,7 +272,7 @@ class FarWriterClass {
 // This exists solely for registration purposes; users should call the
 // static method FarWriterClass::Create instead.
 template <class Arc>
-void CreateFarWriterClass(CreateFarWriterClassArgs *args) {
+void CreateFarWriterClass(CreateFarWriterClassArgs* args) {
   args->retval = fst::WrapUnique(
       new FarWriterClass(std::make_unique<FarWriterClassImpl<Arc>>(
           std::get<0>(args->args), std::get<1>(args->args))));

@@ -25,6 +25,7 @@
 #include <vector>
 
 #include <fst/flags.h>
+#include <fst/flags.h>
 #include <fst/log.h>
 #include <fst/extensions/pdt/pdtscript.h>
 #include <fst/util.h>
@@ -36,7 +37,7 @@ DECLARE_bool(connect);
 DECLARE_bool(keep_parentheses);
 DECLARE_string(weight);
 
-int pdtexpand_main(int argc, char **argv) {
+int pdtexpand_main(int argc, char** argv) {
   namespace s = fst::script;
   using fst::ReadLabelPairs;
   using fst::script::FstClass;

@@ -29,18 +29,18 @@ namespace fst {
 namespace script {
 
 using FstMinimizeArgs =
-    std::tuple<MutableFstClass *, MutableFstClass *, float, bool>;
+    std::tuple<MutableFstClass*, MutableFstClass*, float, bool>;
 
 template <class Arc>
-void Minimize(FstMinimizeArgs *args) {
-  MutableFst<Arc> *ofst1 = std::get<0>(*args)->GetMutableFst<Arc>();
-  MutableFst<Arc> *ofst2 =
+void Minimize(FstMinimizeArgs* args) {
+  MutableFst<Arc>* ofst1 = std::get<0>(*args)->GetMutableFst<Arc>();
+  MutableFst<Arc>* ofst2 =
       std::get<1>(*args) ? std::get<1>(*args)->GetMutableFst<Arc>() : nullptr;
   Minimize(ofst1, ofst2, std::get<2>(*args), std::get<3>(*args));
 }
 
-void Minimize(MutableFstClass *ofst1,
-              MutableFstClass * ofst2 = nullptr,
+void Minimize(MutableFstClass* ofst1,
+              MutableFstClass*  ofst2 = nullptr,
               float delta = kShortestDelta, bool allow_nondet = false);
 
 }  // namespace script

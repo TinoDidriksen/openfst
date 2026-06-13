@@ -22,6 +22,7 @@
 #include <string>
 
 #include <fst/flags.h>
+#include <fst/flags.h>
 #include <fst/log.h>
 #include <fst/script/fst-class.h>
 #include <fst/script/getters.h>
@@ -33,7 +34,7 @@ DECLARE_string(map_type);
 DECLARE_double(power);
 DECLARE_string(weight);
 
-int fstmap_main(int argc, char **argv) {
+int fstmap_main(int argc, char** argv) {
   namespace s = fst::script;
   using fst::script::FstClass;
   using fst::script::WeightClass;
@@ -75,5 +76,10 @@ int fstmap_main(int argc, char **argv) {
       s::Map(*ifst, map_type, FST_FLAGS_delta,
              FST_FLAGS_power, weight_param));
 
-  return !ofst->Write(out_name);
+  if (ofst) {
+    return !ofst->Write(out_name);
+  } else {
+    LOG(ERROR) << argv[0] << ": Map failed";
+    return 1;
+  }
 }

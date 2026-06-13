@@ -26,6 +26,8 @@
 #include <vector>
 
 #include <fst/compat.h>
+#include <fst/flags.h>
+#include <fst/log.h>
 #include <fst/log.h>
 #include <fst/extensions/linear/linear-fst-data-builder.h>
 #include <fst/extensions/linear/linear-fst-data.h>
@@ -34,8 +36,6 @@
 #include <fst/fst.h>
 #include <fst/symbol-table.h>
 #include <fst/util.h>
-#include <fst/script/arg-packs.h>
-#include <fst/script/script-impl.h>
 
 DECLARE_string(delimiter);
 DECLARE_string(empty_symbol);
@@ -47,9 +47,9 @@ namespace fst {
 namespace script {
 
 using LinearCompileArgs =
-    std::tuple<const std::string &, const std::string &, const std::string &,
-               char **, int, const std::string &, const std::string &,
-               const std::string &, const std::string &>;
+    std::tuple<const std::string&, const std::string&, const std::string&,
+               char**, int, const std::string&, const std::string&,
+               const std::string&, const std::string&>;
 
 bool ValidateDelimiter();
 
@@ -62,7 +62,7 @@ bool ValidateEmptySymbol();
 // either returns `kNoLabel` for later processing or decides the label
 // right away.
 template <class Arc>
-inline typename Arc::Label LookUp(const std::string &str, SymbolTable *syms) {
+inline typename Arc::Label LookUp(const std::string& str, SymbolTable* syms) {
   if (str == FST_FLAGS_start_symbol) {
     return str == FST_FLAGS_end_symbol
                ? kNoLabel
@@ -77,8 +77,8 @@ inline typename Arc::Label LookUp(const std::string &str, SymbolTable *syms) {
 // Splits `str` with `delim` as the delimiter and stores the labels in
 // `output`.
 template <class Arc>
-void SplitAndPush(const std::string &str, const char delim, SymbolTable *syms,
-                  std::vector<typename Arc::Label> *output) {
+void SplitAndPush(const std::string& str, const char delim, SymbolTable* syms,
+                  std::vector<typename Arc::Label>* output) {
   if (str == FST_FLAGS_empty_symbol) return;
   std::istringstream strm(str);
   std::string buf;
@@ -90,8 +90,8 @@ void SplitAndPush(const std::string &str, const char delim, SymbolTable *syms,
 // Like `std::replace_copy` but returns the number of modifications
 template <class InputIterator, class OutputIterator, class T>
 size_t ReplaceCopy(InputIterator first, InputIterator last,
-                   OutputIterator result, const T &old_value,
-                   const T &new_value) {
+                   OutputIterator result, const T& old_value,
+                   const T& new_value) {
   size_t changes = 0;
   while (first != last) {
     if (*first == old_value) {
@@ -107,19 +107,19 @@ size_t ReplaceCopy(InputIterator first, InputIterator last,
 }
 
 template <class Arc>
-bool GetVocabRecord(const std::string &vocab, std::istream &strm,
-                    SymbolTable *isyms, SymbolTable *fsyms, SymbolTable *osyms,
-                    typename Arc::Label *word,
-                    std::vector<typename Arc::Label> *feature_labels,
-                    std::vector<typename Arc::Label> *possible_labels,
-                    size_t *num_line);
+bool GetVocabRecord(const std::string& vocab, std::istream& strm,
+                    SymbolTable* isyms, SymbolTable* fsyms, SymbolTable* osyms,
+                    typename Arc::Label* word,
+                    std::vector<typename Arc::Label>* feature_labels,
+                    std::vector<typename Arc::Label>* possible_labels,
+                    size_t* num_line);
 
 template <class Arc>
-bool GetModelRecord(const std::string &model, std::istream &strm,
-                    SymbolTable *fsyms, SymbolTable *osyms,
-                    std::vector<typename Arc::Label> *input_labels,
-                    std::vector<typename Arc::Label> *output_labels,
-                    typename Arc::Weight *weight, size_t *num_line);
+bool GetModelRecord(const std::string& model, std::istream& strm,
+                    SymbolTable* fsyms, SymbolTable* osyms,
+                    std::vector<typename Arc::Label>* input_labels,
+                    std::vector<typename Arc::Label>* output_labels,
+                    typename Arc::Weight* weight, size_t* num_line);
 
 // Reads in vocabulary file. Each line is in the following format
 //
@@ -128,10 +128,10 @@ bool GetModelRecord(const std::string &model, std::istream &strm,
 // where features and possible output are `FST_FLAGS_delimiter`-delimited lists of
 // tokens
 template <class Arc>
-void AddVocab(const std::string &vocab, SymbolTable *isyms, SymbolTable *fsyms,
-              SymbolTable *osyms, LinearFstDataBuilder<Arc> *builder) {
+void AddVocab(const std::string& vocab, SymbolTable* isyms, SymbolTable* fsyms,
+              SymbolTable* osyms, LinearFstDataBuilder<Arc>* builder) {
   std::ifstream in(vocab);
-  if (!in) LOG(FATAL) << "Can't open file: " << vocab;
+  if (!in) LOG(FATAL) << "Can't open file: " << vocab;  // Crash OK.
   size_t num_line = 0, num_added = 0;
   std::vector<std::string> fields;
   std::vector<typename Arc::Label> feature_labels, possible_labels;
@@ -153,11 +153,11 @@ void AddVocab(const std::string &vocab, SymbolTable *isyms, SymbolTable *fsyms,
 }
 
 template <class Arc>
-void AddVocab(const std::string &vocab, SymbolTable *isyms, SymbolTable *fsyms,
-              SymbolTable *osyms,
-              LinearClassifierFstDataBuilder<Arc> *builder) {
+void AddVocab(const std::string& vocab, SymbolTable* isyms, SymbolTable* fsyms,
+              SymbolTable* osyms,
+              LinearClassifierFstDataBuilder<Arc>* builder) {
   std::ifstream in(vocab);
-  if (!in) LOG(FATAL) << "Can't open file: " << vocab;
+  if (!in) LOG(FATAL) << "Can't open file: " << vocab;  // Crash OK.
   size_t num_line = 0, num_added = 0;
   std::vector<std::string> fields;
   std::vector<typename Arc::Label> feature_labels, possible_labels;
@@ -165,7 +165,7 @@ void AddVocab(const std::string &vocab, SymbolTable *isyms, SymbolTable *fsyms,
   while (GetVocabRecord<Arc>(vocab, in, isyms, fsyms, osyms, &word,
                              &feature_labels, &possible_labels, &num_line)) {
     if (!possible_labels.empty()) {
-      LOG(FATAL)
+      LOG(FATAL)  // Crash OK.
           << "Classifier vocabulary should not have possible output constraint";
     }
     if (word == kNoLabel) {
@@ -190,18 +190,18 @@ void AddVocab(const std::string &vocab, SymbolTable *isyms, SymbolTable *fsyms,
 // last label is the output of the feature position before the history
 // boundary.
 template <class Arc>
-void AddModel(const std::string &model, SymbolTable *fsyms, SymbolTable *osyms,
-              LinearFstDataBuilder<Arc> *builder) {
+void AddModel(const std::string& model, SymbolTable* fsyms, SymbolTable* osyms,
+              LinearFstDataBuilder<Arc>* builder) {
   std::ifstream in(model);
-  if (!in) LOG(FATAL) << "Can't open file: " << model;
+  if (!in) LOG(FATAL) << "Can't open file: " << model;  // Crash OK.
   std::string line;
   std::getline(in, line);
-  if (!in) LOG(FATAL) << "Empty file: " << model;
+  if (!in) LOG(FATAL) << "Empty file: " << model;  // Crash OK.
   size_t future_size;
   {
     std::istringstream strm(line);
     strm >> future_size;
-    if (!strm) LOG(FATAL) << "Can't read future size: " << model;
+    if (!strm) LOG(FATAL) << "Can't read future size: " << model;  // Crash OK.
   }
   size_t num_line = 1, num_added = 0;
   const int group = builder->AddGroup(future_size);
@@ -214,8 +214,9 @@ void AddModel(const std::string &model, SymbolTable *fsyms, SymbolTable *osyms,
   while (GetModelRecord<Arc>(model, in, fsyms, osyms, &input_labels,
                              &output_labels, &weight, &num_line)) {
     if (output_labels.empty()) {
-      LOG(FATAL) << "Empty output sequence in source " << model << ", line "
-                 << num_line;
+      LOG(FATAL)  // Crash OK.
+          << "Empty output sequence in source " << model << ", line "
+          << num_line;
     }
 
     const typename Arc::Label marks[] = {LinearFstData<Arc>::kStartOfSentence,
@@ -244,22 +245,23 @@ void AddModel(const std::string &model, SymbolTable *fsyms, SymbolTable *osyms,
 }
 
 template <class Arc>
-void AddModel(const std::string &model, SymbolTable *fsyms, SymbolTable *osyms,
-              LinearClassifierFstDataBuilder<Arc> *builder) {
+void AddModel(const std::string& model, SymbolTable* fsyms, SymbolTable* osyms,
+              LinearClassifierFstDataBuilder<Arc>* builder) {
   std::ifstream in(model);
-  if (!in) LOG(FATAL) << "Can't open file: " << model;
+  if (!in) LOG(FATAL) << "Can't open file: " << model;  // Crash OK.
   std::string line;
   std::getline(in, line);
-  if (!in) LOG(FATAL) << "Empty file: " << model;
+  if (!in) LOG(FATAL) << "Empty file: " << model;  // Crash OK.
   size_t future_size;
   {
     std::istringstream strm(line);
     strm >> future_size;
-    if (!strm) LOG(FATAL) << "Can't read future size: " << model;
+    if (!strm) LOG(FATAL) << "Can't read future size: " << model;  // Crash OK.
   }
   if (future_size != 0) {
-    LOG(FATAL) << "Classifier model must have future size = 0; got "
-               << future_size << " from " << model;
+    LOG(FATAL)  // Crash OK.
+        << "Classifier model must have future size = 0; got " << future_size
+        << " from " << model;
   }
   size_t num_line = 1, num_added = 0;
   const int group = builder->AddGroup();
@@ -272,8 +274,9 @@ void AddModel(const std::string &model, SymbolTable *fsyms, SymbolTable *osyms,
   while (GetModelRecord<Arc>(model, in, fsyms, osyms, &input_labels,
                              &output_labels, &weight, &num_line)) {
     if (output_labels.size() != 1) {
-      LOG(FATAL) << "Output not a single label in source " << model << ", line "
-                 << num_line;
+      LOG(FATAL)  // Crash OK.
+          << "Output not a single label in source " << model << ", line "
+          << num_line;
     }
 
     const typename Arc::Label marks[] = {LinearFstData<Arc>::kStartOfSentence,
@@ -295,20 +298,20 @@ void AddModel(const std::string &model, SymbolTable *fsyms, SymbolTable *osyms,
           << num_line << " lines.";
 }
 
-void SplitByWhitespace(const std::string &str, std::vector<std::string> *out);
-int ScanNumClasses(char **models, int models_length);
+void SplitByWhitespace(const std::string& str, std::vector<std::string>* out);
+int ScanNumClasses(char** models, int models_length);
 
 template <class Arc>
-void LinearCompileTpl(LinearCompileArgs *args) {
-  const std::string &epsilon_symbol = std::get<0>(*args);
-  const std::string &unknown_symbol = std::get<1>(*args);
-  const std::string &vocab = std::get<2>(*args);
-  char **models = std::get<3>(*args);
+void LinearCompileTpl(LinearCompileArgs* args) {
+  const std::string& epsilon_symbol = std::get<0>(*args);
+  const std::string& unknown_symbol = std::get<1>(*args);
+  const std::string& vocab = std::get<2>(*args);
+  char** models = std::get<3>(*args);
   const int models_length = std::get<4>(*args);
-  const std::string &out = std::get<5>(*args);
-  const std::string &save_isymbols = std::get<6>(*args);
-  const std::string &save_fsymbols = std::get<7>(*args);
-  const std::string &save_osymbols = std::get<8>(*args);
+  const std::string& out = std::get<5>(*args);
+  const std::string& save_isymbols = std::get<6>(*args);
+  const std::string& save_fsymbols = std::get<7>(*args);
+  const std::string& save_osymbols = std::get<8>(*args);
 
   SymbolTable isyms,  // input (e.g. word tokens)
       osyms,          // output (e.g. tags)
@@ -348,21 +351,21 @@ void LinearCompileTpl(LinearCompileArgs *args) {
   if (!save_osymbols.empty()) osyms.WriteText(save_osymbols);
 }
 
-void LinearCompile(const std::string &arc_type,
-                   const std::string &epsilon_symbol,
-                   const std::string &unknown_symbol, const std::string &vocab,
-                   char **models, int models_len, const std::string &out,
-                   const std::string &save_isymbols,
-                   const std::string &save_fsymbols,
-                   const std::string &save_osymbols);
+void LinearCompile(const std::string& arc_type,
+                   const std::string& epsilon_symbol,
+                   const std::string& unknown_symbol, const std::string& vocab,
+                   char** models, int models_len, const std::string& out,
+                   const std::string& save_isymbols,
+                   const std::string& save_fsymbols,
+                   const std::string& save_osymbols);
 
 template <class Arc>
-bool GetVocabRecord(const std::string &vocab, std::istream &strm,
-                    SymbolTable *isyms, SymbolTable *fsyms, SymbolTable *osyms,
-                    typename Arc::Label *word,
-                    std::vector<typename Arc::Label> *feature_labels,
-                    std::vector<typename Arc::Label> *possible_labels,
-                    size_t *num_line) {
+bool GetVocabRecord(const std::string& vocab, std::istream& strm,
+                    SymbolTable* isyms, SymbolTable* fsyms, SymbolTable* osyms,
+                    typename Arc::Label* word,
+                    std::vector<typename Arc::Label>* feature_labels,
+                    std::vector<typename Arc::Label>* possible_labels,
+                    size_t* num_line) {
   std::string line;
   if (!std::getline(strm, line)) return false;
   ++(*num_line);
@@ -370,8 +373,9 @@ bool GetVocabRecord(const std::string &vocab, std::istream &strm,
   std::vector<std::string> fields;
   SplitByWhitespace(line, &fields);
   if (fields.size() != 3) {
-    LOG(FATAL) << "Wrong number of fields in source " << vocab << ", line "
-               << num_line;
+    LOG(FATAL)  // Crash OK.
+        << "Wrong number of fields in source " << vocab << ", line "
+        << num_line;
   }
 
   feature_labels->clear();
@@ -387,11 +391,11 @@ bool GetVocabRecord(const std::string &vocab, std::istream &strm,
 }
 
 template <class Arc>
-bool GetModelRecord(const std::string &model, std::istream &strm,
-                    SymbolTable *fsyms, SymbolTable *osyms,
-                    std::vector<typename Arc::Label> *input_labels,
-                    std::vector<typename Arc::Label> *output_labels,
-                    typename Arc::Weight *weight, size_t *num_line) {
+bool GetModelRecord(const std::string& model, std::istream& strm,
+                    SymbolTable* fsyms, SymbolTable* osyms,
+                    std::vector<typename Arc::Label>* input_labels,
+                    std::vector<typename Arc::Label>* output_labels,
+                    typename Arc::Weight* weight, size_t* num_line) {
   std::string line;
   if (!std::getline(strm, line)) return false;
   ++(*num_line);
@@ -399,8 +403,9 @@ bool GetModelRecord(const std::string &model, std::istream &strm,
   std::vector<std::string> fields;
   SplitByWhitespace(line, &fields);
   if (fields.size() != 3) {
-    LOG(FATAL) << "Wrong number of fields in source " << model << ", line "
-               << num_line;
+    LOG(FATAL)  // Crash OK.
+        << "Wrong number of fields in source " << model << ", line "
+        << num_line;
   }
 
   input_labels->clear();

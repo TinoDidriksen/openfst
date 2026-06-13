@@ -23,19 +23,15 @@
 
 #include <string>
 
-#include <fst/flags.h>
-#include <fst/extensions/far/far.h>
-#include <fst/string.h>
 #include <string_view>
+#include <fst/extensions/far/far.h>
 
 namespace fst {
 namespace script {
 
-bool GetFarType(std::string_view str, FarType *far_type);
+bool GetFarType(std::string_view str, FarType* far_type);
 
-bool GetFarEntryType(std::string_view str, FarEntryType *entry_type);
-
-void ExpandArgs(int argc, char **argv, int *argcp, char ***argvp);
+bool GetFarEntryType(std::string_view str, FarEntryType* entry_type);
 
 }  // namespace script
 

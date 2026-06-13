@@ -23,7 +23,6 @@
 #include <cstddef>
 #include <istream>
 #include <memory>
-#include <numeric>
 #include <ostream>
 #include <sstream>
 #include <string>
@@ -72,7 +71,7 @@ class LinearFstData {
 
   // Appends the state tuple of the start state to `output`, where
   // each tuple holds the node ids of a trie for each feature group.
-  void EncodeStartState(std::vector<Label> *output) const {
+  void EncodeStartState(std::vector<Label>* output) const {
     for (int i = 0; i < NumGroups(); ++i) output->push_back(GroupStartState(i));
   }
 
@@ -86,7 +85,7 @@ class LinearFstData {
   template <class Iterator>
   void TakeTransition(Iterator buffer_end, Iterator trie_state_begin,
                       Iterator trie_state_end, Label ilabel, Label olabel,
-                      std::vector<Label> *next, Weight *weight) const;
+                      std::vector<Label>* next, Weight* weight) const;
 
   // Returns the final weight of the given trie state sequence.
   template <class Iterator>
@@ -100,7 +99,7 @@ class LinearFstData {
   // Takes a transition only within the given group. Returns the
   // destination trie state and multiplies the weight onto `weight`.
   Label GroupTransition(int group_id, int trie_state, Label ilabel,
-                        Label olabel, Weight *weight) const;
+                        Label olabel, Weight* weight) const;
 
   // Returns the final weight of the given trie state in the given group.
   Weight GroupFinalWeight(int group_id, int trie_state) const {
@@ -126,16 +125,16 @@ class LinearFstData {
             typename std::vector<Label>::const_iterator>
   PossibleOutputLabels(Label word) const;
 
-  static LinearFstData<A> *Read(std::istream &strm);
-  std::ostream &Write(std::ostream &strm) const;
+  static LinearFstData<A>* Read(std::istream& strm);
+  std::ostream& Write(std::ostream& strm) const;
 
  private:
   // Offsets in `output_pool_`
   struct InputAttribute {
     size_t output_begin, output_length;
 
-    std::istream &Read(std::istream &strm);
-    std::ostream &Write(std::ostream &strm) const;
+    std::istream& Read(std::istream& strm);
+    std::ostream& Write(std::ostream& strm) const;
   };
 
   // Mapping from input label to per-group feature label
@@ -153,8 +152,8 @@ class LinearFstData {
   std::vector<Label> output_pool_, output_set_;
   GroupFeatureMap group_feat_map_;
 
-  LinearFstData(const LinearFstData &) = delete;
-  LinearFstData &operator=(const LinearFstData &) = delete;
+  LinearFstData(const LinearFstData&) = delete;
+  LinearFstData& operator=(const LinearFstData&) = delete;
 };
 
 template <class A>
@@ -162,8 +161,8 @@ template <class Iterator>
 void LinearFstData<A>::TakeTransition(Iterator buffer_end,
                                       Iterator trie_state_begin,
                                       Iterator trie_state_end, Label ilabel,
-                                      Label olabel, std::vector<Label> *next,
-                                      Weight *weight) const {
+                                      Label olabel, std::vector<Label>* next,
+                                      Weight* weight) const {
   DCHECK_EQ(trie_state_end - trie_state_begin, groups_.size());
   DCHECK(ilabel > 0 || ilabel == kEndOfSentence);
   DCHECK(olabel > 0 || olabel == kStartOfSentence);
@@ -182,7 +181,7 @@ template <class A>
 typename A::Label LinearFstData<A>::GroupTransition(int group_id,
                                                     int trie_state,
                                                     Label ilabel, Label olabel,
-                                                    Weight *weight) const {
+                                                    Weight* weight) const {
   Label group_ilabel = FindFeature(group_id, ilabel);
   return groups_[group_id]->Walk(trie_state, group_ilabel, olabel, weight);
 }
@@ -203,7 +202,7 @@ template <class A>
 inline std::pair<typename std::vector<typename A::Label>::const_iterator,
                  typename std::vector<typename A::Label>::const_iterator>
 LinearFstData<A>::PossibleOutputLabels(Label word) const {
-  const InputAttribute &attrib = input_attribs_[word];
+  const InputAttribute& attrib = input_attribs_[word];
   if (attrib.output_length == 0)
     return std::make_pair(output_set_.begin(), output_set_.end());
   else
@@ -213,7 +212,7 @@ LinearFstData<A>::PossibleOutputLabels(Label word) const {
 }
 
 template <class A>
-inline LinearFstData<A> *LinearFstData<A>::Read(std::istream &strm) {
+inline LinearFstData<A>* LinearFstData<A>::Read(std::istream& strm) {
   std::unique_ptr<LinearFstData<A>> data(new LinearFstData<A>());
   ReadType(strm, &(data->max_future_size_));
   ReadType(strm, &(data->max_input_label_));
@@ -236,7 +235,7 @@ inline LinearFstData<A> *LinearFstData<A>::Read(std::istream &strm) {
 }
 
 template <class A>
-inline std::ostream &LinearFstData<A>::Write(std::ostream &strm) const {
+inline std::ostream& LinearFstData<A>::Write(std::ostream& strm) const {
   WriteType(strm, max_future_size_);
   WriteType(strm, max_input_label_);
   // Feature groups
@@ -263,16 +262,16 @@ typename A::Label LinearFstData<A>::FindFeature(size_t group,
 }
 
 template <class A>
-inline std::istream &LinearFstData<A>::InputAttribute::Read(
-    std::istream &strm) {
+inline std::istream& LinearFstData<A>::InputAttribute::Read(
+    std::istream& strm) {
   ReadType(strm, &output_begin);
   ReadType(strm, &output_length);
   return strm;
 }
 
 template <class A>
-inline std::ostream &LinearFstData<A>::InputAttribute::Write(
-    std::ostream &strm) const {
+inline std::ostream& LinearFstData<A>::InputAttribute::Write(
+    std::ostream& strm) const {
   WriteType(strm, output_begin);
   WriteType(strm, output_length);
   return strm;
@@ -306,7 +305,7 @@ class FeatureGroup {
 
   // Finds destination node from `cur` by consuming `ilabel` and
   // `olabel`. The transition weight is multiplied onto `weight`.
-  int Walk(int cur, Label ilabel, Label olabel, Weight *weight) const;
+  int Walk(int cur, Label ilabel, Label olabel, Weight* weight) const;
 
   // Returns the final weight of the current trie state. Only valid if
   // the state is already known to be part of a final state (see
@@ -315,7 +314,7 @@ class FeatureGroup {
     return trie_[trie_state].final_weight;
   }
 
-  static FeatureGroup<A> *Read(std::istream &strm) {
+  static FeatureGroup<A>* Read(std::istream& strm) {
     size_t delay;
     ReadType(strm, &delay);
     int start;
@@ -332,7 +331,7 @@ class FeatureGroup {
     }
   }
 
-  std::ostream &Write(std::ostream &strm) const {
+  std::ostream& Write(std::ostream& strm) const {
     WriteType(strm, delay_);
     WriteType(strm, start_);
     WriteType(strm, trie_);
@@ -362,14 +361,14 @@ class FeatureGroup {
           weight(Weight::One()),
           final_weight(Weight::One()) {}
 
-    std::istream &Read(std::istream &strm) {
+    std::istream& Read(std::istream& strm) {
       ReadType(strm, &back_link);
       ReadType(strm, &weight);
       ReadType(strm, &final_weight);
       return strm;
     }
 
-    std::ostream &Write(std::ostream &strm) const {
+    std::ostream& Write(std::ostream& strm) const {
       WriteType(strm, back_link);
       WriteType(strm, weight);
       WriteType(strm, final_weight);
@@ -397,8 +396,8 @@ class FeatureGroup {
   // back-off state.
   std::vector<int> next_state_;
 
-  FeatureGroup(const FeatureGroup &) = delete;
-  FeatureGroup &operator=(const FeatureGroup &) = delete;
+  FeatureGroup(const FeatureGroup&) = delete;
+  FeatureGroup& operator=(const FeatureGroup&) = delete;
 };
 
 template <class A>
@@ -412,13 +411,13 @@ struct FeatureGroup<A>::InputOutputLabel {
     return input == that.input && output == that.output;
   }
 
-  std::istream &Read(std::istream &strm) {
+  std::istream& Read(std::istream& strm) {
     ReadType(strm, &input);
     ReadType(strm, &output);
     return strm;
   }
 
-  std::ostream &Write(std::ostream &strm) const {
+  std::ostream& Write(std::ostream& strm) const {
     WriteType(strm, input);
     WriteType(strm, output);
     return strm;
@@ -434,7 +433,7 @@ struct FeatureGroup<A>::InputOutputLabelHash {
 
 template <class A>
 int FeatureGroup<A>::Walk(int cur, Label ilabel, Label olabel,
-                          Weight *weight) const {
+                          Weight* weight) const {
   // Note: user of this method need to ensure `ilabel` and `olabel`
   // are valid (e.g. see DCHECKs in
   // `LinearFstData<>::TakeTransition()` and
@@ -511,13 +510,13 @@ class LinearFstData<A>::GroupFeatureMap {
     return true;
   }
 
-  std::istream &Read(std::istream &strm) {
+  std::istream& Read(std::istream& strm) {
     ReadType(strm, &num_groups_);
     ReadType(strm, &pool_);
     return strm;
   }
 
-  std::ostream &Write(std::ostream &strm) const {
+  std::ostream& Write(std::ostream& strm) const {
     WriteType(strm, num_groups_);
     WriteType(strm, pool_);
     return strm;

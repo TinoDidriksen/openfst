@@ -25,7 +25,7 @@
 namespace fst {
 namespace script {
 
-bool Compress(const FstClass &fst, const std::string &source) {
+bool Compress(const FstClass& fst, const std::string& source) {
   CompressInnerArgs iargs(fst, source);
   CompressArgs args(iargs);
   Apply<Operation<CompressArgs>>("Compress", fst.ArcType(), &args);
@@ -34,7 +34,7 @@ bool Compress(const FstClass &fst, const std::string &source) {
 
 REGISTER_FST_OPERATION_3ARCS(Compress, CompressArgs);
 
-bool Decompress(const std::string &source, MutableFstClass *fst) {
+bool Decompress(const std::string& source, MutableFstClass* fst) {
   DecompressInnerArgs iargs(source, fst);
   DecompressArgs args(iargs);
   Apply<Operation<DecompressArgs>>("Decompress", fst->ArcType(), &args);

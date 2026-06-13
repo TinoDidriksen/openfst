@@ -24,7 +24,6 @@
 #include <memory>
 #include <string>
 
-#include <fst/log.h>
 #include <fst/equal.h>
 #include <fst/expanded-fst.h>
 #include <fstream>
@@ -62,7 +61,7 @@ class FstTester {
   // This verifies the contents described in InitFst() using
   // methods defined in a generic Fst.
   template <class G>
-  void TestBase(const G &fst) const {
+  void TestBase(const G& fst) const {
     StateId ns = 0;
     StateIterator<G> siter(fst);
     Matcher<G> matcher(fst, MATCH_INPUT);
@@ -82,7 +81,7 @@ class FstTester {
       }
       for (aiter.Reset(); !aiter.Done(); aiter.Next()) {
         ++na;
-        const Arc &arc = aiter.Value();
+        const Arc& arc = aiter.Value();
         CHECK_EQ(arc.ilabel, na);
         CHECK_EQ(arc.olabel, 0);
         CHECK_EQ(arc.weight, NthWeight(na));
@@ -117,7 +116,7 @@ class FstTester {
 
   // This verifies methods specfic to an ExpandedFst.
   template <class G>
-  void TestExpanded(const G &fst) const {
+  void TestExpanded(const G& fst) const {
     CHECK_EQ(fst.NumStates(), num_states_);
     StateId ns = 0;
     for (StateIterator<G> siter(fst); !siter.Done(); siter.Next()) {
@@ -131,7 +130,7 @@ class FstTester {
 
   // This verifies methods specific to a MutableFst.
   template <class G>
-  void TestMutable(G *fst) const {
+  void TestMutable(G* fst) const {
     for (StateIterator<G> siter(*fst); !siter.Done(); siter.Next()) {
       StateId s = siter.Value();
       size_t na = 0;
@@ -173,7 +172,7 @@ class FstTester {
 
   // This verifies operator=
   template <class G>
-  void TestAssign(const G &fst) const {
+  void TestAssign(const G& fst) const {
     // Assignment from G
     G afst1;
     afst1 = fst;
@@ -181,7 +180,7 @@ class FstTester {
 
     // Assignment from Fst
     G afst2;
-    afst2 = static_cast<const Fst<Arc> &>(fst);
+    afst2 = static_cast<const Fst<Arc>&>(fst);
     CHECK(Equal(fst, afst2));
 
     // Assignment from self
@@ -193,13 +192,13 @@ class FstTester {
 
   // This verifies the copy constructor and Copy method.
   template <class G>
-  void TestCopy(const G &fst) const {
+  void TestCopy(const G& fst) const {
     // Copy from G
     G c1fst(fst);
     TestBase(c1fst);
 
     // Copy from Fst
-    const G c2fst(static_cast<const Fst<Arc> &>(fst));
+    const G c2fst(static_cast<const Fst<Arc>&>(fst));
     TestBase(c2fst);
 
     // Copy from self
@@ -211,7 +210,7 @@ class FstTester {
 
   // This verifies the read/write methods.
   template <class G>
-  void TestIO(const G &fst) const {
+  void TestIO(const G& fst) const {
     const std::string filename = FST_FLAGS_tmpdir + "/test.fst";
     const std::string aligned = FST_FLAGS_tmpdir + "/aligned.fst";
     {
@@ -226,7 +225,7 @@ class FstTester {
       // generic read/cast/test
       auto gfst = fst::WrapUnique(Fst<Arc>::Read(filename));
       CHECK(gfst);
-      G *dfst = down_cast<G *>(gfst.get());
+      G* dfst = down_cast<G*>(gfst.get());
       TestBase(*dfst);
 
       // generic write/read/test
@@ -311,7 +310,7 @@ class FstTester {
   //         (3) weight = NthWeight(s + 1)
   //         (4) nextstate = s + 1 if s < nstates - 1
   //                         0 if s == nstates - 1
-  void InitFst(MutableFst<Arc> *fst, size_t nstates) const {
+  void InitFst(MutableFst<Arc>* fst, size_t nstates) const {
     fst->DeleteStates();
 
     for (StateId s = 0; s < nstates; ++s) {

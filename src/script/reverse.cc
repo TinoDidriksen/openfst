@@ -24,7 +24,7 @@
 namespace fst {
 namespace script {
 
-void Reverse(const FstClass &ifst, MutableFstClass *ofst,
+void Reverse(const FstClass& ifst, MutableFstClass* ofst,
              bool require_superinitial) {
   if (!internal::ArcTypesMatch(ifst, *ofst, "Reverse")) {
     ofst->SetProperties(kError, kError);

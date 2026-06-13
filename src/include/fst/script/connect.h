@@ -25,11 +25,11 @@ namespace fst {
 namespace script {
 
 template <class Arc>
-void Connect(MutableFstClass *fst) {
+void Connect(MutableFstClass* fst) {
   Connect(fst->GetMutableFst<Arc>());
 }
 
-void Connect(MutableFstClass *fst);
+void Connect(MutableFstClass* fst);
 
 }  // namespace script
 }  // namespace fst

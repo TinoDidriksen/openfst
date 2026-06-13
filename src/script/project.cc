@@ -24,7 +24,7 @@
 namespace fst {
 namespace script {
 
-void Project(MutableFstClass *ofst, ProjectType project_type) {
+void Project(MutableFstClass* ofst, ProjectType project_type) {
   FstProjectArgs args(ofst, project_type);
   Apply<Operation<FstProjectArgs>>("Project", ofst->ArcType(), &args);
 }

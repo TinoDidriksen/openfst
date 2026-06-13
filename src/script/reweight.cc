@@ -27,7 +27,7 @@
 namespace fst {
 namespace script {
 
-void Reweight(MutableFstClass *fst, const std::vector<WeightClass> &potential,
+void Reweight(MutableFstClass* fst, const std::vector<WeightClass>& potential,
               ReweightType reweight_type) {
   FstReweightArgs args{fst, potential, reweight_type};
   Apply<Operation<FstReweightArgs>>("Reweight", fst->ArcType(), &args);

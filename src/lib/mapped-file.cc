@@ -51,7 +51,7 @@ static constexpr DWORD DWORD_MAX = std::numeric_limits<DWORD>::max();
 }  // namespace
 #endif  // _WIN32
 
-MappedFile::MappedFile(const MemoryRegion &region) : region_(region) {}
+MappedFile::MappedFile(const MemoryRegion& region) : region_(region) {}
 
 MappedFile::~MappedFile() {
   if (region_.size != 0) {
@@ -76,10 +76,9 @@ MappedFile::~MappedFile() {
   }
 }
 
-MappedFile * MappedFile::Map(std::istream &istrm,
-                                             bool memorymap,
-                                             const std::string &source,
-                                             size_t size) {
+MappedFile*  MappedFile::Map(std::istream& istrm, bool memorymap,
+                                          const std::string& source,
+                                          size_t size) {
   const auto spos = istrm.tellg();
   VLOG(2) << "memorymap: " << (memorymap ? "true" : "false") << " source: \""
           << source << "\""
@@ -108,12 +107,12 @@ MappedFile * MappedFile::Map(std::istream &istrm,
 
   // If all else fails, reads from the file into the allocated buffer.
   if (memorymap) {
-    LOG(WARNING) << "File mapping at offset " << spos << " of file " << source
-                 << " could not be honored, reading instead";
+    LOG(INFO) << "File mapping at offset " << spos << " of file " << source
+              << " could not be honored, reading instead";
   }
   // Reads the file into the buffer in chunks not larger than kMaxReadChunk.
   std::unique_ptr<MappedFile> mf(Allocate(size));
-  auto *buffer = static_cast<char *>(mf->mutable_data());
+  auto* buffer = static_cast<char*>(mf->mutable_data());
   while (size > 0) {
     const auto next_size = std::min(size, kMaxReadChunk);
     const auto current_pos = istrm.tellg();
@@ -129,9 +128,8 @@ MappedFile * MappedFile::Map(std::istream &istrm,
   return mf.release();
 }
 
-MappedFile * MappedFile::MapFromFileDescriptor(int fd,
-                                                               size_t pos,
-                                                               size_t size) {
+MappedFile*  MappedFile::MapFromFileDescriptor(int fd, size_t pos,
+                                                            size_t size) {
 #ifdef _WIN32
   SYSTEM_INFO sysInfo;
   GetSystemInfo(&sysInfo);
@@ -165,12 +163,12 @@ MappedFile * MappedFile::MapFromFileDescriptor(int fd,
     return nullptr;
   }
 
-  const DWORD offset_pos_hi =
-      sizeof(size_t) > sizeof(DWORD) ? offset_pos >> (CHAR_BIT * sizeof(DWORD))
-                                     : 0;
+  const DWORD offset_pos_hi = sizeof(size_t) > sizeof(DWORD)
+                                  ? offset_pos >> (CHAR_BIT * sizeof(DWORD))
+                                  : 0;
   const DWORD offset_pos_lo = offset_pos & DWORD_MAX;
-  void *map = MapViewOfFile(file_mapping, FILE_MAP_READ,
-                            offset_pos_hi, offset_pos_lo, upsize);
+  void* map = MapViewOfFile(file_mapping, FILE_MAP_READ, offset_pos_hi,
+                            offset_pos_lo, upsize);
   if (!map) {
     LOG(ERROR) << "mmap failed for fd=" << fd << " size=" << upsize
                << " offset=" << offset_pos << ": " << GetLastError();
@@ -178,7 +176,7 @@ MappedFile * MappedFile::MapFromFileDescriptor(int fd,
     return nullptr;
   }
 #else
-  void *map = mmap(nullptr, upsize, PROT_READ, MAP_SHARED, fd, offset_pos);
+  void* map = mmap(nullptr, upsize, PROT_READ, MAP_SHARED, fd, offset_pos);
   if (map == MAP_FAILED) {
     LOG(ERROR) << "mmap failed for fd=" << fd << " size=" << upsize
                << " offset=" << offset_pos;
@@ -188,7 +186,7 @@ MappedFile * MappedFile::MapFromFileDescriptor(int fd,
   MemoryRegion region;
   region.mmap = map;
   region.size = upsize;
-  region.data = static_cast<void *>(static_cast<char *>(map) + offset);
+  region.data = static_cast<void*>(static_cast<char*>(map) + offset);
   region.offset = offset;
 #ifdef _WIN32
   region.file_mapping = file_mapping;
@@ -196,22 +194,21 @@ MappedFile * MappedFile::MapFromFileDescriptor(int fd,
   return new MappedFile(region);
 }
 
-MappedFile *MappedFile::Allocate(size_t size, size_t align) {
+MappedFile* MappedFile::Allocate(size_t size, size_t align) {
   MemoryRegion region;
   region.data = nullptr;
   region.offset = 0;
   if (size > 0) {
     region.offset = align;
-    region.data = static_cast<char *>(operator new(
-        size, std::align_val_t{align}
-        ));
+    region.data = static_cast<char*>(operator new(size, std::align_val_t{align}
+                                                  ));
   }
   region.mmap = nullptr;
   region.size = size;
   return new MappedFile(region);
 }
 
-MappedFile *MappedFile::Borrow(void *data) {
+MappedFile* MappedFile::Borrow(void* data) {
   MemoryRegion region;
   region.data = data;
   region.mmap = data;

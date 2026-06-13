@@ -25,8 +25,8 @@
 namespace fst {
 namespace script {
 
-void Difference(const FstClass &ifst1, const FstClass &ifst2,
-                MutableFstClass *ofst, const ComposeOptions &opts) {
+void Difference(const FstClass& ifst1, const FstClass& ifst2,
+                MutableFstClass* ofst, const ComposeOptions& opts) {
   if (!internal::ArcTypesMatch(ifst1, ifst2, "Difference") ||
       !internal::ArcTypesMatch(*ofst, ifst1, "Difference")) {
     ofst->SetProperties(kError, kError);

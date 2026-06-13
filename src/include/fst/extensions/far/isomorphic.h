@@ -19,23 +19,23 @@
 #define FST_EXTENSIONS_FAR_ISOMORPHIC_H_
 
 #include <fst/log.h>
+#include <string_view>
 #include <fst/extensions/far/far.h>
 #include <fst/extensions/far/map-reduce.h>
 #include <fst/fst.h>
 #include <fst/isomorphic.h>
 #include <fst/weight.h>
-#include <string_view>
 
 namespace fst {
 
 template <class Arc>
-bool Isomorphic(FarReader<Arc> &reader1, FarReader<Arc> &reader2,
+bool Isomorphic(FarReader<Arc>& reader1, FarReader<Arc>& reader2,
                 float delta = kDelta, std::string_view begin_key = "",
                 std::string_view end_key = "") {
   return internal::MapAllReduce(
       reader1, reader2,
-      [delta](std::string_view key, const Fst<Arc> *fst1,
-              const Fst<Arc> *fst2) {
+      [delta](std::string_view key, const Fst<Arc>* fst1,
+              const Fst<Arc>* fst2) {
         if (!Isomorphic(*fst1, *fst2, delta)) {
           LOG(ERROR) << "Isomorphic: FSTs for key " << key << "are not equal";
           return false;

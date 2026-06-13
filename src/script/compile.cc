@@ -29,10 +29,10 @@
 namespace fst {
 namespace script {
 
-void Compile(std::istream &istrm, const std::string &source,
-             const std::string &dest, const std::string &fst_type,
-             const std::string &arc_type, const SymbolTable *isyms,
-             const SymbolTable *osyms, const SymbolTable *ssyms, bool accep,
+void Compile(std::istream& istrm, const std::string& source,
+             const std::string& dest, const std::string& fst_type,
+             const std::string& arc_type, const SymbolTable* isyms,
+             const SymbolTable* osyms, const SymbolTable* ssyms, bool accep,
              bool ikeep, bool okeep, bool nkeep) {
   std::unique_ptr<FstClass> fst(CompileInternal(istrm, source, fst_type,
                                                 arc_type, isyms, osyms, ssyms,
@@ -41,20 +41,12 @@ void Compile(std::istream &istrm, const std::string &source,
 }
 
 std::unique_ptr<FstClass> CompileInternal(
-    std::istream &istrm, const std::string &source, const std::string &fst_type,
-    const std::string &arc_type, const SymbolTable *isyms,
-    const SymbolTable *osyms, const SymbolTable *ssyms, bool accep, bool ikeep,
+    std::istream& istrm, const std::string& source, const std::string& fst_type,
+    const std::string& arc_type, const SymbolTable* isyms,
+    const SymbolTable* osyms, const SymbolTable* ssyms, bool accep, bool ikeep,
     bool okeep, bool nkeep) {
-  FstCompileInnerArgs iargs{istrm,
-                            source,
-                            fst_type,
-                            isyms,
-                            osyms,
-                            ssyms,
-                            accep,
-                            ikeep,
-                            okeep,
-                            nkeep};
+  FstCompileInnerArgs iargs{istrm, source, fst_type, isyms, osyms,
+                            ssyms, accep,  ikeep,    okeep, nkeep};
   FstCompileArgs args(iargs);
   Apply<Operation<FstCompileArgs>>("CompileInternal", arc_type, &args);
   return std::move(args.retval);

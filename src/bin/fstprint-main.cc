@@ -24,6 +24,7 @@
 #include <string>
 
 #include <fst/flags.h>
+#include <fst/flags.h>
 #include <fst/log.h>
 #include <fstream>
 #include <fst/symbol-table.h>
@@ -40,7 +41,7 @@ DECLARE_string(save_osymbols);
 DECLARE_bool(show_weight_one);
 DECLARE_string(missing_symbol);
 
-int fstprint_main(int argc, char **argv) {
+int fstprint_main(int argc, char** argv) {
   namespace s = fst::script;
   using fst::SymbolTable;
   using fst::script::FstClass;
@@ -74,7 +75,7 @@ int fstprint_main(int argc, char **argv) {
     }
     dest = argv[2];
   }
-  std::ostream &ostrm = fstrm.is_open() ? fstrm : std::cout;
+  std::ostream& ostrm = fstrm.is_open() ? fstrm : std::cout;
   ostrm.precision(9);
 
   std::unique_ptr<const SymbolTable> isyms;

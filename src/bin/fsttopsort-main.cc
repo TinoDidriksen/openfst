@@ -22,11 +22,12 @@
 #include <string>
 
 #include <fst/flags.h>
+#include <fst/flags.h>
 #include <fst/log.h>
 #include <fst/script/fst-class.h>
 #include <fst/script/topsort.h>
 
-int fsttopsort_main(int argc, char **argv) {
+int fsttopsort_main(int argc, char** argv) {
   namespace s = fst::script;
   using fst::script::MutableFstClass;
 

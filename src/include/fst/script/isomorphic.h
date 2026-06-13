@@ -30,18 +30,18 @@ namespace fst {
 namespace script {
 
 using FstIsomorphicInnerArgs =
-    std::tuple<const FstClass &, const FstClass &, float>;
+    std::tuple<const FstClass&, const FstClass&, float>;
 
 using FstIsomorphicArgs = WithReturnValue<bool, FstIsomorphicInnerArgs>;
 
 template <class Arc>
-void Isomorphic(FstIsomorphicArgs *args) {
-  const Fst<Arc> &fst1 = *std::get<0>(args->args).GetFst<Arc>();
-  const Fst<Arc> &fst2 = *std::get<1>(args->args).GetFst<Arc>();
+void Isomorphic(FstIsomorphicArgs* args) {
+  const Fst<Arc>& fst1 = *std::get<0>(args->args).GetFst<Arc>();
+  const Fst<Arc>& fst2 = *std::get<1>(args->args).GetFst<Arc>();
   args->retval = Isomorphic(fst1, fst2, std::get<2>(args->args));
 }
 
-bool Isomorphic(const FstClass &fst1, const FstClass &fst2,
+bool Isomorphic(const FstClass& fst1, const FstClass& fst2,
                 float delta = kDelta);
 
 }  // namespace script

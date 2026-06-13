@@ -23,7 +23,6 @@
 #include <utility>
 #include <vector>
 
-#include <fst/log.h>
 #include <fst/fst.h>
 #include <fst/mutable-fst.h>
 #include <fst/properties.h>
@@ -52,22 +51,22 @@ struct ReplaceOptions {
 };
 
 using FstReplaceArgs =
-    std::tuple<const std::vector<std::pair<int64_t, const FstClass *>> &,
-               MutableFstClass *, const ReplaceOptions &>;
+    std::tuple<const std::vector<std::pair<int64_t, const FstClass*>>&,
+               MutableFstClass*, const ReplaceOptions&>;
 
 template <class Arc>
-void Replace(FstReplaceArgs *args) {
+void Replace(FstReplaceArgs* args) {
   // Now that we know the arc type, we construct a vector of
   // std::pair<real label, real fst> that the real Replace will use.
-  const auto &untyped_pairs = std::get<0>(*args);
-  std::vector<std::pair<typename Arc::Label, const Fst<Arc> *>> typed_pairs;
+  const auto& untyped_pairs = std::get<0>(*args);
+  std::vector<std::pair<typename Arc::Label, const Fst<Arc>*>> typed_pairs;
   typed_pairs.reserve(untyped_pairs.size());
-  for (const auto &untyped_pair : untyped_pairs) {
+  for (const auto& untyped_pair : untyped_pairs) {
     typed_pairs.emplace_back(untyped_pair.first,  // Converts label.
                              untyped_pair.second->GetFst<Arc>());
   }
-  MutableFst<Arc> *ofst = std::get<1>(*args)->GetMutableFst<Arc>();
-  const auto &opts = std::get<2>(*args);
+  MutableFst<Arc>* ofst = std::get<1>(*args)->GetMutableFst<Arc>();
+  const auto& opts = std::get<2>(*args);
   ReplaceFstOptions<Arc> typed_opts(opts.root, opts.call_label_type,
                                     opts.return_label_type, opts.return_label);
   ReplaceFst<Arc> rfst(typed_pairs, typed_opts);
@@ -82,8 +81,8 @@ void Replace(FstReplaceArgs *args) {
   *ofst = rfst;
 }
 
-void Replace(const std::vector<std::pair<int64_t, const FstClass *>> &pairs,
-             MutableFstClass *ofst, const ReplaceOptions &opts);
+void Replace(const std::vector<std::pair<int64_t, const FstClass*>>& pairs,
+             MutableFstClass* ofst, const ReplaceOptions& opts);
 
 }  // namespace script
 }  // namespace fst

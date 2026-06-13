@@ -25,6 +25,7 @@
 #include <vector>
 
 #include <fst/flags.h>
+#include <fst/flags.h>
 #include <fst/log.h>
 #include <fst/extensions/mpdt/expand.h>
 #include <fst/extensions/mpdt/mpdtscript.h>
@@ -35,7 +36,7 @@ DECLARE_string(mpdt_parentheses);
 DECLARE_bool(connect);
 DECLARE_bool(keep_parentheses);
 
-int mpdtexpand_main(int argc, char **argv) {
+int mpdtexpand_main(int argc, char** argv) {
   namespace s = fst::script;
   using fst::MPdtExpandOptions;
   using fst::ReadLabelTriples;

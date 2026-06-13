@@ -26,6 +26,7 @@
 #include <tuple>
 #include <vector>
 
+#include <string_view>
 #include <fst/extensions/far/compile-strings.h>
 #include <fst/extensions/far/convert.h>
 #include <fst/extensions/far/create.h>
@@ -44,7 +45,6 @@
 #include <fst/script/arg-packs.h>
 #include <fst/script/encodemapper-class.h>
 #include <fst/script/script-impl.h>
-#include <string_view>
 
 namespace fst {
 namespace script {
@@ -53,216 +53,215 @@ namespace script {
 // only used to pass them deeper in the call graph. Be sure you understand why
 // this is so before using this struct for anything else!
 struct FarCompileStringsArgs {
-  const std::vector<std::string> &sources;
-  FarWriterClass &writer;
+  const std::vector<std::string>& sources;
+  FarWriterClass& writer;
   std::string_view fst_type;
   const int32_t generate_keys;
   const FarEntryType fet;
   const TokenType tt;
-  const std::string &symbols_source;
-  const std::string &unknown_symbol;
+  const std::string& symbols_source;
+  const std::string& unknown_symbol;
   const bool keep_symbols;
   const bool initial_symbols;
-  const std::string &key_prefix;
-  const std::string &key_suffix;
+  const std::string& key_prefix;
+  const std::string& key_suffix;
 };
 
 template <class Arc>
-void CompileStrings(FarCompileStringsArgs *args) {
-  FarWriter<Arc> &writer = *args->writer.GetFarWriter<Arc>();
+void CompileStrings(FarCompileStringsArgs* args) {
+  FarWriter<Arc>& writer = *args->writer.GetFarWriter<Arc>();
   ::fst::CompileStrings<Arc>(
       args->sources, writer, args->fst_type, args->generate_keys, args->fet,
       args->tt, args->symbols_source, args->unknown_symbol, args->keep_symbols,
       args->initial_symbols, args->key_prefix, args->key_suffix);
 }
 
-void CompileStrings(const std::vector<std::string> &sources,
-                    FarWriterClass &writer, std::string_view fst_type,
+void CompileStrings(const std::vector<std::string>& sources,
+                    FarWriterClass& writer, std::string_view fst_type,
                     int32_t generate_keys, FarEntryType fet, TokenType tt,
-                    const std::string &symbols_source,
-                    const std::string &unknown_symbol, bool keep_symbols,
-                    bool initial_symbols, const std::string &key_prefix,
-                    const std::string &key_suffix);
+                    const std::string& symbols_source,
+                    const std::string& unknown_symbol, bool keep_symbols,
+                    bool initial_symbols, const std::string& key_prefix,
+                    const std::string& key_suffix);
 
 using FarConvertArgs =
-    std::tuple<FarReaderClass &, FarWriterClass &, std::string_view>;
+    std::tuple<FarReaderClass&, FarWriterClass&, std::string_view>;
 
 template <class Arc>
-void Convert(FarConvertArgs *args) {
-  FarReader<Arc> &reader = *std::get<0>(*args).GetFarReader<Arc>();
-  FarWriter<Arc> &writer = *std::get<1>(*args).GetFarWriter<Arc>();
+void Convert(FarConvertArgs* args) {
+  FarReader<Arc>& reader = *std::get<0>(*args).GetFarReader<Arc>();
+  FarWriter<Arc>& writer = *std::get<1>(*args).GetFarWriter<Arc>();
   ::fst::Convert<Arc>(reader, writer, std::get<2>(*args));
 }
 
-void Convert(FarReaderClass &reader, FarWriterClass &writer,
+void Convert(FarReaderClass& reader, FarWriterClass& writer,
              std::string_view fst_type);
 
 // Note: it is safe to pass these strings as references because this struct is
 // only used to pass them deeper in the call graph. Be sure you understand why
 // this is so before using this struct for anything else!
 struct FarCreateArgs {
-  const std::vector<std::string> &sources;
-  FarWriterClass &writer;
+  const std::vector<std::string>& sources;
+  FarWriterClass& writer;
   const int32_t generate_keys;
-  const std::string &key_prefix;
-  const std::string &key_suffix;
+  const std::string& key_prefix;
+  const std::string& key_suffix;
 };
 
 template <class Arc>
-void Create(FarCreateArgs *args) {
-  FarWriter<Arc> &writer = *args->writer.GetFarWriter<Arc>();
+void Create(FarCreateArgs* args) {
+  FarWriter<Arc>& writer = *args->writer.GetFarWriter<Arc>();
   ::fst::Create<Arc>(args->sources, writer, args->generate_keys,
-                         args->key_prefix, args->key_suffix);
+                     args->key_prefix, args->key_suffix);
 }
 
-void Create(const std::vector<std::string> &sources, FarWriterClass &writer,
-            int32_t generate_keys, const std::string &key_prefix,
-            const std::string &key_suffix);
+void Create(const std::vector<std::string>& sources, FarWriterClass& writer,
+            int32_t generate_keys, const std::string& key_prefix,
+            const std::string& key_suffix);
 
 using FarDecodeArgs =
-    std::tuple<FarReaderClass &, FarWriterClass &, const EncodeMapperClass &>;
+    std::tuple<FarReaderClass&, FarWriterClass&, const EncodeMapperClass&>;
 
 template <class Arc>
-void Decode(FarDecodeArgs *args) {
-  FarReader<Arc> &reader = *std::get<0>(*args).GetFarReader<Arc>();
-  FarWriter<Arc> &writer = *std::get<1>(*args).GetFarWriter<Arc>();
-  const EncodeMapper<Arc> &mapper = *std::get<2>(*args).GetEncodeMapper<Arc>();
+void Decode(FarDecodeArgs* args) {
+  FarReader<Arc>& reader = *std::get<0>(*args).GetFarReader<Arc>();
+  FarWriter<Arc>& writer = *std::get<1>(*args).GetFarWriter<Arc>();
+  const EncodeMapper<Arc>& mapper = *std::get<2>(*args).GetEncodeMapper<Arc>();
   Decode(reader, writer, mapper);
 }
 
-void Decode(FarReaderClass &reader, FarWriterClass &writer,
-            const EncodeMapperClass &encoder);
+void Decode(FarReaderClass& reader, FarWriterClass& writer,
+            const EncodeMapperClass& encoder);
 
 using FarEncodeArgs =
-    std::tuple<FarReaderClass &, FarWriterClass &, EncodeMapperClass *>;
+    std::tuple<FarReaderClass&, FarWriterClass&, EncodeMapperClass*>;
 
 template <class Arc>
-void Encode(FarEncodeArgs *args) {
-  FarReader<Arc> &reader = *std::get<0>(*args).GetFarReader<Arc>();
-  FarWriter<Arc> &writer = *std::get<1>(*args).GetFarWriter<Arc>();
-  EncodeMapper<Arc> *mapper = std::get<2>(*args)->GetEncodeMapper<Arc>();
+void Encode(FarEncodeArgs* args) {
+  FarReader<Arc>& reader = *std::get<0>(*args).GetFarReader<Arc>();
+  FarWriter<Arc>& writer = *std::get<1>(*args).GetFarWriter<Arc>();
+  EncodeMapper<Arc>* mapper = std::get<2>(*args)->GetEncodeMapper<Arc>();
   Encode(reader, writer, mapper);
 }
 
-void Encode(FarReaderClass &reader, FarWriterClass &writer,
-            EncodeMapperClass *encoder);
+void Encode(FarReaderClass& reader, FarWriterClass& writer,
+            EncodeMapperClass* encoder);
 
-using FarEqualInnerArgs = std::tuple<FarReaderClass &, FarReaderClass &, float,
+using FarEqualInnerArgs = std::tuple<FarReaderClass&, FarReaderClass&, float,
                                      std::string_view, std::string_view>;
 
 using FarEqualArgs = WithReturnValue<bool, FarEqualInnerArgs>;
 
 template <class Arc>
-void Equal(FarEqualArgs *args) {
-  FarReader<Arc> &reader1 = *std::get<0>(args->args).GetFarReader<Arc>();
-  FarReader<Arc> &reader2 = *std::get<1>(args->args).GetFarReader<Arc>();
+void Equal(FarEqualArgs* args) {
+  FarReader<Arc>& reader1 = *std::get<0>(args->args).GetFarReader<Arc>();
+  FarReader<Arc>& reader2 = *std::get<1>(args->args).GetFarReader<Arc>();
   args->retval =
       ::fst::Equal<Arc>(reader1, reader2, std::get<2>(args->args),
-                            std::get<3>(args->args), std::get<4>(args->args));
+                        std::get<3>(args->args), std::get<4>(args->args));
 }
 
-bool Equal(FarReaderClass &reader1, FarReaderClass &reader2,
+bool Equal(FarReaderClass& reader1, FarReaderClass& reader2,
            float delta = kDelta, std::string_view begin_key = "",
            std::string_view end_key = "");
 
 using FarExtractArgs =
-    std::tuple<FarReaderClass &, int32_t, const std::string &,
-               const std::string &, const std::string &, const std::string &,
-               const std::string &>;
+    std::tuple<FarReaderClass&, int32_t, const std::string&, const std::string&,
+               const std::string&, const std::string&, const std::string&>;
 
 template <class Arc>
-void Extract(FarExtractArgs *args) {
-  FarReader<Arc> &reader = *std::get<0>(*args).GetFarReader<Arc>();
+void Extract(FarExtractArgs* args) {
+  FarReader<Arc>& reader = *std::get<0>(*args).GetFarReader<Arc>();
   ::fst::Extract<Arc>(reader, std::get<1>(*args), std::get<2>(*args),
-                          std::get<3>(*args), std::get<4>(*args),
-                          std::get<5>(*args), std::get<6>(*args));
+                      std::get<3>(*args), std::get<4>(*args),
+                      std::get<5>(*args), std::get<6>(*args));
 }
 
-void Extract(FarReaderClass &reader, int32_t generate_sources,
-             const std::string &keys, const std::string &key_separator,
-             const std::string &range_delimiter,
-             const std::string &source_prefix,
-             const std::string &source_suffix);
+void Extract(FarReaderClass& reader, int32_t generate_sources,
+             const std::string& keys, const std::string& key_separator,
+             const std::string& range_delimiter,
+             const std::string& source_prefix,
+             const std::string& source_suffix);
 
 using FarInfoArgs =
-    std::tuple<const std::vector<std::string> &, const std::string &,
-               const std::string &, const bool>;
+    std::tuple<const std::vector<std::string>&, const std::string&,
+               const std::string&, const bool>;
 
 template <class Arc>
-void Info(FarInfoArgs *args) {
-  ::fst::Info<Arc>(std::get<0>(*args), std::get<1>(*args),
-                       std::get<2>(*args), std::get<3>(*args));
+void Info(FarInfoArgs* args) {
+  ::fst::Info<Arc>(std::get<0>(*args), std::get<1>(*args), std::get<2>(*args),
+                   std::get<3>(*args));
 }
 
-void Info(const std::vector<std::string> &sources, const std::string &arc_type,
-          const std::string &begin_key, const std::string &end_key,
+void Info(const std::vector<std::string>& sources, const std::string& arc_type,
+          const std::string& begin_key, const std::string& end_key,
           bool list_fsts);
 
 using FarGetInfoArgs =
-    std::tuple<const std::vector<std::string> &, const std::string &,
-               const std::string &, const bool, FarInfoData *>;
+    std::tuple<const std::vector<std::string>&, const std::string&,
+               const std::string&, const bool, FarInfoData*>;
 
 template <class Arc>
-void GetInfo(FarGetInfoArgs *args) {
+void GetInfo(FarGetInfoArgs* args) {
   ::fst::GetInfo<Arc>(std::get<0>(*args), std::get<1>(*args),
-                          std::get<2>(*args), std::get<3>(*args),
-                          std::get<4>(*args));
+                      std::get<2>(*args), std::get<3>(*args),
+                      std::get<4>(*args));
 }
 
-void GetInfo(const std::vector<std::string> &sources,
-             const std::string &arc_type, const std::string &begin_key,
-             const std::string &end_key, bool list_fsts, FarInfoData *);
+void GetInfo(const std::vector<std::string>& sources,
+             const std::string& arc_type, const std::string& begin_key,
+             const std::string& end_key, bool list_fsts, FarInfoData*);
 
 using FarIsomorphicInnerArgs =
-    std::tuple<FarReaderClass &, FarReaderClass &, float, std::string_view,
+    std::tuple<FarReaderClass&, FarReaderClass&, float, std::string_view,
                std::string_view>;
 
 using FarIsomorphicArgs = WithReturnValue<bool, FarIsomorphicInnerArgs>;
 
 template <class Arc>
-void Isomorphic(FarIsomorphicArgs *args) {
-  FarReader<Arc> &reader1 = *std::get<0>(args->args).GetFarReader<Arc>();
-  FarReader<Arc> &reader2 = *std::get<1>(args->args).GetFarReader<Arc>();
-  args->retval = ::fst::Isomorphic<Arc>(
-      reader1, reader2, std::get<2>(args->args), std::get<3>(args->args),
-      std::get<4>(args->args));
+void Isomorphic(FarIsomorphicArgs* args) {
+  FarReader<Arc>& reader1 = *std::get<0>(args->args).GetFarReader<Arc>();
+  FarReader<Arc>& reader2 = *std::get<1>(args->args).GetFarReader<Arc>();
+  args->retval =
+      ::fst::Isomorphic<Arc>(reader1, reader2, std::get<2>(args->args),
+                             std::get<3>(args->args), std::get<4>(args->args));
 }
 
-bool Isomorphic(FarReaderClass &reader1, FarReaderClass &reader2,
+bool Isomorphic(FarReaderClass& reader1, FarReaderClass& reader2,
                 float delta = kDelta, std::string_view begin_key = "",
                 std::string_view end_key = "");
 
 struct FarPrintStringsArgs {
-  FarReaderClass &reader;
+  FarReaderClass& reader;
   const FarEntryType entry_type;
   const TokenType token_type;
-  const std::string &begin_key;
-  const std::string &end_key;
+  const std::string& begin_key;
+  const std::string& end_key;
   const bool print_key;
   const bool print_weight;
-  const std::string &symbols_source;
+  const std::string& symbols_source;
   const bool initial_symbols;
   const int32_t generate_sources;
-  const std::string &source_prefix;
-  const std::string &source_suffix;
+  const std::string& source_prefix;
+  const std::string& source_suffix;
 };
 
 template <class Arc>
-void PrintStrings(FarPrintStringsArgs *args) {
-  FarReader<Arc> &reader = *args->reader.GetFarReader<Arc>();
+void PrintStrings(FarPrintStringsArgs* args) {
+  FarReader<Arc>& reader = *args->reader.GetFarReader<Arc>();
   ::fst::PrintStrings<Arc>(reader, args->entry_type, args->token_type,
-                               args->begin_key, args->end_key, args->print_key,
-                               args->print_weight, args->symbols_source,
-                               args->initial_symbols, args->generate_sources,
-                               args->source_prefix, args->source_suffix);
+                           args->begin_key, args->end_key, args->print_key,
+                           args->print_weight, args->symbols_source,
+                           args->initial_symbols, args->generate_sources,
+                           args->source_prefix, args->source_suffix);
 }
 
-void PrintStrings(FarReaderClass &reader, FarEntryType entry_type,
-                  TokenType token_type, const std::string &begin_key,
-                  const std::string &end_key, bool print_key, bool print_weight,
-                  const std::string &symbols_source, bool initial_symbols,
-                  int32_t generate_sources, const std::string &source_prefix,
-                  const std::string &source_suffix);
+void PrintStrings(FarReaderClass& reader, FarEntryType entry_type,
+                  TokenType token_type, const std::string& begin_key,
+                  const std::string& end_key, bool print_key, bool print_weight,
+                  const std::string& symbols_source, bool initial_symbols,
+                  int32_t generate_sources, const std::string& source_prefix,
+                  const std::string& source_suffix);
 
 }  // namespace script
 }  // namespace fst

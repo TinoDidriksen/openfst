@@ -30,11 +30,11 @@ namespace script {
 
 enum class ArcSortType : uint8_t { ILABEL, OLABEL };
 
-using FstArcSortArgs = std::pair<MutableFstClass *, ArcSortType>;
+using FstArcSortArgs = std::pair<MutableFstClass*, ArcSortType>;
 
 template <class Arc>
-void ArcSort(FstArcSortArgs *args) {
-  MutableFst<Arc> *fst = std::get<0>(*args)->GetMutableFst<Arc>();
+void ArcSort(FstArcSortArgs* args) {
+  MutableFst<Arc>* fst = std::get<0>(*args)->GetMutableFst<Arc>();
   switch (std::get<1>(*args)) {
     case ArcSortType::ILABEL: {
       const ILabelCompare<Arc> icomp;
@@ -49,7 +49,7 @@ void ArcSort(FstArcSortArgs *args) {
   }
 }
 
-void ArcSort(MutableFstClass *ofst, ArcSortType);
+void ArcSort(MutableFstClass* ofst, ArcSortType);
 
 }  // namespace script
 }  // namespace fst

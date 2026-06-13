@@ -23,15 +23,15 @@
 #include <cstddef>
 #include <cstdint>
 #include <cstring>
-#include <fstream>
 #include <iostream>
 #include <istream>
 #include <memory>
 #include <sstream>
 #include <string>
-#include <vector>
 
+#include <fst/flags.h>
 #include <fst/log.h>
+#include <string_view>
 #include <fst/extensions/far/far.h>
 #include <fst/compact-fst.h>
 #include <fstream>
@@ -40,7 +40,6 @@
 #include <fst/symbol-table.h>
 #include <fst/util.h>
 #include <fst/vector-fst.h>
-#include <string_view>
 
 namespace fst {
 namespace internal {
@@ -52,7 +51,7 @@ namespace internal {
 // Sample usage:
 //
 //   for (StringReader<Arc> reader(...); !reader.Done(); reader.Next()) {
-//     auto *fst = reader.GetVectorFst();
+//     auto fst = reader.GetVectorFst();
 //   }
 template <class Arc>
 class StringReader {
@@ -60,9 +59,9 @@ class StringReader {
   using Label = typename Arc::Label;
   using Weight = typename Arc::Weight;
 
-  StringReader(std::istream &istrm, const std::string &source,
+  StringReader(std::istream& istrm, const std::string& source,
                FarEntryType entry_type, TokenType token_type,
-               const SymbolTable *syms = nullptr,
+               const SymbolTable* syms = nullptr,
                Label unknown_label = kNoStateId)
       : nline_(0),
         istrm_(istrm),
@@ -99,31 +98,32 @@ class StringReader {
       done_ = true;                   // whitespace at the end of a file.
   }
 
-  VectorFst<Arc> *GetVectorFst(bool keep_symbols = false) {
-    std::unique_ptr<VectorFst<Arc>> fst(new VectorFst<Arc>());
+  std::unique_ptr<VectorFst<Arc>> GetVectorFst(bool keep_symbols = false) {
+    auto fst = std::make_unique<VectorFst<Arc>>();
     if (keep_symbols) {
       fst->SetInputSymbols(symbols_);
       fst->SetOutputSymbols(symbols_);
     }
     if (compiler_(content_, fst.get())) {
-      return fst.release();
+      return fst;
     } else {
       return nullptr;
     }
   }
 
-  CompactStringFst<Arc> *GetCompactFst(bool keep_symbols = false) {
+  std::unique_ptr<CompactStringFst<Arc>> GetCompactFst(
+      bool keep_symbols = false) {
     std::unique_ptr<CompactStringFst<Arc>> fst;
     if (keep_symbols) {
       VectorFst<Arc> tmp;
       tmp.SetInputSymbols(symbols_);
       tmp.SetOutputSymbols(symbols_);
-      fst.reset(new CompactStringFst<Arc>(tmp));
+      fst = std::make_unique<CompactStringFst<Arc>>(tmp);
     } else {
-      fst.reset(new CompactStringFst<Arc>());
+      fst = std::make_unique<CompactStringFst<Arc>>();
     }
     if (compiler_(content_, fst.get())) {
-      return fst.release();
+      return fst;
     } else {
       return nullptr;
     }
@@ -131,17 +131,17 @@ class StringReader {
 
  private:
   size_t nline_;
-  std::istream &istrm_;
+  std::istream& istrm_;
   std::string source_;
   FarEntryType entry_type_;
   TokenType token_type_;
-  const SymbolTable *symbols_;
+  const SymbolTable* symbols_;
   bool done_;
   StringCompiler<Arc> compiler_;
   std::string content_;  // The actual content of the input stream's next FST.
 
-  StringReader(const StringReader &) = delete;
-  StringReader &operator=(const StringReader &) = delete;
+  StringReader(const StringReader&) = delete;
+  StringReader& operator=(const StringReader&) = delete;
 };
 
 // Computes the minimal length required to encode each line number as a decimal
@@ -152,12 +152,12 @@ int KeySize(std::string_view source);
 
 template <class Arc>
 void CompileStrings(const std::vector<std::string> &sources,
-                    FarWriter<Arc> &writer, std::string_view fst_type,
+                    FarWriter<Arc>& writer, std::string_view fst_type,
                     int32_t generate_keys, FarEntryType entry_type,
-                    TokenType token_type, const std::string &symbols_source,
-                    const std::string &unknown_symbol, bool keep_symbols,
-                    bool initial_symbols, const std::string &key_prefix,
-                    const std::string &key_suffix) {
+                    TokenType token_type, const std::string& symbols_source,
+                    const std::string& unknown_symbol, bool keep_symbols,
+                    bool initial_symbols, const std::string& key_prefix,
+                    const std::string& key_suffix) {
   bool compact;
   if (fst_type.empty() || (fst_type == "vector")) {
     compact = false;
@@ -187,7 +187,7 @@ void CompileStrings(const std::vector<std::string> &sources,
     }
   }
   int n = 0;
-  for (const auto &in_source : sources) {
+  for (const auto& in_source : sources) {
     // Don't try to call KeySize("").
     if (generate_keys == 0 && in_source.empty()) {
       FSTERROR() << "CompileStrings: Read from a file instead of stdin or"
@@ -211,7 +211,7 @@ void CompileStrings(const std::vector<std::string> &sources,
         return;
       }
     }
-    std::istream &istrm = fstrm.is_open() ? fstrm : std::cin;
+    std::istream& istrm = fstrm.is_open() ? fstrm : std::cin;
     bool keep_syms = keep_symbols;
     for (internal::StringReader<Arc> reader(
              istrm, in_source.empty() ? "stdin" : in_source, entry_type,
@@ -220,9 +220,9 @@ void CompileStrings(const std::vector<std::string> &sources,
       ++n;
       std::unique_ptr<const Fst<Arc>> fst;
       if (compact) {
-        fst.reset(reader.GetCompactFst(keep_syms));
+        fst = reader.GetCompactFst(keep_syms);
       } else {
-        fst.reset(reader.GetVectorFst(keep_syms));
+        fst = reader.GetVectorFst(keep_syms);
       }
       if (initial_symbols) keep_syms = false;
       if (!fst) {

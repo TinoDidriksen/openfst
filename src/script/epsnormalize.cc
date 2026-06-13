@@ -25,7 +25,7 @@
 namespace fst {
 namespace script {
 
-void EpsNormalize(const FstClass &ifst, MutableFstClass *ofst,
+void EpsNormalize(const FstClass& ifst, MutableFstClass* ofst,
                   EpsNormalizeType norm_type) {
   if (!internal::ArcTypesMatch(ifst, *ofst, "EpsNormalize")) {
     ofst->SetProperties(kError, kError);

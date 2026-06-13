@@ -15,11 +15,13 @@
 // See www.openfst.org for extensive documentation on this weighted
 // finite-state transducer library.
 
+#include <string>
+
 #include <fst/flags.h>
 
 DEFINE_string(eps_norm_type, "input",
-              "Side to epsilon normalize, one of: \"input\", \"output\"");
+          "Side to epsilon normalize, one of: \"input\", \"output\"");
 
-int fstepsnormalize_main(int argc, char **argv);
+int fstepsnormalize_main(int argc, char** argv);
 
-int main(int argc, char **argv) { return fstepsnormalize_main(argc, argv); }
+int main(int argc, char** argv) { return fstepsnormalize_main(argc, argv); }

@@ -27,9 +27,9 @@
 namespace fst {
 namespace script {
 
-std::string LoadArcTypeFromFar(const std::string &far_source);
+std::string LoadArcTypeFromFar(const std::string& far_source);
 
-std::string LoadArcTypeFromFst(const std::string &fst_source);
+std::string LoadArcTypeFromFst(const std::string& fst_source);
 
 }  // namespace script
 }  // namespace fst

@@ -15,6 +15,8 @@
 // See www.openfst.org for extensive documentation on this weighted
 // finite-state transducer library.
 
+#include <string>
+
 #include <fst/flags.h>
 
 DEFINE_string(isymbols, "", "Input label symbol table");
@@ -24,11 +26,10 @@ DEFINE_string(relabel_osymbols, "", "Output symbol set to relabel to");
 DEFINE_string(relabel_ipairs, "", "Input relabel pairs (numeric)");
 DEFINE_string(relabel_opairs, "", "Output relabel pairs (numeric)");
 DEFINE_string(unknown_isymbol, "",
-              "Input symbol to use to relabel OOVs (default: OOVs are errors)");
-DEFINE_string(
-    unknown_osymbol, "",
-    "Output symbol to use to relabel OOVs (default: OOVs are errors)");
+          "Input symbol to use to relabel OOVs (default: OOVs are errors)");
+DEFINE_string(unknown_osymbol, "",
+          "Output symbol to use to relabel OOVs (default: OOVs are errors)");
 
-int fstrelabel_main(int argc, char **argv);
+int fstrelabel_main(int argc, char** argv);
 
-int main(int argc, char **argv) { return fstrelabel_main(argc, argv); }
+int main(int argc, char** argv) { return fstrelabel_main(argc, argv); }

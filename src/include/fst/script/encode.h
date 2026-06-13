@@ -29,16 +29,16 @@
 namespace fst {
 namespace script {
 
-using FstEncodeArgs = std::tuple<MutableFstClass *, EncodeMapperClass *>;
+using FstEncodeArgs = std::tuple<MutableFstClass*, EncodeMapperClass*>;
 
 template <class Arc>
-void Encode(FstEncodeArgs *args) {
-  MutableFst<Arc> *fst = std::get<0>(*args)->GetMutableFst<Arc>();
-  EncodeMapper<Arc> *mapper = std::get<1>(*args)->GetEncodeMapper<Arc>();
+void Encode(FstEncodeArgs* args) {
+  MutableFst<Arc>* fst = std::get<0>(*args)->GetMutableFst<Arc>();
+  EncodeMapper<Arc>* mapper = std::get<1>(*args)->GetEncodeMapper<Arc>();
   Encode(fst, mapper);
 }
 
-void Encode(MutableFstClass *fst, EncodeMapperClass *mapper);
+void Encode(MutableFstClass* fst, EncodeMapperClass* mapper);
 
 }  // namespace script
 }  // namespace fst

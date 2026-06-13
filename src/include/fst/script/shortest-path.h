@@ -23,7 +23,6 @@
 #include <tuple>
 #include <vector>
 
-#include <fst/log.h>
 #include <fst/arcfilter.h>
 #include <fst/fst.h>
 #include <fst/mutable-fst.h>
@@ -45,11 +44,11 @@ namespace script {
 struct ShortestPathOptions : public ShortestDistanceOptions {
   const int32_t nshortest;
   const bool unique;
-  const WeightClass &weight_threshold;
+  const WeightClass& weight_threshold;
   const int64_t state_threshold;
 
   ShortestPathOptions(QueueType queue_type, int32_t nshortest, bool unique,
-                      float delta, const WeightClass &weight_threshold,
+                      float delta, const WeightClass& weight_threshold,
                       int64_t state_threshold = kNoStateId)
       : ShortestDistanceOptions(queue_type, ArcFilterType::ANY, kNoStateId,
                                 delta),
@@ -64,9 +63,9 @@ namespace internal {
 // Code to implement switching on queue types.
 
 template <class Arc, class Queue>
-void ShortestPath(const Fst<Arc> &ifst, MutableFst<Arc> *ofst,
-                  std::vector<typename Arc::Weight> *distance,
-                  const ShortestPathOptions &opts) {
+void ShortestPath(const Fst<Arc>& ifst, MutableFst<Arc>* ofst,
+                  std::vector<typename Arc::Weight>* distance,
+                  const ShortestPathOptions& opts) {
   using ArcFilter = AnyArcFilter<Arc>;
   using Weight = typename Arc::Weight;
   if constexpr (IsPath<Weight>::value) {
@@ -85,8 +84,8 @@ void ShortestPath(const Fst<Arc> &ifst, MutableFst<Arc> *ofst,
 }
 
 template <class Arc>
-void ShortestPath(const Fst<Arc> &ifst, MutableFst<Arc> *ofst,
-                  const ShortestPathOptions &opts) {
+void ShortestPath(const Fst<Arc>& ifst, MutableFst<Arc>* ofst,
+                  const ShortestPathOptions& opts) {
   using StateId = typename Arc::StateId;
   using Weight = typename Arc::Weight;
   std::vector<Weight> distance;
@@ -132,19 +131,19 @@ void ShortestPath(const Fst<Arc> &ifst, MutableFst<Arc> *ofst,
 
 }  // namespace internal
 
-using FstShortestPathArgs = std::tuple<const FstClass &, MutableFstClass *,
-                                       const ShortestPathOptions &>;
+using FstShortestPathArgs =
+    std::tuple<const FstClass&, MutableFstClass*, const ShortestPathOptions&>;
 
 template <class Arc>
-void ShortestPath(FstShortestPathArgs *args) {
-  const Fst<Arc> &ifst = *std::get<0>(*args).GetFst<Arc>();
-  MutableFst<Arc> *ofst = std::get<1>(*args)->GetMutableFst<Arc>();
-  const ShortestPathOptions &opts = std::get<2>(*args);
+void ShortestPath(FstShortestPathArgs* args) {
+  const Fst<Arc>& ifst = *std::get<0>(*args).GetFst<Arc>();
+  MutableFst<Arc>* ofst = std::get<1>(*args)->GetMutableFst<Arc>();
+  const ShortestPathOptions& opts = std::get<2>(*args);
   internal::ShortestPath(ifst, ofst, opts);
 }
 
-void ShortestPath(const FstClass &ifst, MutableFstClass *ofst,
-                  const ShortestPathOptions &opts);
+void ShortestPath(const FstClass& ifst, MutableFstClass* ofst,
+                  const ShortestPathOptions& opts);
 
 }  // namespace script
 }  // namespace fst

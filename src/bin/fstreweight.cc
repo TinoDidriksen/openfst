@@ -15,12 +15,14 @@
 // See www.openfst.org for extensive documentation on this weighted
 // finite-state transducer library.
 
+#include <string>
+
 #include <fst/flags.h>
 
 DEFINE_string(reweight_type, "to_initial",
-              "Push/reweight to final (vs. to initial) states: one of "
-              "\"to_initial\", \"to_final\"");
+          "Push/reweight to final (vs. to initial) states: one of "
+          "\"to_initial\", \"to_final\"");
 
-int fstreweight_main(int argc, char **argv);
+int fstreweight_main(int argc, char** argv);
 
-int main(int argc, char **argv) { return fstreweight_main(argc, argv); }
+int main(int argc, char** argv) { return fstreweight_main(argc, argv); }

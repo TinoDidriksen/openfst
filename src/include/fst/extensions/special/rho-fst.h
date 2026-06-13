@@ -24,6 +24,7 @@
 #include <ostream>
 #include <string>
 
+#include <fst/flags.h>
 #include <fst/log.h>
 #include <fst/arc.h>
 #include <fst/const-fst.h>
@@ -47,11 +48,11 @@ class RhoFstMatcherData {
           RewriteMode(FST_FLAGS_rho_fst_rewrite_mode))
       : rho_label_(rho_label), rewrite_mode_(rewrite_mode) {}
 
-  RhoFstMatcherData(const RhoFstMatcherData &data)
+  RhoFstMatcherData(const RhoFstMatcherData& data)
       : rho_label_(data.rho_label_), rewrite_mode_(data.rewrite_mode_) {}
 
-  static RhoFstMatcherData<Label> *Read(std::istream &istrm,
-                                        const FstReadOptions &read) {
+  static RhoFstMatcherData<Label>* Read(std::istream& istrm,
+                                        const FstReadOptions& read) {
     auto data = std::make_unique<RhoFstMatcherData<Label>>();
     ReadType(istrm, &data->rho_label_);
     int32_t rewrite_mode;
@@ -60,7 +61,7 @@ class RhoFstMatcherData {
     return data.release();
   }
 
-  bool Write(std::ostream &ostrm, const FstWriteOptions &opts) const {
+  bool Write(std::ostream& ostrm, const FstWriteOptions& opts) const {
     WriteType(ostrm, rho_label_);
     WriteType(ostrm, static_cast<int32_t>(rewrite_mode_));
     return !ostrm ? false : true;
@@ -71,7 +72,7 @@ class RhoFstMatcherData {
   MatcherRewriteMode RewriteMode() const { return rewrite_mode_; }
 
  private:
-  static MatcherRewriteMode RewriteMode(const std::string &mode) {
+  static MatcherRewriteMode RewriteMode(const std::string& mode) {
     if (mode == "auto") return MATCHER_REWRITE_AUTO;
     if (mode == "always") return MATCHER_REWRITE_ALWAYS;
     if (mode == "never") return MATCHER_REWRITE_NEVER;
@@ -105,7 +106,7 @@ class RhoFstMatcher : public RhoMatcher<M> {
 
   // This makes a copy of the FST.
   RhoFstMatcher(
-      const FST &fst, MatchType match_type,
+      const FST& fst, MatchType match_type,
       std::shared_ptr<MatcherData> data = std::make_shared<MatcherData>())
       : RhoMatcher<M>(fst, match_type,
                       RhoLabel(match_type, data ? data->RhoLabel()
@@ -115,7 +116,7 @@ class RhoFstMatcher : public RhoMatcher<M> {
 
   // This doesn't copy the FST.
   RhoFstMatcher(
-      const FST *fst, MatchType match_type,
+      const FST* fst, MatchType match_type,
       std::shared_ptr<MatcherData> data = std::make_shared<MatcherData>())
       : RhoMatcher<M>(fst, match_type,
                       RhoLabel(match_type, data ? data->RhoLabel()
@@ -124,14 +125,14 @@ class RhoFstMatcher : public RhoMatcher<M> {
         data_(data) {}
 
   // This makes a copy of the FST.
-  RhoFstMatcher(const RhoFstMatcher<M, flags> &matcher, bool safe = false)
+  RhoFstMatcher(const RhoFstMatcher<M, flags>& matcher, bool safe = false)
       : RhoMatcher<M>(matcher, safe), data_(matcher.data_) {}
 
-  RhoFstMatcher<M, flags> *Copy(bool safe = false) const override {
+  RhoFstMatcher<M, flags>* Copy(bool safe = false) const override {
     return new RhoFstMatcher<M, flags>(*this, safe);
   }
 
-  const MatcherData *GetData() const { return data_.get(); }
+  const MatcherData* GetData() const { return data_.get(); }
 
   std::shared_ptr<MatcherData> GetSharedData() const { return data_; }
 

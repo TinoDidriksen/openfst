@@ -30,31 +30,31 @@
 namespace fst {
 namespace script {
 
-using CompressInnerArgs = std::tuple<const FstClass &, const std::string &>;
+using CompressInnerArgs = std::tuple<const FstClass&, const std::string&>;
 
 using CompressArgs = WithReturnValue<bool, CompressInnerArgs>;
 
 template <class Arc>
-void Compress(CompressArgs *args) {
-  const Fst<Arc> &fst = *std::get<0>(args->args).GetFst<Arc>();
-  const auto &source = std::get<1>(args->args);
+void Compress(CompressArgs* args) {
+  const Fst<Arc>& fst = *std::get<0>(args->args).GetFst<Arc>();
+  const auto& source = std::get<1>(args->args);
   args->retval = Compress(fst, source);
 }
 
-bool Compress(const FstClass &fst, const std::string &source);
+bool Compress(const FstClass& fst, const std::string& source);
 
-using DecompressInnerArgs = std::tuple<const std::string &, MutableFstClass *>;
+using DecompressInnerArgs = std::tuple<const std::string&, MutableFstClass*>;
 
 using DecompressArgs = WithReturnValue<bool, DecompressInnerArgs>;
 
 template <class Arc>
-void Decompress(DecompressArgs *args) {
-  const auto &source = std::get<0>(args->args);
-  MutableFst<Arc> *fst = std::get<1>(args->args)->GetMutableFst<Arc>();
+void Decompress(DecompressArgs* args) {
+  const auto& source = std::get<0>(args->args);
+  MutableFst<Arc>* fst = std::get<1>(args->args)->GetMutableFst<Arc>();
   args->retval = Decompress(source, fst);
 }
 
-bool Decompress(const std::string &source, MutableFstClass *fst);
+bool Decompress(const std::string& source, MutableFstClass* fst);
 
 }  // namespace script
 }  // namespace fst

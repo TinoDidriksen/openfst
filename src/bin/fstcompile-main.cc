@@ -24,6 +24,7 @@
 #include <string>
 
 #include <fst/flags.h>
+#include <fst/flags.h>
 #include <fst/log.h>
 #include <fstream>
 #include <fst/symbol-table.h>
@@ -39,7 +40,7 @@ DECLARE_bool(keep_isymbols);
 DECLARE_bool(keep_osymbols);
 DECLARE_bool(keep_state_numbering);
 
-int fstcompile_main(int argc, char **argv) {
+int fstcompile_main(int argc, char** argv) {
   namespace s = fst::script;
   using fst::SymbolTable;
 
@@ -64,7 +65,7 @@ int fstcompile_main(int argc, char **argv) {
     }
     source = argv[1];
   }
-  std::istream &istrm = fstrm.is_open() ? fstrm : std::cin;
+  std::istream& istrm = fstrm.is_open() ? fstrm : std::cin;
 
   std::unique_ptr<const SymbolTable> isyms;
   if (!FST_FLAGS_isymbols.empty()) {

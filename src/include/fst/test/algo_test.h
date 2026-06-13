@@ -26,16 +26,15 @@
 #include <cstdint>
 #include <memory>
 #include <random>
-#include <string>
 #include <utility>
 #include <vector>
 
+#include <fst/flags.h>
 #include <fst/log.h>
 #include <fst/arc-map.h>
 #include <fst/arc.h>
 #include <fst/arcfilter.h>
 #include <fst/arcsort.h>
-#include <fst/cache.h>
 #include <fst/closure.h>
 #include <fst/compose-filter.h>
 #include <fst/compose.h>
@@ -49,7 +48,6 @@
 #include <fst/equivalent.h>
 #include <fst/float-weight.h>
 #include <fst/fst.h>
-#include <fst/fstlib.h>
 #include <fst/intersect.h>
 #include <fst/invert.h>
 #include <fst/lookahead-matcher.h>
@@ -81,7 +79,8 @@
 #include <fst/weight.h>
 #include <fst/test/rand-fst.h>
 
-DECLARE_int32(repeat);  // defined in ./algo_test.cc
+// defined in ./algo_test.cc
+DECLARE_int32(repeat);
 
 namespace fst {
 
@@ -92,7 +91,7 @@ class EpsMapper {
  public:
   EpsMapper() = default;
 
-  A operator()(const A &arc) const {
+  A operator()(const A& arc) const {
     return A(0, 0, arc.weight, arc.nextstate);
   }
 
@@ -115,14 +114,14 @@ class EpsMapper {
 
 // Generic - no lookahead.
 template <class Arc>
-void LookAheadCompose(const Fst<Arc> &ifst1, const Fst<Arc> &ifst2,
-                      MutableFst<Arc> *ofst) {
+void LookAheadCompose(const Fst<Arc>& ifst1, const Fst<Arc>& ifst2,
+                      MutableFst<Arc>* ofst) {
   Compose(ifst1, ifst2, ofst);
 }
 
 // Specialized and epsilon olabel acyclic - lookahead.
-inline void LookAheadCompose(const Fst<StdArc> &ifst1, const Fst<StdArc> &ifst2,
-                             MutableFst<StdArc> *ofst) {
+inline void LookAheadCompose(const Fst<StdArc>& ifst1, const Fst<StdArc>& ifst2,
+                             MutableFst<StdArc>* ofst) {
   std::vector<StdArc::StateId> order;
   bool acyclic;
   TopOrderVisitor<StdArc> visitor(&order, &acyclic);
@@ -147,8 +146,8 @@ class WeightedTester {
   using Weight = typename Arc::Weight;
   using WeightGenerator = WeightGenerate<Weight>;
 
-  WeightedTester(uint64_t seed, const Fst<Arc> &zero_fst,
-                 const Fst<Arc> &one_fst, const Fst<Arc> &univ_fst,
+  WeightedTester(uint64_t seed, const Fst<Arc>& zero_fst,
+                 const Fst<Arc>& one_fst, const Fst<Arc>& univ_fst,
                  WeightGenerator weight_generator)
       : seed_(seed),
         rand_(seed),
@@ -157,7 +156,7 @@ class WeightedTester {
         univ_fst_(univ_fst),
         generate_(std::move(weight_generator)) {}
 
-  void Test(const Fst<Arc> &T1, const Fst<Arc> &T2, const Fst<Arc> &T3) {
+  void Test(const Fst<Arc>& T1, const Fst<Arc>& T2, const Fst<Arc>& T3) {
     TestRational(T1, T2, T3);
     TestMap(T1);
     TestCompose(T1, T2, T3);
@@ -168,8 +167,8 @@ class WeightedTester {
 
  private:
   // Tests rational operations with identities
-  void TestRational(const Fst<Arc> &T1, const Fst<Arc> &T2,
-                    const Fst<Arc> &T3) {
+  void TestRational(const Fst<Arc>& T1, const Fst<Arc>& T2,
+                    const Fst<Arc>& T3) {
     {
       VLOG(1) << "Check destructive and delayed union are equivalent.";
       VectorFst<Arc> U1(T1);
@@ -386,7 +385,7 @@ class WeightedTester {
   }
 
   // Tests map-based operations.
-  void TestMap(const Fst<Arc> &T) {
+  void TestMap(const Fst<Arc>& T) {
     {
       VLOG(1) << "Check destructive and delayed projection are equivalent.";
       VectorFst<Arc> P1(T);
@@ -529,7 +528,7 @@ class WeightedTester {
   }
 
   // Tests compose-based operations.
-  void TestCompose(const Fst<Arc> &T1, const Fst<Arc> &T2, const Fst<Arc> &T3) {
+  void TestCompose(const Fst<Arc>& T1, const Fst<Arc>& T2, const Fst<Arc>& T3) {
     if (!(Weight::Properties() & kCommutative)) return;
 
     VectorFst<Arc> S1(T1);
@@ -632,7 +631,7 @@ class WeightedTester {
   }
 
   // Tests sorting operations
-  void TestSort(const Fst<Arc> &T) {
+  void TestSort(const Fst<Arc>& T) {
     ILabelCompare<Arc> icomp;
     OLabelCompare<Arc> ocomp;
 
@@ -683,7 +682,7 @@ class WeightedTester {
   }
 
   // Tests optimization operations
-  void TestOptimize(const Fst<Arc> &T) {
+  void TestOptimize(const Fst<Arc>& T) {
     uint64_t tprops = T.Properties(kFstProperties, true);
     uint64_t wprops = Weight::Properties();
 
@@ -783,9 +782,9 @@ class WeightedTester {
                 << " and  min(det(A)) equiv det(A)";
         VectorFst<Arc> M(D);
         n = M.NumStates();
-        Minimize(&M, static_cast<MutableFst<Arc> *>(nullptr), kDelta);
+        Minimize(&M, static_cast<MutableFst<Arc>*>(nullptr), kDelta);
         CHECK(Equiv(D, M));
-        CHECK(M.NumStates() <= n);
+        CHECK_LE(M.NumStates(), n);
         n = M.NumStates();
       }
 
@@ -806,7 +805,7 @@ class WeightedTester {
         DeterminizeFst<Arc> DRD(RD);
         VectorFst<Arc> M(DRD);
         CHECK_EQ(n + 1, M.NumStates());  // Accounts for the epsilon transition
-                                         // to the initial state
+                                          // to the initial state
       }
     }
 
@@ -819,7 +818,7 @@ class WeightedTester {
       VLOG(1) << "Check disambiguated FSA is unambiguous";
       CHECK(Unambiguous(D));
 
-      /* TODO(riley): find out why this fails
+      /* TODO: find out why this fails
       if ((wprops & (kPath | kCommutative)) == (kPath | kCommutative)) {
         VLOG(1)  << "Check pruning in disambiguation";
         VectorFst<Arc> P;
@@ -924,7 +923,7 @@ class WeightedTester {
   }
 
   // Tests search operations
-  void TestSearch(const Fst<Arc> &T) {
+  void TestSearch(const Fst<Arc>& T) {
     if constexpr (IsPath<Weight>::value) {
       uint64_t wprops = Weight::Properties();
 
@@ -979,7 +978,7 @@ class WeightedTester {
   // Tests if two FSTS are equivalent by checking if random
   // strings from one FST are transduced the same by both FSTs.
   template <class A>
-  bool Equiv(const Fst<A> &fst1, const Fst<A> &fst2) {
+  bool Equiv(const Fst<A>& fst1, const Fst<A>& fst2) {
     VLOG(1) << "Check FSTs for sanity (including property bits).";
     CHECK(Verify(fst1));
     CHECK(Verify(fst2));
@@ -992,7 +991,7 @@ class WeightedTester {
   }
 
   // Tests FSA is unambiguous.
-  bool Unambiguous(const Fst<Arc> &fst) {
+  bool Unambiguous(const Fst<Arc>& fst) {
     VectorFst<StdArc> sfst, dfst;
     VectorFst<LogArc> lfst1, lfst2;
     ArcMap(fst, &sfst, RmWeightMapper<Arc, StdArc>());
@@ -1006,7 +1005,7 @@ class WeightedTester {
   // same domain and that for each string pair '(is, os)' in fst1,
   // '(is, os)' is the minimum weight match to 'is' in fst2.
   template <class A>
-  bool MinRelated(const Fst<A> &fst1, const Fst<A> &fst2) {
+  bool MinRelated(const Fst<A>& fst1, const Fst<A>& fst2) {
     // Same domain
     VectorFst<Arc> P1(fst1), P2(fst2);
     Project(&P1, ProjectType::INPUT);
@@ -1040,7 +1039,7 @@ class WeightedTester {
 
   // Tests ShortestDistance(A - P) >= ShortestDistance(A) times Threshold.
   template <class A>
-  bool PruneEquiv(const Fst<A> &fst, const Fst<A> &pfst, Weight threshold) {
+  bool PruneEquiv(const Fst<A>& fst, const Fst<A>& pfst, Weight threshold) {
     VLOG(1) << "Check FSTs for sanity (including property bits).";
     CHECK(Verify(fst));
     CHECK(Verify(pfst));
@@ -1075,8 +1074,8 @@ class WeightedTester {
   // Delta for equivalence tests.
   static constexpr float kTestDelta = .05;
 
-  WeightedTester(const WeightedTester &) = delete;
-  WeightedTester &operator=(const WeightedTester &) = delete;
+  WeightedTester(const WeightedTester&) = delete;
+  WeightedTester& operator=(const WeightedTester&) = delete;
 };
 
 // This class tests a variety of identities and properties that must
@@ -1085,10 +1084,10 @@ class WeightedTester {
 template <class Arc>
 class UnweightedTester {
  public:
-  UnweightedTester(const Fst<Arc> &zero_fsa, const Fst<Arc> &one_fsa,
-                   const Fst<Arc> &univ_fsa, uint64_t seed) {}
+  UnweightedTester(const Fst<Arc>& zero_fsa, const Fst<Arc>& one_fsa,
+                   const Fst<Arc>& univ_fsa, uint64_t seed) {}
 
-  void Test(const Fst<Arc> &A1, const Fst<Arc> &A2, const Fst<Arc> &A3) {}
+  void Test(const Fst<Arc>& A1, const Fst<Arc>& A2, const Fst<Arc>& A3) {}
 };
 
 // Specialization for StdArc. This should work for any commutative,
@@ -1102,14 +1101,14 @@ class UnweightedTester<StdArc> {
   using StateId = Arc::StateId;
   using Weight = Arc::Weight;
 
-  UnweightedTester(const Fst<Arc> &zero_fsa, const Fst<Arc> &one_fsa,
-                   const Fst<Arc> &univ_fsa, uint64_t seed)
+  UnweightedTester(const Fst<Arc>& zero_fsa, const Fst<Arc>& one_fsa,
+                   const Fst<Arc>& univ_fsa, uint64_t seed)
       : zero_fsa_(zero_fsa),
         one_fsa_(one_fsa),
         univ_fsa_(univ_fsa),
         rand_(seed) {}
 
-  void Test(const Fst<Arc> &A1, const Fst<Arc> &A2, const Fst<Arc> &A3) {
+  void Test(const Fst<Arc>& A1, const Fst<Arc>& A2, const Fst<Arc>& A3) {
     TestRational(A1, A2, A3);
     TestIntersect(A1, A2, A3);
     TestOptimize(A1);
@@ -1117,8 +1116,8 @@ class UnweightedTester<StdArc> {
 
  private:
   // Tests rational operations with identities.
-  void TestRational(const Fst<Arc> &A1, const Fst<Arc> &A2,
-                    const Fst<Arc> &A3) {
+  void TestRational(const Fst<Arc>& A1, const Fst<Arc>& A2,
+                    const Fst<Arc>& A3) {
     {
       VLOG(1) << "Check the union contains its arguments (destructive).";
       VectorFst<Arc> U(A1);
@@ -1160,8 +1159,8 @@ class UnweightedTester<StdArc> {
   }
 
   // Tests intersect-based operations.
-  void TestIntersect(const Fst<Arc> &A1, const Fst<Arc> &A2,
-                     const Fst<Arc> &A3) {
+  void TestIntersect(const Fst<Arc>& A1, const Fst<Arc>& A2,
+                     const Fst<Arc>& A3) {
     VectorFst<Arc> S1(A1);
     VectorFst<Arc> S2(A2);
     VectorFst<Arc> S3(A3);
@@ -1233,7 +1232,7 @@ class UnweightedTester<StdArc> {
   }
 
   // Tests optimization operations.
-  void TestOptimize(const Fst<Arc> &A) {
+  void TestOptimize(const Fst<Arc>& A) {
     {
       VLOG(1) << "Check determinized FSA is equivalent to its input.";
       DeterminizeFst<Arc> D(A);
@@ -1256,7 +1255,7 @@ class UnweightedTester<StdArc> {
         RmEpsilonFst<Arc> R(A);
         DeterminizeFst<Arc> D(R);
         VectorFst<Arc> M(D);
-        Minimize(&M, static_cast<MutableFst<Arc> *>(nullptr), kDelta);
+        Minimize(&M, static_cast<MutableFst<Arc>*>(nullptr), kDelta);
         CHECK(Equiv(A, M));
         n = M.NumStates();
       }
@@ -1273,13 +1272,13 @@ class UnweightedTester<StdArc> {
         DeterminizeFst<Arc> DRD(RD);
         VectorFst<Arc> M(DRD);
         CHECK_EQ(n + 1, M.NumStates());  // Accounts for the epsilon transition
-                                         // to the initial state.
+                                          // to the initial state.
       }
     }
   }
 
   // Tests if two FSAS are equivalent.
-  bool Equiv(const Fst<Arc> &fsa1, const Fst<Arc> &fsa2) {
+  bool Equiv(const Fst<Arc>& fsa1, const Fst<Arc>& fsa2) {
     VLOG(1) << "Check FSAs for sanity (including property bits).";
     CHECK(Verify(fsa1));
     CHECK(Verify(fsa2));
@@ -1310,13 +1309,13 @@ class UnweightedTester<StdArc> {
     bool equiv2 = ufsa.NumStates() == 0;
 
     // Checks both equivalence tests match.
-    CHECK((equiv1 && equiv2) || (!equiv1 && !equiv2));
+    CHECK_EQ(equiv1, equiv2);
 
     return equiv1;
   }
 
   // Tests if FSA1 is a subset of FSA2 (disregarding weights).
-  bool Subset(const Fst<Arc> &fsa1, const Fst<Arc> &fsa2) {
+  bool Subset(const Fst<Arc>& fsa1, const Fst<Arc>& fsa2) {
     VLOG(1) << "Check FSAs (incl. property bits) for sanity";
     CHECK(Verify(fsa1));
     CHECK(Verify(fsa2));
@@ -1335,7 +1334,7 @@ class UnweightedTester<StdArc> {
   }
 
   // Returns complement FSA.
-  void Complement(const Fst<Arc> &ifsa, MutableFst<Arc> *ofsa) {
+  void Complement(const Fst<Arc>& ifsa, MutableFst<Arc>* ofsa) {
     RmEpsilonFst<Arc> rfsa(ifsa);
     DeterminizeFst<Arc> dfa(rfsa);
     DifferenceFst<Arc> cfsa(univ_fsa_, dfa);
@@ -1382,7 +1381,7 @@ class AlgoTester {
         new UnweightedTester<Arc>(zero_fst_, one_fst_, univ_fst_, seed));
   }
 
-  void MakeRandFst(MutableFst<Arc> *fst) {
+  void MakeRandFst(MutableFst<Arc>* fst) {
     RandFst<Arc, WeightGenerator>(kNumRandomStates, kNumRandomArcs,
                                   kNumRandomLabels, kAcyclicProb, generate_,
                                   rand_(), fst);
@@ -1444,8 +1443,8 @@ class AlgoTester {
   // Number of random paths to explore.
   static constexpr int kNumRandomPaths = 100;
 
-  AlgoTester(const AlgoTester &) = delete;
-  AlgoTester &operator=(const AlgoTester &) = delete;
+  AlgoTester(const AlgoTester&) = delete;
+  AlgoTester& operator=(const AlgoTester&) = delete;
 };
 }  // namespace fst
 

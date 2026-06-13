@@ -27,20 +27,19 @@
 #include <ostream>
 #include <set>
 #include <string>
-#include <utility>
 #include <vector>
 
 #include <fst/log.h>
+#include <string_view>
 #include <fst/extensions/far/far.h>
 #include <fst/extensions/far/getters.h>
 #include <fst/fst.h>
-#include <string_view>
 
 namespace fst {
 
 template <class Arc>
-void AccumulateStatesAndArcs(const Fst<Arc> &fst, size_t *nstate, size_t *narc,
-                             size_t *nfinal) {
+void AccumulateStatesAndArcs(const Fst<Arc>& fst, size_t* nstate, size_t* narc,
+                             size_t* nfinal) {
   for (StateIterator<Fst<Arc>> siter(fst); !siter.Done();
        siter.Next(), ++(*nstate)) {
     ArcIterator<Fst<Arc>> aiter(fst, siter.Value());
@@ -70,9 +69,9 @@ struct FarInfoData {
 };
 
 template <class Arc>
-void GetInfo(const std::vector<std::string> &sources,
-             std::string_view begin_key, std::string_view end_key,
-             const bool list_fsts, FarInfoData *far_info) {
+void GetInfo(const std::vector<std::string> &sources, std::string_view begin_key,
+             std::string_view end_key, const bool list_fsts,
+             FarInfoData* far_info) {
   *far_info = FarInfoData();
   std::unique_ptr<FarReader<Arc>> reader(FarReader<Arc>::Open(sources));
   if (!reader) {
@@ -82,10 +81,10 @@ void GetInfo(const std::vector<std::string> &sources,
   if (!begin_key.empty()) reader->Find(begin_key);
 
   for (; !reader->Done(); reader->Next()) {
-    const auto &key = reader->GetKey();
+    const auto& key = reader->GetKey();
     if (!end_key.empty() && end_key < key) break;
     ++far_info->nfst;
-    const auto *fst = reader->GetFst();
+    const auto* fst = reader->GetFst();
     far_info->fst_types.insert(fst->Type());
     if (list_fsts) {
       KeyInfo info;
@@ -136,7 +135,7 @@ void Info(const std::vector<std::string> &sources, std::string_view begin_key,
     int wnstate = 14;
     int wnarc = 12;
     int wnfinal = 20;
-    for (const auto &key_info : info.key_infos) {
+    for (const auto& key_info : info.key_infos) {
       if (key_info.key.size() + 2 > wkey) wkey = key_info.key.size() + 2;
       if (key_info.type.size() + 2 > wtype) wtype = key_info.type.size() + 2;
       if (ceil(log10(key_info.nstate)) + 2 > wnstate) {
@@ -153,7 +152,7 @@ void Info(const std::vector<std::string> &sources, std::string_view begin_key,
               << "type" << std::right << std::setw(wnstate) << "# of states"
               << std::setw(wnarc) << "# of arcs" << std::setw(wnfinal)
               << "# of final states" << '\n';
-    for (const auto &key_info : info.key_infos) {
+    for (const auto& key_info : info.key_infos) {
       std::cout << std::left << std::setw(wkey) << key_info.key
                 << std::setw(wtype) << key_info.type << std::right
                 << std::setw(wnstate) << key_info.nstate << std::setw(wnarc)

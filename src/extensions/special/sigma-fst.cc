@@ -17,16 +17,18 @@
 
 #include <fst/extensions/special/sigma-fst.h>
 
+#include <cstdint>
+
 #include <fst/flags.h>
 #include <fst/arc.h>
 #include <fst/register.h>
 
 DEFINE_int64(sigma_fst_sigma_label, 0,
-             "Label of transitions to be interpreted as sigma ('any') "
-             "transitions");
+          "Label of transitions to be interpreted as sigma ('any') "
+          "transitions");
 DEFINE_string(sigma_fst_rewrite_mode, "auto",
-              "Rewrite both sides when matching? One of:"
-              " \"auto\" (rewrite iff acceptor), \"always\", \"never\"");
+          "Rewrite both sides when matching? One of:"
+          " \"auto\" (rewrite iff acceptor), \"always\", \"never\"");
 
 namespace fst {
 

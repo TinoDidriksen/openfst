@@ -15,27 +15,30 @@
 // See www.openfst.org for extensive documentation on this weighted
 // finite-state transducer library.
 
+#include <string>
+
 #include <fst/flags.h>
 
 DEFINE_string(arc_filter, "any",
-              "Arc filter: one of"
-              " \"any\", \"epsilon\", \"iepsilon\", \"oepsilon\"; "
-              "this only affects the counts of (co)accessible states, "
-              "connected states, and (strongly) connected components");
+          "Arc filter: one of"
+          " \"any\", \"epsilon\", \"iepsilon\", \"oepsilon\"; "
+          "this only affects the counts of (co)accessible states, "
+          "connected states, and (strongly) connected components");
 DEFINE_string(info_type, "auto",
-              "Info format: one of \"auto\", \"long\", \"short\", \"fast\".\n"
-              "auto: Equivalent to \"long\" if the FST is an ExpandedFst,"
-              " otherwise \"short\".\n"
-              "long: Print all properties, computing if unknown;"
-              " this may be slow for large FSTs.\n"
-              "short: Print only type and SymbolTable info.\n"
-              "fast: Print only info that is fast to obtain (by reading"
-              " only the file header);" " this is more info than \"short\","
-              " but less than \"long\".");
+          "Info format: one of \"auto\", \"long\", \"short\", \"fast\".\n"
+          "auto: Equivalent to \"long\" if the FST is an ExpandedFst,"
+          " otherwise \"short\".\n"
+          "long: Print all properties, computing if unknown;"
+          " this may be slow for large FSTs.\n"
+          "short: Print only type and SymbolTable info.\n"
+          "fast: Print only info that is fast to obtain (by reading"
+          " only the file header);"
+          " this is more info than \"short\","
+          " but less than \"long\".");
 DEFINE_bool(test_properties, true,
-            "Compute property values (if unknown to FST)");
+          "Compute property values (if unknown to FST)");
 DEFINE_bool(fst_verify, true, "Verify FST sanity");
 
-int fstinfo_main(int argc, char **argv);
+int fstinfo_main(int argc, char** argv);
 
-int main(int argc, char **argv) { return fstinfo_main(argc, argv); }
+int main(int argc, char** argv) { return fstinfo_main(argc, argv); }

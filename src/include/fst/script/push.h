@@ -31,21 +31,21 @@
 namespace fst {
 namespace script {
 
-using FstPushArgs1 = std::tuple<MutableFstClass *, ReweightType, float, bool>;
+using FstPushArgs1 = std::tuple<MutableFstClass*, ReweightType, float, bool>;
 
 template <class Arc>
-void Push(FstPushArgs1 *args) {
-  MutableFst<Arc> *fst = std::get<0>(*args)->GetMutableFst<Arc>();
+void Push(FstPushArgs1* args) {
+  MutableFst<Arc>* fst = std::get<0>(*args)->GetMutableFst<Arc>();
   Push(fst, std::get<1>(*args), std::get<2>(*args), std::get<3>(*args));
 }
 
-using FstPushArgs2 = std::tuple<const FstClass &, MutableFstClass *, uint8_t,
-                                ReweightType, float>;
+using FstPushArgs2 =
+    std::tuple<const FstClass&, MutableFstClass*, uint8_t, ReweightType, float>;
 
 template <class Arc>
-void Push(FstPushArgs2 *args) {
-  const Fst<Arc> &ifst = *std::get<0>(*args).GetFst<Arc>();
-  MutableFst<Arc> *ofst = std::get<1>(*args)->GetMutableFst<Arc>();
+void Push(FstPushArgs2* args) {
+  const Fst<Arc>& ifst = *std::get<0>(*args).GetFst<Arc>();
+  MutableFst<Arc>* ofst = std::get<1>(*args)->GetMutableFst<Arc>();
   switch (std::get<3>(*args)) {
     case REWEIGHT_TO_FINAL: {
       Push<Arc, REWEIGHT_TO_FINAL>(ifst, ofst, std::get<2>(*args),
@@ -60,10 +60,10 @@ void Push(FstPushArgs2 *args) {
   }
 }
 
-void Push(MutableFstClass *fst, ReweightType type = REWEIGHT_TO_INITIAL,
+void Push(MutableFstClass* fst, ReweightType type = REWEIGHT_TO_INITIAL,
           float delta = kShortestDelta, bool remove_total_weight = false);
 
-void Push(const FstClass &ifst, MutableFstClass *ofst, uint8_t flags,
+void Push(const FstClass& ifst, MutableFstClass* ofst, uint8_t flags,
           ReweightType rew_type, float delta = kShortestDelta);
 
 }  // namespace script

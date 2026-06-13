@@ -28,12 +28,10 @@
 #include <utility>
 #include <vector>
 
-#include <fst/log.h>
-#include <fst/extensions/mpdt/mpdt.h>
-#include <fst/fst.h>
-#include <fst/util.h>
 #include <unordered_map>
 #include <unordered_set>
+#include <fst/fst.h>
+#include <fst/util.h>
 
 namespace fst {
 
@@ -45,13 +43,13 @@ class MPdtInfo {
   using StateId = typename Arc::StateId;
   using Weight = typename Arc::Weight;
 
-  MPdtInfo(const Fst<Arc> &fst,
-           const std::vector<std::pair<Label, Label>> &parens,
-           const std::vector<Label> &assignments);
+  MPdtInfo(const Fst<Arc>& fst,
+           const std::vector<std::pair<Label, Label>>& parens,
+           const std::vector<Label>& assignments);
 
-  const std::string &FstType() const { return fst_type_; }
+  const std::string& FstType() const { return fst_type_; }
 
-  const std::string &ArcType() const { return Arc::Type(); }
+  const std::string& ArcType() const { return Arc::Type(); }
 
   int64_t NumStates() const { return nstates_; }
 
@@ -95,10 +93,10 @@ class MPdtInfo {
 
 template <class Arc, typename Arc::Label nlevels>
 MPdtInfo<Arc, nlevels>::MPdtInfo(
-    const Fst<Arc> &fst,
-    const std::vector<std::pair<typename Arc::Label, typename Arc::Label>>
-        &parens,
-    const std::vector<typename Arc::Label> &assignments)
+    const Fst<Arc>& fst,
+    const std::vector<std::pair<typename Arc::Label, typename Arc::Label>>&
+        parens,
+    const std::vector<typename Arc::Label>& assignments)
     : fst_type_(fst.Type()), nstates_(0), narcs_(0), error_(false) {
   std::unordered_map<Label, size_t> paren_map;
   std::unordered_set<Label> paren_set;
@@ -119,7 +117,7 @@ MPdtInfo<Arc, nlevels>::MPdtInfo(
       error_ = true;
       return;
     }
-    const auto &pair = parens[i];
+    const auto& pair = parens[i];
     paren_levels[pair.first] = level;
     paren_levels[pair.second] = level;
     paren_map[pair.first] = i;
@@ -137,7 +135,7 @@ MPdtInfo<Arc, nlevels>::MPdtInfo(
     ++nstates_;
     const auto s = siter.Value();
     for (ArcIterator<Fst<Arc>> aiter(fst, s); !aiter.Done(); aiter.Next()) {
-      const auto &arc = aiter.Value();
+      const auto& arc = aiter.Value();
       ++narcs_;
       const auto it = paren_map.find(arc.ilabel);
       if (it != paren_map.end()) {

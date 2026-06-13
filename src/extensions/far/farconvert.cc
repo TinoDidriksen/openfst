@@ -15,14 +15,16 @@
 // See www.openfst.org for extensive documentation on this weighted
 // finite-state transducer library.
 
+#include <string>
+
 #include <fst/flags.h>
 
 DEFINE_string(fst_type, "", "Output FST type");
 DEFINE_string(far_type, "default",
-              "FAR file format type: one of: \"default\", \"fst\", "
-              "\"stlist\", \"sttable\"; "
-              "the input FAR type is used if \"default\"");
+          "FAR file format type: one of: \"default\", \"fst\", "
+          "\"stlist\", \"sttable\"; "
+          "the input FAR type is used if \"default\"");
 
-int farconvert_main(int argc, char **argv);
+int farconvert_main(int argc, char** argv);
 
-int main(int argc, char **argv) { return farconvert_main(argc, argv); }
+int main(int argc, char** argv) { return farconvert_main(argc, argv); }

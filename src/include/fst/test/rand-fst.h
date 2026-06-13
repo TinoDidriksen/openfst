@@ -30,10 +30,9 @@ namespace fst {
 template <class Arc, class Generate>
 void RandFst(const int num_random_states, const int num_random_arcs,
              const int num_random_labels, const float acyclic_prob,
-             Generate generate, uint64_t seed, MutableFst<Arc> *fst) {
+             Generate generate, uint64_t seed, MutableFst<Arc>* fst) {
   using Label = typename Arc::Label;
   using StateId = typename Arc::StateId;
-  using Weight = typename Arc::Weight;
 
   // Determines direction of the arcs wrt state numbering. This way we
   // can force acyclicity when desired.
@@ -95,7 +94,7 @@ void RandFst(const int num_random_states, const int num_random_arcs,
     fst->SetFinal(s, generate());
   }
   VLOG(1) << "Check FST for sanity (including property bits).";
-  CHECK(Verify(*fst));
+  CHECK(Verify(*fst));  // Crash OK
 
   // Get/compute all properties.
   const uint64_t props = fst->Properties(kFstProperties, true);

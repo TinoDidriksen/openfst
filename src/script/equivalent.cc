@@ -23,8 +23,8 @@
 namespace fst {
 namespace script {
 
-bool Equivalent(const FstClass &fst1, const FstClass &fst2, float delta,
-                bool *error) {
+bool Equivalent(const FstClass& fst1, const FstClass& fst2, float delta,
+                bool* error) {
   if (!internal::ArcTypesMatch(fst1, fst2, "Equivalent")) return false;
   FstEquivalentInnerArgs iargs{fst1, fst2, delta, error};
   FstEquivalentArgs args(iargs);

@@ -19,9 +19,9 @@
 #include <fst/arc.h>
 #include <fst/register.h>
 
-using fst::LinearClassifierFst;
-using fst::LogArc;
-using fst::StdArc;
+using ::fst::LinearClassifierFst;
+using ::fst::LogArc;
+using ::fst::StdArc;
 
 REGISTER_FST(LinearClassifierFst, StdArc);
 REGISTER_FST(LinearClassifierFst, LogArc);

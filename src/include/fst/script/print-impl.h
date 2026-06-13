@@ -25,13 +25,11 @@
 #include <sstream>
 #include <string>
 
-#include <fst/log.h>
+#include <string_view>
 #include <fst/fst.h>
-#include <fst/fstlib.h>
 #include <fst/properties.h>
 #include <fst/symbol-table.h>
 #include <fst/util.h>
-#include <string_view>
 
 namespace fst {
 
@@ -45,8 +43,8 @@ class FstPrinter {
   using Label = typename Arc::Label;
   using Weight = typename Arc::Weight;
 
-  explicit FstPrinter(const Fst<Arc> &fst, const SymbolTable *isyms,
-                      const SymbolTable *osyms, const SymbolTable *ssyms,
+  explicit FstPrinter(const Fst<Arc>& fst, const SymbolTable* isyms,
+                      const SymbolTable* osyms, const SymbolTable* ssyms,
                       bool accept, bool show_weight_one,
                       std::string_view field_separator,
                       std::string_view missing_symbol = "")
@@ -60,7 +58,7 @@ class FstPrinter {
         missing_symbol_(missing_symbol) {}
 
   // Prints FST to an output stream.
-  void Print(std::ostream &ostrm, std::string_view dest) {
+  void Print(std::ostream& ostrm, std::string_view dest) {
     dest_ = std::string(dest);
     const auto start = fst_.Start();
     if (start == kNoStateId) return;
@@ -73,7 +71,7 @@ class FstPrinter {
   }
 
  private:
-  std::string FormatId(StateId id, const SymbolTable *syms) const {
+  std::string FormatId(StateId id, const SymbolTable* syms) const {
     if (syms) {
       std::string symbol = syms->Find(id);
       if (symbol.empty()) {
@@ -99,12 +97,12 @@ class FstPrinter {
 
   std::string FormatOLabel(Label l) const { return FormatId(l, osyms_); }
 
-  void PrintState(std::ostream &ostrm, StateId s) const {
+  void PrintState(std::ostream& ostrm, StateId s) const {
     bool output = false;
     for (ArcIterator<Fst<Arc>> aiter(fst_, s); !aiter.Done(); aiter.Next()) {
-      const auto &arc = aiter.Value();
-      ostrm << FormatStateId(s) << sep_ << FormatStateId(arc.nextstate)
-              << sep_ << FormatILabel(arc.ilabel);
+      const auto& arc = aiter.Value();
+      ostrm << FormatStateId(s) << sep_ << FormatStateId(arc.nextstate) << sep_
+            << FormatILabel(arc.ilabel);
       if (!accept_) {
         ostrm << sep_ << FormatOLabel(arc.olabel);
       }
@@ -124,10 +122,10 @@ class FstPrinter {
     }
   }
 
-  const Fst<Arc> &fst_;
-  const SymbolTable *isyms_;    // ilabel symbol table.
-  const SymbolTable *osyms_;    // olabel symbol table.
-  const SymbolTable *ssyms_;    // slabel symbol table.
+  const Fst<Arc>& fst_;
+  const SymbolTable* isyms_;    // ilabel symbol table.
+  const SymbolTable* osyms_;    // olabel symbol table.
+  const SymbolTable* ssyms_;    // slabel symbol table.
   bool accept_;                 // Print as acceptor when possible?
   std::string dest_;            // Text FST destination name.
   bool show_weight_one_;        // Print weights equal to Weight::One()?
@@ -135,8 +133,8 @@ class FstPrinter {
   std::string missing_symbol_;  // Symbol to print when lookup fails (default
                                 // "" means raise error).
 
-  FstPrinter(const FstPrinter &) = delete;
-  FstPrinter &operator=(const FstPrinter &) = delete;
+  FstPrinter(const FstPrinter&) = delete;
+  FstPrinter& operator=(const FstPrinter&) = delete;
 };
 
 }  // namespace fst

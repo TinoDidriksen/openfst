@@ -17,16 +17,14 @@
 
 #include <fst/extensions/pdt/getters.h>
 
-#include <string>
-
+#include <string_view>
 #include <fst/extensions/pdt/compose.h>
 #include <fst/extensions/pdt/replace.h>
-#include <string_view>
 
 namespace fst {
 namespace script {
 
-bool GetPdtComposeFilter(std::string_view str, PdtComposeFilter *cf) {
+bool GetPdtComposeFilter(std::string_view str, PdtComposeFilter* cf) {
   if (str == "expand") {
     *cf = PdtComposeFilter::EXPAND;
   } else if (str == "expand_paren") {
@@ -39,7 +37,7 @@ bool GetPdtComposeFilter(std::string_view str, PdtComposeFilter *cf) {
   return true;
 }
 
-bool GetPdtParserType(std::string_view str, PdtParserType *pt) {
+bool GetPdtParserType(std::string_view str, PdtParserType* pt) {
   if (str == "left") {
     *pt = PdtParserType::LEFT;
   } else if (str == "left_sr") {

@@ -26,6 +26,7 @@
 #include <vector>
 
 #include <fst/flags.h>
+#include <fst/flags.h>
 #include <fst/log.h>
 #include <fst/symbol-table.h>
 #include <fst/util.h>
@@ -42,7 +43,7 @@ DECLARE_string(save_isymbols);
 DECLARE_string(save_osymbols);
 DECLARE_bool(verify);
 
-int fstsymbols_main(int argc, char **argv) {
+int fstsymbols_main(int argc, char** argv) {
   namespace s = fst::script;
   using fst::ReadLabelPairs;
   using fst::SymbolTable;
@@ -69,7 +70,7 @@ int fstsymbols_main(int argc, char **argv) {
   if (!fst) return 1;
 
   if (!FST_FLAGS_save_isymbols.empty()) {
-    const auto *isyms = fst->InputSymbols();
+    const auto* isyms = fst->InputSymbols();
     if (isyms) {
       isyms->WriteText(FST_FLAGS_save_isymbols);
     } else {
@@ -79,7 +80,7 @@ int fstsymbols_main(int argc, char **argv) {
   }
 
   if (!FST_FLAGS_save_osymbols.empty()) {
-    const auto *osyms = fst->OutputSymbols();
+    const auto* osyms = fst->OutputSymbols();
     if (osyms) {
       osyms->WriteText(FST_FLAGS_save_osymbols);
     } else {

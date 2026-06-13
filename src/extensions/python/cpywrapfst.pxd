@@ -613,6 +613,7 @@ cdef extern from "<fst/script/fstscript.h>" namespace "fst::script" \
                  int,
                  const string &,
                  bool,
+                 const string &,
                  ostream &,
                  const string &)
 
@@ -813,7 +814,7 @@ cdef extern from "<fst/extensions/far/far.h>" namespace "fst" nogil:
     FAR_STTABLE "fst::FarType::STTABLE"
     FAR_STLIST "fst::FarType::STLIST"
     FAR_FST "fst::FarType::FST"
-    FAR_SSTABLE "fst::FarType::SSTABLE"
+    FAR_SSTABLE "fst::FarType::SSTABLE"  # copybara:strip(SSTable not released)
 
 cdef extern from "<fst/extensions/far/getters.h>" \
     namespace "fst" nogil:

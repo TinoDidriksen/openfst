@@ -28,7 +28,6 @@
 #include <memory>
 #include <sstream>
 #include <string>
-#include <vector>
 
 #include <fst/extensions/far/far.h>
 #include <fst/fst.h>
@@ -36,9 +35,9 @@
 namespace fst {
 
 template <class Arc>
-void Create(const std::vector<std::string> &sources, FarWriter<Arc> &writer,
-            int32_t generate_keys, const std::string &key_prefix,
-            const std::string &key_suffix) {
+void Create(const std::vector<std::string> &sources, FarWriter<Arc>& writer,
+            int32_t generate_keys, const std::string& key_prefix,
+            const std::string& key_suffix) {
   for (size_t i = 0; i < sources.size(); ++i) {
     std::unique_ptr<Fst<Arc>> ifst(Fst<Arc>::Read(sources[i]));
     if (!ifst) return;

@@ -29,44 +29,44 @@
 namespace fst {
 namespace script {
 
-using FstConcatArgs1 = std::pair<MutableFstClass *, const FstClass &>;
+using FstConcatArgs1 = std::pair<MutableFstClass*, const FstClass&>;
 
 template <class Arc>
-void Concat(FstConcatArgs1 *args) {
-  MutableFst<Arc> *fst1 = std::get<0>(*args)->GetMutableFst<Arc>();
-  const Fst<Arc> &fst2 = *std::get<1>(*args).GetFst<Arc>();
+void Concat(FstConcatArgs1* args) {
+  MutableFst<Arc>* fst1 = std::get<0>(*args)->GetMutableFst<Arc>();
+  const Fst<Arc>& fst2 = *std::get<1>(*args).GetFst<Arc>();
   Concat(fst1, fst2);
 }
 
-using FstConcatArgs2 = std::pair<const FstClass &, MutableFstClass *>;
+using FstConcatArgs2 = std::pair<const FstClass&, MutableFstClass*>;
 
 template <class Arc>
-void Concat(FstConcatArgs2 *args) {
-  const Fst<Arc> &fst1 = *std::get<0>(*args).GetFst<Arc>();
-  MutableFst<Arc> *fst2 = std::get<1>(*args)->GetMutableFst<Arc>();
+void Concat(FstConcatArgs2* args) {
+  const Fst<Arc>& fst1 = *std::get<0>(*args).GetFst<Arc>();
+  MutableFst<Arc>* fst2 = std::get<1>(*args)->GetMutableFst<Arc>();
   Concat(fst1, fst2);
 }
 
 using FstConcatArgs3 =
-    std::pair<const std::vector<FstClass *> &, MutableFstClass *>;
+    std::pair<const std::vector<FstClass*>&, MutableFstClass*>;
 
 template <class Arc>
-void Concat(FstConcatArgs3 *args) {
-  const auto &untyped_fsts1 = std::get<0>(*args);
-  std::vector<const Fst<Arc> *> typed_fsts1;
+void Concat(FstConcatArgs3* args) {
+  const auto& untyped_fsts1 = std::get<0>(*args);
+  std::vector<const Fst<Arc>*> typed_fsts1;
   typed_fsts1.reserve(untyped_fsts1.size());
-  for (const auto &untyped_fst1 : untyped_fsts1) {
+  for (const auto& untyped_fst1 : untyped_fsts1) {
     typed_fsts1.emplace_back(untyped_fst1->GetFst<Arc>());
   }
-  MutableFst<Arc> *fst2 = std::get<1>(*args)->GetMutableFst<Arc>();
+  MutableFst<Arc>* fst2 = std::get<1>(*args)->GetMutableFst<Arc>();
   Concat(typed_fsts1, fst2);
 }
 
-void Concat(MutableFstClass *fst1, const FstClass &fst2);
+void Concat(MutableFstClass* fst1, const FstClass& fst2);
 
-void Concat(const FstClass &fst1, MutableFstClass *fst2);
+void Concat(const FstClass& fst1, MutableFstClass* fst2);
 
-void Concat(const std::vector<FstClass *> &fsts1, MutableFstClass *fst2);
+void Concat(const std::vector<FstClass*>& fsts1, MutableFstClass* fst2);
 
 }  // namespace script
 }  // namespace fst

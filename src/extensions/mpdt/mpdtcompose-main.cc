@@ -25,6 +25,7 @@
 #include <vector>
 
 #include <fst/flags.h>
+#include <fst/flags.h>
 #include <fst/log.h>
 #include <fst/extensions/mpdt/compose.h>
 #include <fst/extensions/mpdt/mpdtscript.h>
@@ -38,7 +39,7 @@ DECLARE_bool(left_mpdt);
 DECLARE_bool(connect);
 DECLARE_string(compose_filter);
 
-int mpdtcompose_main(int argc, char **argv) {
+int mpdtcompose_main(int argc, char** argv) {
   namespace s = fst::script;
   using fst::MPdtComposeOptions;
   using fst::PdtComposeFilter;

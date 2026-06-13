@@ -25,6 +25,7 @@
 #include <vector>
 
 #include <fst/flags.h>
+#include <fst/flags.h>
 #include <fst/symbol-table.h>
 #include <fst/util.h>
 #include <fst/script/fst-class.h>
@@ -39,7 +40,7 @@ DECLARE_string(relabel_opairs);
 DECLARE_string(unknown_isymbol);
 DECLARE_string(unknown_osymbol);
 
-int fstrelabel_main(int argc, char **argv) {
+int fstrelabel_main(int argc, char** argv) {
   namespace s = fst::script;
   using fst::ReadLabelPairs;
   using fst::SymbolTable;

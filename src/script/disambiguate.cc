@@ -24,8 +24,8 @@
 namespace fst {
 namespace script {
 
-void Disambiguate(const FstClass &ifst, MutableFstClass *ofst,
-                  const DisambiguateOptions &opts) {
+void Disambiguate(const FstClass& ifst, MutableFstClass* ofst,
+                  const DisambiguateOptions& opts) {
   if (!internal::ArcTypesMatch(ifst, *ofst, "Disambiguate") ||
       !ofst->WeightTypesMatch(opts.weight_threshold, "Disambiguate")) {
     ofst->SetProperties(kError, kError);

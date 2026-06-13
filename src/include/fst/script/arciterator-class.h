@@ -58,7 +58,7 @@ class ArcIteratorImplBase {
 template <class Arc>
 class ArcIteratorClassImpl : public ArcIteratorImplBase {
  public:
-  explicit ArcIteratorClassImpl(const Fst<Arc> &fst, int64_t s)
+  explicit ArcIteratorClassImpl(const Fst<Arc>& fst, int64_t s)
       : aiter_(fst, s) {}
 
   bool Done() const final { return aiter_.Done(); }
@@ -90,15 +90,15 @@ class ArcIteratorClassImpl : public ArcIteratorImplBase {
 class ArcIteratorClass;
 
 using InitArcIteratorClassArgs =
-    std::tuple<const FstClass &, int64_t, ArcIteratorClass *>;
+    std::tuple<const FstClass&, int64_t, ArcIteratorClass*>;
 
 // Untemplated user-facing class holding a templated pimpl.
 class ArcIteratorClass {
  public:
-  ArcIteratorClass(const FstClass &fst, int64_t s);
+  ArcIteratorClass(const FstClass& fst, int64_t s);
 
   template <class Arc>
-  ArcIteratorClass(const Fst<Arc> &fst, int64_t s)
+  ArcIteratorClass(const Fst<Arc>& fst, int64_t s)
       : impl_(std::make_unique<ArcIteratorClassImpl<Arc>>(fst, s)) {}
 
   bool Done() const { return impl_->Done(); }
@@ -118,15 +118,15 @@ class ArcIteratorClass {
   ArcClass Value() const { return impl_->Value(); }
 
   template <class Arc>
-  friend void InitArcIteratorClass(InitArcIteratorClassArgs *args);
+  friend void InitArcIteratorClass(InitArcIteratorClassArgs* args);
 
  private:
   std::unique_ptr<ArcIteratorImplBase> impl_;
 };
 
 template <class Arc>
-void InitArcIteratorClass(InitArcIteratorClassArgs *args) {
-  const Fst<Arc> &fst = *std::get<0>(*args).GetFst<Arc>();
+void InitArcIteratorClass(InitArcIteratorClassArgs* args) {
+  const Fst<Arc>& fst = *std::get<0>(*args).GetFst<Arc>();
   std::get<2>(*args)->impl_ =
       std::make_unique<ArcIteratorClassImpl<Arc>>(fst, std::get<1>(*args));
 }
@@ -136,7 +136,7 @@ void InitArcIteratorClass(InitArcIteratorClassArgs *args) {
 // Virtual interface implemented by each concrete MutableArcIteratorImpl<F>.
 class MutableArcIteratorImplBase : public ArcIteratorImplBase {
  public:
-  virtual void SetValue(const ArcClass &) = 0;
+  virtual void SetValue(const ArcClass&) = 0;
 
   ~MutableArcIteratorImplBase() override = default;
 };
@@ -145,7 +145,7 @@ class MutableArcIteratorImplBase : public ArcIteratorImplBase {
 template <class Arc>
 class MutableArcIteratorClassImpl : public MutableArcIteratorImplBase {
  public:
-  explicit MutableArcIteratorClassImpl(MutableFst<Arc> *fst, int64_t s)
+  explicit MutableArcIteratorClassImpl(MutableFst<Arc>* fst, int64_t s)
       : aiter_(fst, s) {}
 
   bool Done() const final { return aiter_.Done(); }
@@ -164,7 +164,7 @@ class MutableArcIteratorClassImpl : public MutableArcIteratorImplBase {
     aiter_.SetFlags(flags, mask);
   }
 
-  void SetValue(const ArcClass &ac) final { SetValue(ac.GetArc<Arc>()); }
+  void SetValue(const ArcClass& ac) final { SetValue(ac.GetArc<Arc>()); }
 
   // This is returned by value because it has not yet been constructed, and
   // is likely to participate in return-value optimization.
@@ -173,7 +173,7 @@ class MutableArcIteratorClassImpl : public MutableArcIteratorImplBase {
   ~MutableArcIteratorClassImpl() override = default;
 
  private:
-  void SetValue(const Arc &arc) { aiter_.SetValue(arc); }
+  void SetValue(const Arc& arc) { aiter_.SetValue(arc); }
 
   MutableArcIterator<MutableFst<Arc>> aiter_;
 };
@@ -181,15 +181,15 @@ class MutableArcIteratorClassImpl : public MutableArcIteratorImplBase {
 class MutableArcIteratorClass;
 
 using InitMutableArcIteratorClassArgs =
-    std::tuple<MutableFstClass *, int64_t, MutableArcIteratorClass *>;
+    std::tuple<MutableFstClass*, int64_t, MutableArcIteratorClass*>;
 
 // Untemplated user-facing class holding a templated pimpl.
 class MutableArcIteratorClass {
  public:
-  MutableArcIteratorClass(MutableFstClass *fst, int64_t s);
+  MutableArcIteratorClass(MutableFstClass* fst, int64_t s);
 
   template <class Arc>
-  MutableArcIteratorClass(MutableFst<Arc> *fst, int64_t s)
+  MutableArcIteratorClass(MutableFst<Arc>* fst, int64_t s)
       : impl_(std::make_unique<MutableArcIteratorClassImpl<Arc>>(fst, s)) {}
 
   bool Done() const { return impl_->Done(); }
@@ -206,21 +206,21 @@ class MutableArcIteratorClass {
 
   void SetFlags(uint8_t flags, uint8_t mask) { impl_->SetFlags(flags, mask); }
 
-  void SetValue(const ArcClass &ac) { impl_->SetValue(ac); }
+  void SetValue(const ArcClass& ac) { impl_->SetValue(ac); }
 
   ArcClass Value() const { return impl_->Value(); }
 
   template <class Arc>
   friend void InitMutableArcIteratorClass(
-      InitMutableArcIteratorClassArgs *args);
+      InitMutableArcIteratorClassArgs* args);
 
  private:
   std::unique_ptr<MutableArcIteratorImplBase> impl_;
 };
 
 template <class Arc>
-void InitMutableArcIteratorClass(InitMutableArcIteratorClassArgs *args) {
-  MutableFst<Arc> *fst = std::get<0>(*args)->GetMutableFst<Arc>();
+void InitMutableArcIteratorClass(InitMutableArcIteratorClassArgs* args) {
+  MutableFst<Arc>* fst = std::get<0>(*args)->GetMutableFst<Arc>();
   std::get<2>(*args)->impl_ =
       std::make_unique<MutableArcIteratorClassImpl<Arc>>(fst,
                                                          std::get<1>(*args));

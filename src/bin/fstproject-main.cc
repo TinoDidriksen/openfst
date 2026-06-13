@@ -22,6 +22,7 @@
 #include <string>
 
 #include <fst/flags.h>
+#include <fst/flags.h>
 #include <fst/log.h>
 #include <fst/project.h>
 #include <fst/script/fst-class.h>
@@ -30,7 +31,7 @@
 
 DECLARE_string(project_type);
 
-int fstproject_main(int argc, char **argv) {
+int fstproject_main(int argc, char** argv) {
   namespace s = fst::script;
   using fst::ProjectType;
   using fst::script::MutableFstClass;

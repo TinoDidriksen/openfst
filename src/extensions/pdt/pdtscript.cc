@@ -18,8 +18,8 @@
 // Definitions of 'scriptable' versions of pdt operations, that is,
 // those that can be called with FstClass-type arguments.
 //
-// See comments in nlp/fst/script/script-impl.h for how the registration
-// mechanism allows these to work with various arc types.
+// See comments in `third_party/openfst/script/script-impl.h` for how the
+// registration mechanism allows these to work with various arc types.
 
 #include <fst/extensions/pdt/pdtscript.h>
 
@@ -38,9 +38,9 @@
 namespace fst {
 namespace script {
 
-void Compose(const FstClass &ifst1, const FstClass &ifst2,
-             const std::vector<std::pair<int64_t, int64_t>> &parens,
-             MutableFstClass *ofst, const PdtComposeOptions &copts,
+void Compose(const FstClass& ifst1, const FstClass& ifst2,
+             const std::vector<std::pair<int64_t, int64_t>>& parens,
+             MutableFstClass* ofst, const PdtComposeOptions& copts,
              bool left_pdt) {
   if (!internal::ArcTypesMatch(ifst1, ifst2, "Compose") ||
       !internal::ArcTypesMatch(ifst1, *ofst, "Compose")) {
@@ -52,29 +52,29 @@ void Compose(const FstClass &ifst1, const FstClass &ifst2,
 
 REGISTER_FST_OPERATION_3ARCS(Compose, PdtComposeArgs);
 
-void Expand(const FstClass &ifst,
-            const std::vector<std::pair<int64_t, int64_t>> &parens,
-            MutableFstClass *ofst, const PdtExpandOptions &opts) {
+void Expand(const FstClass& ifst,
+            const std::vector<std::pair<int64_t, int64_t>>& parens,
+            MutableFstClass* ofst, const PdtExpandOptions& opts) {
   PdtExpandArgs args{ifst, parens, ofst, opts};
   Apply<Operation<PdtExpandArgs>>("Expand", ifst.ArcType(), &args);
 }
 
 REGISTER_FST_OPERATION_3ARCS(Expand, PdtExpandArgs);
 
-void Expand(const FstClass &ifst,
-            const std::vector<std::pair<int64_t, int64_t>> &parens,
-            MutableFstClass *ofst, bool connect, bool keep_parentheses,
-            const WeightClass &weight_threshold) {
+void Expand(const FstClass& ifst,
+            const std::vector<std::pair<int64_t, int64_t>>& parens,
+            MutableFstClass* ofst, bool connect, bool keep_parentheses,
+            const WeightClass& weight_threshold) {
   Expand(ifst, parens, ofst,
          PdtExpandOptions(connect, keep_parentheses, weight_threshold));
 }
 
-void Replace(const std::vector<std::pair<int64_t, const FstClass *>> &pairs,
-             MutableFstClass *ofst,
-             std::vector<std::pair<int64_t, int64_t>> *parens, int64_t root,
+void Replace(const std::vector<std::pair<int64_t, const FstClass*>>& pairs,
+             MutableFstClass* ofst,
+             std::vector<std::pair<int64_t, int64_t>>* parens, int64_t root,
              PdtParserType parser_type, int64_t start_paren_labels,
-             const std::string &left_paren_prefix,
-             const std::string &right_paren_prefix) {
+             const std::string& left_paren_prefix,
+             const std::string& right_paren_prefix) {
   for (size_t i = 1; i < pairs.size(); ++i) {
     if (!internal::ArcTypesMatch(*pairs[i - 1].second, *pairs[i].second,
                                  "Replace"))
@@ -94,26 +94,26 @@ void Replace(const std::vector<std::pair<int64_t, const FstClass *>> &pairs,
 
 REGISTER_FST_OPERATION_3ARCS(Replace, PdtReplaceArgs);
 
-void Reverse(const FstClass &ifst,
-             const std::vector<std::pair<int64_t, int64_t>> &parens,
-             MutableFstClass *ofst) {
+void Reverse(const FstClass& ifst,
+             const std::vector<std::pair<int64_t, int64_t>>& parens,
+             MutableFstClass* ofst) {
   PdtReverseArgs args{ifst, parens, ofst};
   Apply<Operation<PdtReverseArgs>>("Reverse", ifst.ArcType(), &args);
 }
 
 REGISTER_FST_OPERATION_3ARCS(Reverse, PdtReverseArgs);
 
-void ShortestPath(const FstClass &ifst,
-                  const std::vector<std::pair<int64_t, int64_t>> &parens,
-                  MutableFstClass *ofst, const PdtShortestPathOptions &opts) {
+void ShortestPath(const FstClass& ifst,
+                  const std::vector<std::pair<int64_t, int64_t>>& parens,
+                  MutableFstClass* ofst, const PdtShortestPathOptions& opts) {
   PdtShortestPathArgs args{ifst, parens, ofst, opts};
   Apply<Operation<PdtShortestPathArgs>>("ShortestPath", ifst.ArcType(), &args);
 }
 
 REGISTER_FST_OPERATION_3ARCS(ShortestPath, PdtShortestPathArgs);
 
-void Info(const FstClass &ifst,
-          const std::vector<std::pair<int64_t, int64_t>> &parens) {
+void Info(const FstClass& ifst,
+          const std::vector<std::pair<int64_t, int64_t>>& parens) {
   PdtInfoArgs args(ifst, parens);
   Apply<Operation<PdtInfoArgs>>("Info", ifst.ArcType(), &args);
 }

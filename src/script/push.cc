@@ -27,13 +27,13 @@
 namespace fst {
 namespace script {
 
-void Push(MutableFstClass *fst, ReweightType rew_type, float delta,
+void Push(MutableFstClass* fst, ReweightType rew_type, float delta,
           bool remove_total_weight) {
   FstPushArgs1 args{fst, rew_type, delta, remove_total_weight};
   Apply<Operation<FstPushArgs1>>("Push", fst->ArcType(), &args);
 }
 
-void Push(const FstClass &ifst, MutableFstClass *ofst, uint8_t flags,
+void Push(const FstClass& ifst, MutableFstClass* ofst, uint8_t flags,
           ReweightType rew_type, float delta) {
   if (!internal::ArcTypesMatch(ifst, *ofst, "Push")) {
     ofst->SetProperties(kError, kError);

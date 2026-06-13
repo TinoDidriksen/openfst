@@ -25,8 +25,8 @@
 namespace fst {
 namespace script {
 
-void Intersect(const FstClass &ifst1, const FstClass &ifst2,
-               MutableFstClass *ofst, const ComposeOptions &opts) {
+void Intersect(const FstClass& ifst1, const FstClass& ifst2,
+               MutableFstClass* ofst, const ComposeOptions& opts) {
   if (!internal::ArcTypesMatch(ifst1, ifst2, "Intersect") ||
       !internal::ArcTypesMatch(*ofst, ifst1, "Intersect")) {
     ofst->SetProperties(kError, kError);

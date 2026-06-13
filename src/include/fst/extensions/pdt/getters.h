@@ -18,18 +18,16 @@
 #ifndef FST_EXTENSIONS_PDT_GETTERS_H_
 #define FST_EXTENSIONS_PDT_GETTERS_H_
 
-#include <string>
-
+#include <string_view>
 #include <fst/extensions/pdt/compose.h>
 #include <fst/extensions/pdt/replace.h>
-#include <string_view>
 
 namespace fst {
 namespace script {
 
-bool GetPdtComposeFilter(std::string_view str, PdtComposeFilter *cf);
+bool GetPdtComposeFilter(std::string_view str, PdtComposeFilter* cf);
 
-bool GetPdtParserType(std::string_view str, PdtParserType *pt);
+bool GetPdtParserType(std::string_view str, PdtParserType* pt);
 
 }  // namespace script
 }  // namespace fst

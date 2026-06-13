@@ -26,8 +26,8 @@
 namespace fst {
 namespace script {
 
-void Info(const FstClass &fst, bool test_properties, ArcFilterType arc_filter,
-          const std::string &info_type, bool verify) {
+void Info(const FstClass& fst, bool test_properties, ArcFilterType arc_filter,
+          const std::string& info_type, bool verify) {
   FstInfoArgs args{fst, test_properties, arc_filter, info_type, verify};
   Apply<Operation<FstInfoArgs>>("Info", fst.ArcType(), &args);
 }

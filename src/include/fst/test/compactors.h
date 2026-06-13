@@ -55,11 +55,11 @@ class TrivialArcCompactor {
   static_assert(std::is_trivially_copyable_v<Element>,
                 "ArcTpl should be trivially copyable; someone broke it.");
 
-  Element Compact(StateId s, const A &arc) const {
+  Element Compact(StateId s, const A& arc) const {
     return Element(arc.ilabel, arc.olabel, arc.weight, arc.nextstate);
   }
 
-  Arc Expand(StateId s, const Element &e, uint32_t f = kArcValueFlags) const {
+  Arc Expand(StateId s, const Element& e, uint32_t f = kArcValueFlags) const {
     return Arc(e.ilabel, e.olabel, e.weight, e.nextstate);
   }
 
@@ -67,17 +67,17 @@ class TrivialArcCompactor {
 
   uint64_t Properties() const { return 0ULL; }
 
-  bool Compatible(const Fst<A> &fst) const { return true; }
+  bool Compatible(const Fst<A>& fst) const { return true; }
 
-  static const std::string &Type() {
-    static const std::string *const type =
+  static const std::string& Type() {
+    static const std::string* const type =
         new std::string("trival_arc_compactor_" + Arc::Type());
     return *type;
   }
 
-  bool Write(std::ostream &strm) const { return true; }
+  bool Write(std::ostream& strm) const { return true; }
 
-  static TrivialArcCompactor *Read(std::istream &strm) {
+  static TrivialArcCompactor* Read(std::istream& strm) {
     return new TrivialArcCompactor;
   }
 };
@@ -96,13 +96,13 @@ class TrivialCompactor {
 
   // Constructor from the Fst to be compacted.  If compactor is present,
   // only optional state should be copied from it.
-  explicit TrivialCompactor(const Fst<Arc> &fst,
+  explicit TrivialCompactor(const Fst<Arc>& fst,
                             std::shared_ptr<TrivialCompactor> = nullptr)
       : fst_(fst.Copy()) {}
 
   // Copy constructor.  Must make a thread-safe copy suitable for use by
   // by Fst::Copy(/*safe=*/true).
-  TrivialCompactor(const TrivialCompactor &compactor)
+  TrivialCompactor(const TrivialCompactor& compactor)
       : fst_(compactor.fst_->Copy(/*safe=*/true)) {}
 
   StateId Start() const { return fst_->Start(); }
@@ -113,7 +113,7 @@ class TrivialCompactor {
   class State {
    public:
     State() = default;
-    State(const TrivialCompactor *c, StateId s)
+    State(const TrivialCompactor* c, StateId s)
         : c_(c),
           s_(s),
           i_(std::make_unique<ArcIterator<Fst<Arc>>>(*c->fst_, s)) {}
@@ -126,36 +126,36 @@ class TrivialCompactor {
     }
 
    private:
-    const TrivialCompactor *c_ = nullptr;
+    const TrivialCompactor* c_ = nullptr;
     StateId s_ = kNoStateId;
     std::unique_ptr<ArcIterator<Fst<Arc>>> i_;
   };
 
-  void SetState(StateId s, State *state) { *state = State(this, s); }
+  void SetState(StateId s, State* state) { *state = State(this, s); }
 
   template <typename Arc>
-  bool IsCompatible(const Fst<Arc> &fst) const {
+  bool IsCompatible(const Fst<Arc>& fst) const {
     return std::is_same_v<Arc, A>;
   }
 
   uint64_t Properties(uint64_t props) const { return props; }
 
-  static const std::string &Type() {
-    static const std::string *const type =
+  static const std::string& Type() {
+    static const std::string* const type =
         new std::string("trivial_compactor_" + Arc::Type());
     return *type;
   }
 
   bool Error() const { return fst_->Properties(kError, /*test=*/false); }
 
-  bool Write(std::ostream &strm, const FstWriteOptions &opts) const {
+  bool Write(std::ostream& strm, const FstWriteOptions& opts) const {
     WriteType(strm, Type());
     // Write as a VectorFst.
     return VectorFst<Arc>::WriteFst(*fst_, strm, opts);
   }
 
-  static TrivialCompactor *Read(std::istream &strm, FstReadOptions opts,
-                                const FstHeader &hdr) {
+  static TrivialCompactor* Read(std::istream& strm, FstReadOptions opts,
+                                const FstHeader& hdr) {
     std::string type;
     ReadType(strm, &type);
     if (type != Type()) return nullptr;

@@ -25,6 +25,7 @@
 #include <ostream>
 #include <string>
 
+#include <fst/flags.h>
 #include <fst/log.h>
 #include <fst/arc.h>
 #include <fst/compact-fst.h>
@@ -52,8 +53,8 @@ struct CustomArc {
       : ilabel(i), olabel(o), weight(w), nextstate(s) {}
   CustomArc() = default;
 
-  static const std::string &Type() {  // Arc type name
-    static const std::string *const type = new std::string("my");
+  static const std::string& Type() {  // Arc type name
+    static const std::string* const type = new std::string("my");
     return *type;
   }
 
@@ -65,42 +66,22 @@ struct CustomArc {
 
 REGISTER_FST(VectorFst, CustomArc);
 REGISTER_FST(ConstFst, CustomArc);
-static fst::FstRegisterer<
-    CompactArcFst<StdArc, TrivialArcCompactor<StdArc>>>
+
+static FstRegisterer<CompactArcFst<StdArc, TrivialArcCompactor<StdArc>>>
     CompactFst_StdArc_TrivialCompactor_registerer;
-static fst::FstRegisterer<
-    CompactArcFst<CustomArc, TrivialArcCompactor<CustomArc>>>
+static FstRegisterer<CompactArcFst<CustomArc, TrivialArcCompactor<CustomArc>>>
     CompactFst_CustomArc_TrivialCompactor_registerer;
-static fst::FstRegisterer<ConstFst<StdArc, uint16_t>>
+static FstRegisterer<ConstFst<StdArc, uint16_t>>
     ConstFst_StdArc_uint16_registerer;
-static fst::FstRegisterer<
+static FstRegisterer<
     CompactArcFst<StdArc, TrivialArcCompactor<StdArc>, uint16_t>>
     CompactFst_StdArc_TrivialCompactor_uint16_registerer;
-static fst::FstRegisterer<CompactFst<StdArc, TrivialCompactor<StdArc>>>
+static FstRegisterer<CompactFst<StdArc, TrivialCompactor<StdArc>>>
     CompactFst_StdArc_CustomCompactor_registerer;
-static fst::FstRegisterer<
-    CompactFst<CustomArc, TrivialCompactor<CustomArc>>>
+static FstRegisterer<CompactFst<CustomArc, TrivialCompactor<CustomArc>>>
     CompactFst_CustomArc_CustomCompactor_registerer;
 
-}  // namespace
-}  // namespace fst
-
-using fst::CompactArcFst;
-using fst::CompactFst;
-using fst::ConstFst;
-using fst::CustomArc;
-using fst::EditFst;
-using fst::FstTester;
-using fst::StdArc;
-using fst::StdArcLookAheadFst;
-using fst::TrivialArcCompactor;
-using fst::TrivialCompactor;
-using fst::VectorFst;
-
-int main(int argc, char **argv) {
-  SetFlag(&FST_FLAGS_fst_verify_properties, true);
-  SET_FLAGS(argv[0], &argc, &argv, true);
-
+void RunTest() {
   LOG(INFO) << "Testing VectorFst<StdArc>.";
   {
     for (const size_t num_states : {0, 1, 2, 3, 128}) {
@@ -267,6 +248,13 @@ int main(int argc, char **argv) {
   }
 
   std::cout << "PASS" << std::endl;
+}
 
-  return 0;
+}  // namespace
+}  // namespace fst
+
+int main(int argc, char** argv) {
+  SetFlag(&FST_FLAGS_fst_verify_properties, true);
+  SET_FLAGS(argv[0], &argc, &argv, true);
+  fst::RunTest();
 }

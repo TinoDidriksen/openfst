@@ -21,17 +21,15 @@
 
 #include <fst/extensions/far/getters.h>
 
-#include <cstdint>
 #include <string>
-#include <vector>
 
-#include <fstream>
+#include <string_view>
+#include <fst/extensions/far/far.h>
 
 namespace fst {
-
 namespace script {
 
-bool GetFarType(std::string_view str, FarType *far_type) {
+bool GetFarType(std::string_view str, FarType* far_type) {
   if (str == "fst") {
     *far_type = FarType::FST;
   } else if (str == "stlist") {
@@ -46,7 +44,7 @@ bool GetFarType(std::string_view str, FarType *far_type) {
   return true;
 }
 
-bool GetFarEntryType(std::string_view str, FarEntryType *entry_type) {
+bool GetFarEntryType(std::string_view str, FarEntryType* entry_type) {
   if (str == "line") {
     *entry_type = FarEntryType::LINE;
   } else if (str == "file") {
@@ -55,9 +53,6 @@ bool GetFarEntryType(std::string_view str, FarEntryType *entry_type) {
     return false;
   }
   return true;
-}
-
-void ExpandArgs(int argc, char **argv, int *argcp, char ***argvp) {
 }
 
 }  // namespace script

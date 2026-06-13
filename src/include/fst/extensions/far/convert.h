@@ -15,22 +15,20 @@
 #ifndef FST_EXTENSIONS_FAR_CONVERT_H_
 #define FST_EXTENSIONS_FAR_CONVERT_H_
 
-#include <fst/log.h>
+#include <string_view>
 #include <fst/extensions/far/far.h>
-#include <fst/extensions/far/getters.h>
 #include <fst/extensions/far/map-reduce.h>
 #include <fst/fst.h>
 #include <fst/register.h>
 #include <fst/util.h>
-#include <string_view>
 
 namespace fst {
 
 template <class Arc>
-void Convert(FarReader<Arc> &reader, FarWriter<Arc> &writer,
+void Convert(FarReader<Arc>& reader, FarWriter<Arc>& writer,
              std::string_view fst_type) {
   internal::Map(reader, writer,
-                [&fst_type](std::string_view key, const Fst<Arc> *ifst) {
+                [&fst_type](std::string_view key, const Fst<Arc>* ifst) {
                   if (fst_type.empty() || ifst->Type() == fst_type) {
                     return fst::WrapUnique(ifst->Copy());
                   }

@@ -17,10 +17,12 @@
 //
 // Generates random paths through an FST.
 
+#include <cstdint>
 #include <cstring>
 #include <memory>
 #include <string>
 
+#include <fst/flags.h>
 #include <fst/flags.h>
 #include <fst/log.h>
 #include <fst/randgen.h>
@@ -36,7 +38,7 @@ DECLARE_string(select);
 DECLARE_bool(weighted);
 DECLARE_bool(remove_total_weight);
 
-int fstrandgen_main(int argc, char **argv) {
+int fstrandgen_main(int argc, char** argv) {
   namespace s = fst::script;
   using fst::RandGenOptions;
   using fst::script::FstClass;

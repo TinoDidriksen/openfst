@@ -25,14 +25,14 @@
 namespace fst {
 namespace script {
 
-ArcIteratorClass::ArcIteratorClass(const FstClass &fst, int64_t s)
+ArcIteratorClass::ArcIteratorClass(const FstClass& fst, int64_t s)
     : impl_(nullptr) {
   InitArcIteratorClassArgs args{fst, s, this};
   Apply<Operation<InitArcIteratorClassArgs>>("InitArcIteratorClass",
                                              fst.ArcType(), &args);
 }
 
-MutableArcIteratorClass::MutableArcIteratorClass(MutableFstClass *fst,
+MutableArcIteratorClass::MutableArcIteratorClass(MutableFstClass* fst,
                                                  int64_t s)
     : impl_(nullptr) {
   InitMutableArcIteratorClassArgs args{fst, s, this};

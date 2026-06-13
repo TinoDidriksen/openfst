@@ -32,6 +32,7 @@
 
 #include <fst/compat.h>
 #include <fst/log.h>
+#include <fst/log.h>
 #include <fst/extensions/linear/linear-fst-data.h>
 #include <fst/extensions/linear/trie.h>
 #include <fst/fst.h>
@@ -45,18 +46,18 @@ template <class A>
 class FeatureGroupBuilder;
 
 // For logging purposes
-inline std::string TranslateLabel(int64_t label, const SymbolTable *syms);
+inline std::string TranslateLabel(int64_t label, const SymbolTable* syms);
 template <class Iterator>
-std::string JoinLabels(Iterator begin, Iterator end, const SymbolTable *syms);
+std::string JoinLabels(Iterator begin, Iterator end, const SymbolTable* syms);
 template <class Label>
-std::string JoinLabels(const std::vector<Label> &labels,
-                       const SymbolTable *syms);
+std::string JoinLabels(const std::vector<Label>& labels,
+                       const SymbolTable* syms);
 
 // Guesses the appropriate boundary label (start- or end-of-sentence)
 // for all labels equal to `boundary` and modifies the `sequence`
 // in-place. Returns the number of positions that are still uncertain.
 template <class A>
-typename A::Label GuessStartOrEnd(std::vector<typename A::Label> *sequence,
+typename A::Label GuessStartOrEnd(std::vector<typename A::Label>* sequence,
                                   typename A::Label boundary);
 
 // Builds a `LinearFstData` object by adding words and feature
@@ -74,9 +75,9 @@ class LinearFstDataBuilder {
 
   // Constructs a builder with associated symbol tables for diagonstic
   // output. Each of these symbol tables may also be nullptr.
-  explicit LinearFstDataBuilder(const SymbolTable *isyms = nullptr,
-                                const SymbolTable *fsyms = nullptr,
-                                const SymbolTable *osyms = nullptr)
+  explicit LinearFstDataBuilder(const SymbolTable* isyms = nullptr,
+                                const SymbolTable* fsyms = nullptr,
+                                const SymbolTable* osyms = nullptr)
       : error_(false),
         max_future_size_(0),
         max_input_label_(1),
@@ -105,8 +106,8 @@ class LinearFstDataBuilder {
   // In addition to the reasons above in the two-parameter version,
   // this may also fail if `possible_output` is empty or any output
   // label in it is non-positive.
-  bool AddWord(Label word, const std::vector<Label> &word_features,
-               const std::vector<Label> &possible_output);
+  bool AddWord(Label word, const std::vector<Label>& word_features,
+               const std::vector<Label>& possible_output);
 
   // Creates a new feature group with specified future size (size of
   // the look-ahead window), returns the group id to be used for
@@ -156,8 +157,8 @@ class LinearFstDataBuilder {
   //
   // This may fail if any of input or output labels are non-positive,
   // or if any call to `FeatureGroupBuilder<>::AddWeight()` fails.
-  bool AddWeight(size_t group, const std::vector<Label> &input,
-                 const std::vector<Label> &output, Weight weight);
+  bool AddWeight(size_t group, const std::vector<Label>& input,
+                 const std::vector<Label>& output, Weight weight);
 
   // Returns a newly created `LinearFstData` object or nullptr in case
   // of failure. The caller takes the ownership of the memory. No
@@ -167,7 +168,7 @@ class LinearFstDataBuilder {
   //
   // This may fail if the call to any `FeatureGroupBuilder<>::Dump()`
   // fails.
-  LinearFstData<A> *Dump();
+  LinearFstData<A>* Dump();
 
  private:
   bool error_;
@@ -179,8 +180,8 @@ class LinearFstDataBuilder {
   Label max_input_label_;
   const SymbolTable *isyms_, *fsyms_, *osyms_;
 
-  LinearFstDataBuilder(const LinearFstDataBuilder &) = delete;
-  LinearFstDataBuilder &operator=(const LinearFstDataBuilder &) = delete;
+  LinearFstDataBuilder(const LinearFstDataBuilder&) = delete;
+  LinearFstDataBuilder& operator=(const LinearFstDataBuilder&) = delete;
 };
 
 // Builds a LinearFstData tailored for a LinearClassifierFst. The
@@ -206,9 +207,9 @@ class LinearClassifierFstDataBuilder {
   // output. The output labels (i.e. prediction) must be in the range
   // of [1, num_classes].
   explicit LinearClassifierFstDataBuilder(size_t num_classes,
-                                          const SymbolTable *isyms = nullptr,
-                                          const SymbolTable *fsyms = nullptr,
-                                          const SymbolTable *osyms = nullptr)
+                                          const SymbolTable* isyms = nullptr,
+                                          const SymbolTable* fsyms = nullptr,
+                                          const SymbolTable* osyms = nullptr)
       : error_(false),
         num_classes_(num_classes),
         num_groups_(0),
@@ -219,7 +220,7 @@ class LinearClassifierFstDataBuilder {
   bool Error() const { return error_; }
 
   // Same as LinearFstDataBuilder<>::AddWord().
-  bool AddWord(Label word, const std::vector<Label> &features);
+  bool AddWord(Label word, const std::vector<Label>& features);
 
   // Adds a logical feature group. Similar to
   // LinearFstDataBuilder<>::AddGroup(), with the exception that the
@@ -232,12 +233,12 @@ class LinearClassifierFstDataBuilder {
   // prediction is needed as the output.
   //
   // This may fail if `pred` is not in the range of [1, num_classes_].
-  bool AddWeight(size_t group, const std::vector<Label> &input, Label pred,
+  bool AddWeight(size_t group, const std::vector<Label>& input, Label pred,
                  Weight weight);
 
   // Returns a newly created `LinearFstData` object or nullptr in case of
   // failure.
-  LinearFstData<A> *Dump();
+  LinearFstData<A>* Dump();
 
  private:
   std::vector<Label> empty_;
@@ -257,8 +258,8 @@ class FeatureGroupBuilder {
 
   // Constructs a builder with the given future size. All features
   // added to the group will have look-ahead windows of this size.
-  FeatureGroupBuilder(size_t future_size, const SymbolTable *fsyms,
-                      const SymbolTable *osyms)
+  FeatureGroupBuilder(size_t future_size, const SymbolTable* fsyms,
+                      const SymbolTable* osyms)
       : error_(false), future_size_(future_size), fsyms_(fsyms), osyms_(osyms) {
     // This edge is special; see doc of class `FeatureGroup` on the
     // details.
@@ -284,8 +285,8 @@ class FeatureGroupBuilder {
   // LinearFstDataBuilder<>::AddWeight for more details.
   //
   // This may fail if the input is smaller than the look-ahead window.
-  bool AddWeight(const std::vector<Label> &input,
-                 const std::vector<Label> &output, Weight weight);
+  bool AddWeight(const std::vector<Label>& input,
+                 const std::vector<Label>& output, Weight weight);
 
   // Creates an actual FeatureGroup<> object. Connects back-off links;
   // pre-accumulates weights from back-off features. Returns nullptr if
@@ -297,7 +298,7 @@ class FeatureGroupBuilder {
   //
   // TODO(wuke): check overlapping top-level contexts (see
   // `DumpOverlappingContext()` in tests).
-  FeatureGroup<A> *Dump(size_t max_future_size);
+  FeatureGroup<A>* Dump(size_t max_future_size);
 
  private:
   typedef typename FeatureGroup<A>::InputOutputLabel InputOutputLabel;
@@ -314,7 +315,7 @@ class FeatureGroupBuilder {
   // `hop` when it is not `nullptr`.
   //
   // This does not fail.
-  int FindFirstMatch(InputOutputLabel label, int parent, int *hop) const;
+  int FindFirstMatch(InputOutputLabel label, int parent, int* hop) const;
 
   // Links each node to its immediate back-off. root is linked to -1.
   //
@@ -329,9 +330,9 @@ class FeatureGroupBuilder {
   void PreAccumulateWeights();
 
   // Reconstruct the path from trie root to given node for logging.
-  bool TrieDfs(const Topology &topology, int cur, int target,
-               std::vector<InputOutputLabel> *path) const;
-  std::string TriePath(int node, const Topology &topology) const;
+  bool TrieDfs(const Topology& topology, int cur, int target,
+               std::vector<InputOutputLabel>* path) const;
+  std::string TriePath(int node, const Topology& topology) const;
 
   bool error_;
   size_t future_size_;
@@ -339,8 +340,8 @@ class FeatureGroupBuilder {
   int start_;
   const SymbolTable *fsyms_, *osyms_;
 
-  FeatureGroupBuilder(const FeatureGroupBuilder &) = delete;
-  FeatureGroupBuilder &operator=(const FeatureGroupBuilder &) = delete;
+  FeatureGroupBuilder(const FeatureGroupBuilder&) = delete;
+  FeatureGroupBuilder& operator=(const FeatureGroupBuilder&) = delete;
 };
 
 //
@@ -376,7 +377,7 @@ bool LinearFstDataBuilder<A>::AddWord(Label word,
     return false;
   }
   // Store features
-  std::set<Label> *feats = &word_feat_map_[word];
+  std::set<Label>* feats = &word_feat_map_[word];
   for (size_t i = 0; i < features.size(); ++i) {
     Label feat = features[i];
     if (feat <= 0) {
@@ -391,8 +392,8 @@ bool LinearFstDataBuilder<A>::AddWord(Label word,
 
 template <class A>
 bool LinearFstDataBuilder<A>::AddWord(
-    Label word, const std::vector<Label> &word_features,
-    const std::vector<Label> &possible_output) {
+    Label word, const std::vector<Label>& word_features,
+    const std::vector<Label>& possible_output) {
   if (error_) {
     FSTERROR() << "Calling LinearFstDataBuilder<>::AddWord() at error state";
     return false;
@@ -405,7 +406,7 @@ bool LinearFstDataBuilder<A>::AddWord(
                << "use the two-parameter version if no constraint is need.";
     return false;
   }
-  std::set<Label> *outputs = &word_output_map_[word];
+  std::set<Label>* outputs = &word_output_map_[word];
   for (size_t i = 0; i < possible_output.size(); ++i) {
     Label output = possible_output[i];
     if (output == LinearFstData<A>::kStartOfSentence ||
@@ -443,8 +444,8 @@ inline int LinearFstDataBuilder<A>::AddGroup(size_t future_size) {
 
 template <class A>
 bool LinearFstDataBuilder<A>::AddWeight(size_t group,
-                                        const std::vector<Label> &input,
-                                        const std::vector<Label> &output,
+                                        const std::vector<Label>& input,
+                                        const std::vector<Label>& output,
                                         Weight weight) {
   if (error_) {
     FSTERROR() << "Calling LinearFstDataBuilder<>::AddWeight() at error state";
@@ -534,7 +535,7 @@ bool LinearFstDataBuilder<A>::AddWeight(size_t group,
 }
 
 template <class A>
-LinearFstData<A> *LinearFstDataBuilder<A>::Dump() {
+LinearFstData<A>* LinearFstDataBuilder<A>::Dump() {
   if (error_) {
     FSTERROR() << "Calling LinearFstDataBuilder<>::Dump() at error state";
     return nullptr;
@@ -547,7 +548,7 @@ LinearFstData<A> *LinearFstDataBuilder<A>::Dump() {
   // Feature groups; free builders after it's dumped.
   data->groups_.resize(groups_.size());
   for (int group = 0; group != groups_.size(); ++group) {
-    FeatureGroup<A> *new_group = groups_[group]->Dump(max_future_size_);
+    FeatureGroup<A>* new_group = groups_[group]->Dump(max_future_size_);
     if (new_group == nullptr) {
       error_ = true;
       FSTERROR() << "Error in dumping group " << group;
@@ -583,9 +584,9 @@ LinearFstData<A> *LinearFstDataBuilder<A>::Dump() {
 
   // Possible output labels
   {
-    std::vector<typename LinearFstData<A>::InputAttribute> *input_attribs =
+    std::vector<typename LinearFstData<A>::InputAttribute>* input_attribs =
         &data->input_attribs_;
-    std::vector<Label> *output_pool = &data->output_pool_;
+    std::vector<Label>* output_pool = &data->output_pool_;
     input_attribs->resize(max_input_label_ + 1);
     for (Label word = 0; word <= max_input_label_; ++word) {
       typename std::map<Label, std::set<Label>>::const_iterator it =
@@ -619,7 +620,7 @@ LinearFstData<A> *LinearFstDataBuilder<A>::Dump() {
 //
 template <class A>
 inline bool LinearClassifierFstDataBuilder<A>::AddWord(
-    Label word, const std::vector<Label> &features) {
+    Label word, const std::vector<Label>& features) {
   if (error_) {
     FSTERROR() << "Calling LinearClassifierFstDataBuilder<>::AddWord() at "
                   "error state";
@@ -647,7 +648,7 @@ inline int LinearClassifierFstDataBuilder<A>::AddGroup() {
 
 template <class A>
 inline bool LinearClassifierFstDataBuilder<A>::AddWeight(
-    size_t group, const std::vector<Label> &input, Label pred, Weight weight) {
+    size_t group, const std::vector<Label>& input, Label pred, Weight weight) {
   if (error_) {
     FSTERROR() << "Calling LinearClassifierFstDataBuilder<>::AddWeight() at "
                   "error state";
@@ -666,13 +667,13 @@ inline bool LinearClassifierFstDataBuilder<A>::AddWeight(
 }
 
 template <class A>
-inline LinearFstData<A> *LinearClassifierFstDataBuilder<A>::Dump() {
+inline LinearFstData<A>* LinearClassifierFstDataBuilder<A>::Dump() {
   if (error_) {
     FSTERROR()
         << "Calling LinearClassifierFstDataBuilder<>::Dump() at error state";
     return nullptr;
   }
-  LinearFstData<A> *data = builder_.Dump();
+  LinearFstData<A>* data = builder_.Dump();
   error_ = true;
   return data;
 }
@@ -681,8 +682,8 @@ inline LinearFstData<A> *LinearClassifierFstDataBuilder<A>::Dump() {
 // Implementation of methods in `FeatureGroupBuilder`
 //
 template <class A>
-bool FeatureGroupBuilder<A>::AddWeight(const std::vector<Label> &input,
-                                       const std::vector<Label> &output,
+bool FeatureGroupBuilder<A>::AddWeight(const std::vector<Label>& input,
+                                       const std::vector<Label>& output,
                                        Weight weight) {
   if (error_) {
     FSTERROR() << "Calling FeatureGroupBuilder<>::AddWeight() at error state";
@@ -790,7 +791,7 @@ bool FeatureGroupBuilder<A>::AddWeight(const std::vector<Label> &input,
          --pad, ++opos)
       cur = trie_.Insert(cur, InputOutputLabel(kNoLabel, output[opos]));
   }
-  CHECK_EQ(iend - ipos, oend - opos);
+  CHECK_EQ(iend - ipos, oend - opos);  // Crash OK.
   for (; ipos != iend; ++ipos, ++opos)
     cur = trie_.Insert(cur, InputOutputLabel(input[ipos], output[opos]));
   // We only need to attach final weight when there is an output
@@ -808,7 +809,7 @@ bool FeatureGroupBuilder<A>::AddWeight(const std::vector<Label> &input,
 }
 
 template <class A>
-FeatureGroup<A> *FeatureGroupBuilder<A>::Dump(size_t max_future_size) {
+FeatureGroup<A>* FeatureGroupBuilder<A>::Dump(size_t max_future_size) {
   if (error_) {
     FSTERROR() << "Calling FeatureGroupBuilder<>::PreAccumulateWeights() "
                << "at error state";
@@ -827,12 +828,12 @@ FeatureGroup<A> *FeatureGroupBuilder<A>::Dump(size_t max_future_size) {
   if (error_) return nullptr;
   PreAccumulateWeights();  // does not fail
 
-  FeatureGroup<A> *ret =
+  FeatureGroup<A>* ret =
       new FeatureGroup<A>(max_future_size - future_size_, start_);
 
   // Walk around the trie to compute next states
   ret->next_state_.resize(trie_.NumNodes());
-  const Topology &topology = trie_.TrieTopology();
+  const Topology& topology = trie_.TrieTopology();
   for (int i = 0; i < topology.NumNodes(); ++i) {
     int next = i;
     while (next != topology.Root() && topology.ChildrenOf(next).empty() &&
@@ -853,7 +854,7 @@ FeatureGroup<A> *FeatureGroupBuilder<A>::Dump(size_t max_future_size) {
 
 template <class A>
 int FeatureGroupBuilder<A>::FindFirstMatch(InputOutputLabel label, int parent,
-                                           int *hop) const {
+                                           int* hop) const {
   int hop_count = 0;
   int ret = kNoTrieNodeId;
   for (; parent >= 0; parent = trie_[parent].back_link, ++hop_count) {
@@ -879,7 +880,7 @@ void FeatureGroupBuilder<A>::BuildBackLinks() {
   // labels, it is possible to back off by removing first labels from
   // either side, which in general causes non-uniqueness.
 
-  const Topology &topology = trie_.TrieTopology();
+  const Topology& topology = trie_.TrieTopology();
   std::queue<int> q;  // all enqueued or visited nodes have known links
 
   // Note: nodes have back link initialized to -1 in their
@@ -889,10 +890,10 @@ void FeatureGroupBuilder<A>::BuildBackLinks() {
     int parent = q.front();
     q.pop();
     // Find links for every child
-    const typename Topology::NextMap &children = topology.ChildrenOf(parent);
+    const typename Topology::NextMap& children = topology.ChildrenOf(parent);
     for (typename Topology::NextMap::const_iterator eit = children.begin();
          eit != children.end(); ++eit) {
-      const std::pair<InputOutputLabel, int> &edge = *eit;
+      const std::pair<InputOutputLabel, int>& edge = *eit;
       InputOutputLabel label = edge.first;
       int child = edge.second;
       if (label.input == kNoLabel || label.output == kNoLabel) {
@@ -937,7 +938,7 @@ void FeatureGroupBuilder<A>::BuildBackLinks() {
             int problem_link = only_input_link != kNoTrieNodeId
                                    ? only_input_link
                                    : only_output_link;
-            CHECK_NE(problem_link, kNoTrieNodeId);
+            CHECK_NE(problem_link, kNoTrieNodeId);  // Crash OK.
             FSTERROR() << "Branching back-off chain:\n"
                        << "\tnode " << child << ": "
                        << TriePath(child, topology) << "\n"
@@ -971,7 +972,7 @@ void FeatureGroupBuilder<A>::PreAccumulateWeights() {
     while (!back_offs.empty()) {
       int j = back_offs.top();
       back_offs.pop();
-      WeightBackLink &node = trie_[j];
+      WeightBackLink& node = trie_[j];
       node.weight = Times(node.weight, trie_[node.back_link].weight);
       node.final_weight =
           Times(node.final_weight, trie_[node.back_link].final_weight);
@@ -982,13 +983,13 @@ void FeatureGroupBuilder<A>::PreAccumulateWeights() {
 
 template <class A>
 bool FeatureGroupBuilder<A>::TrieDfs(
-    const Topology &topology, int cur, int target,
-    std::vector<InputOutputLabel> *path) const {
+    const Topology& topology, int cur, int target,
+    std::vector<InputOutputLabel>* path) const {
   if (cur == target) return true;
-  const typename Topology::NextMap &children = topology.ChildrenOf(cur);
+  const typename Topology::NextMap& children = topology.ChildrenOf(cur);
   for (typename Topology::NextMap::const_iterator eit = children.begin();
        eit != children.end(); ++eit) {
-    const std::pair<InputOutputLabel, int> &edge = *eit;
+    const std::pair<InputOutputLabel, int>& edge = *eit;
     path->push_back(edge.first);
     if (TrieDfs(topology, edge.second, target, path)) return true;
     path->pop_back();
@@ -998,7 +999,7 @@ bool FeatureGroupBuilder<A>::TrieDfs(
 
 template <class A>
 std::string FeatureGroupBuilder<A>::TriePath(int node,
-                                             const Topology &topology) const {
+                                             const Topology& topology) const {
   std::vector<InputOutputLabel> labels;
   TrieDfs(topology, topology.Root(), node, &labels);
   bool first = true;
@@ -1017,7 +1018,7 @@ std::string FeatureGroupBuilder<A>::TriePath(int node,
   return strm.str();
 }
 
-inline std::string TranslateLabel(int64_t label, const SymbolTable *syms) {
+inline std::string TranslateLabel(int64_t label, const SymbolTable* syms) {
   std::string ret;
   if (syms != nullptr) ret += syms->Find(label);
   if (ret.empty()) {
@@ -1029,7 +1030,7 @@ inline std::string TranslateLabel(int64_t label, const SymbolTable *syms) {
 }
 
 template <class Iterator>
-std::string JoinLabels(Iterator begin, Iterator end, const SymbolTable *syms) {
+std::string JoinLabels(Iterator begin, Iterator end, const SymbolTable* syms) {
   if (begin == end) return "<empty>";
   std::ostringstream strm;
   bool first = true;
@@ -1044,13 +1045,13 @@ std::string JoinLabels(Iterator begin, Iterator end, const SymbolTable *syms) {
 }
 
 template <class Label>
-std::string JoinLabels(const std::vector<Label> &labels,
-                       const SymbolTable *syms) {
+std::string JoinLabels(const std::vector<Label>& labels,
+                       const SymbolTable* syms) {
   return JoinLabels(labels.begin(), labels.end(), syms);
 }
 
 template <class A>
-typename A::Label GuessStartOrEnd(std::vector<typename A::Label> *sequence,
+typename A::Label GuessStartOrEnd(std::vector<typename A::Label>* sequence,
                                   typename A::Label boundary) {
   const size_t length = sequence->size();
   std::vector<bool> non_boundary_on_left(length, false),

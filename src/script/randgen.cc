@@ -27,8 +27,8 @@
 namespace fst {
 namespace script {
 
-void RandGen(const FstClass &ifst, MutableFstClass *ofst,
-             const RandGenOptions<RandArcSelection> &opts, uint64_t seed) {
+void RandGen(const FstClass& ifst, MutableFstClass* ofst,
+             const RandGenOptions<RandArcSelection>& opts, uint64_t seed) {
   if (!internal::ArcTypesMatch(ifst, *ofst, "RandGen")) {
     ofst->SetProperties(kError, kError);
     return;

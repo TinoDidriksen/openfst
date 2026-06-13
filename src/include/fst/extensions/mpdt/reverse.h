@@ -34,17 +34,17 @@ namespace fst {
 // Reverses a multi-stack pushdown transducer (MPDT) encoded as an FST.
 template <class Arc, class RevArc>
 void Reverse(
-    const Fst<Arc> &ifst,
-    const std::vector<std::pair<typename Arc::Label, typename Arc::Label>>
-        &parens,
-    std::vector<typename Arc::Label> *assignments, MutableFst<RevArc> *ofst) {
+    const Fst<Arc>& ifst,
+    const std::vector<std::pair<typename Arc::Label, typename Arc::Label>>&
+        parens,
+    std::vector<typename Arc::Label>* assignments, MutableFst<RevArc>* ofst) {
   using Label = typename Arc::Label;
   // Reverses FST component.
   Reverse(ifst, ofst);
   // Exchanges open and close parenthesis pairs.
   std::vector<std::pair<Label, Label>> relabel_pairs;
   relabel_pairs.reserve(2 * parens.size());
-  for (const auto &pair : parens) {
+  for (const auto& pair : parens) {
     relabel_pairs.emplace_back(pair.first, pair.second);
     relabel_pairs.emplace_back(pair.second, pair.first);
   }
@@ -60,7 +60,7 @@ void Reverse(
     }
   }
   // Actually reverses stack assignments.
-  for (auto &assignment : *assignments) {
+  for (auto& assignment : *assignments) {
     assignment = (max_level - assignment) + min_level;
   }
 }

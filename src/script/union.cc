@@ -26,7 +26,7 @@
 namespace fst {
 namespace script {
 
-void Union(MutableFstClass *fst1, const FstClass &fst2) {
+void Union(MutableFstClass* fst1, const FstClass& fst2) {
   if (!internal::ArcTypesMatch(*fst1, fst2, "Union")) {
     fst1->SetProperties(kError, kError);
     return;
@@ -35,8 +35,8 @@ void Union(MutableFstClass *fst1, const FstClass &fst2) {
   Apply<Operation<FstUnionArgs1>>("Union", fst1->ArcType(), &args);
 }
 
-void Union(MutableFstClass *fst1, const std::vector<const FstClass *> &fsts2) {
-  for (const auto *fst2 : fsts2) {
+void Union(MutableFstClass* fst1, const std::vector<const FstClass*>& fsts2) {
+  for (const auto* fst2 : fsts2) {
     if (!internal::ArcTypesMatch(*fst1, *fst2, "Union")) {
       fst1->SetProperties(kError, kError);
       return;

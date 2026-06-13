@@ -24,7 +24,6 @@
 #include <fst/arcsort.h>
 #include <fst/compose.h>
 #include <fst/determinize.h>
-#include <fst/float-weight.h>
 #include <fst/fst.h>
 #include <fst/minimize.h>
 #include <fst/mutable-fst.h>
@@ -48,7 +47,7 @@ namespace fst {
 // - When `normalize` is true, its weight is P(X, Y) Q(Z|Y) / sum_z Q(z|Y);
 // - When `normalize` is false, its weight is P(X, Y) Q(Z|Y).
 template <class A>
-void LogLinearApply(const Fst<A> &ifst, const Fst<A> &lfst, MutableFst<A> *ofst,
+void LogLinearApply(const Fst<A>& ifst, const Fst<A>& lfst, MutableFst<A>* ofst,
                     bool normalize = true) {
   LogLinearApply<A, LogArc>(ifst, lfst, ofst, normalize);
 }
@@ -57,7 +56,7 @@ void LogLinearApply(const Fst<A> &ifst, const Fst<A> &lfst, MutableFst<A> *ofst,
 // in normalization. `B` is an arc type with log weight (e.g. `LogArc`
 // or `Log64Arc`).
 template <class A, class B>
-void LogLinearApply(const Fst<A> &ifst, const Fst<A> &lfst, MutableFst<A> *ofst,
+void LogLinearApply(const Fst<A>& ifst, const Fst<A>& lfst, MutableFst<A>* ofst,
                     bool normalize = true) {
   if (normalize) {
     VectorFst<A> unnormalized_ofst, rescored_ifsa;

@@ -28,15 +28,15 @@
 namespace fst {
 namespace script {
 
-using FstClosureArgs = std::pair<MutableFstClass *, const ClosureType>;
+using FstClosureArgs = std::pair<MutableFstClass*, const ClosureType>;
 
 template <class Arc>
-void Closure(FstClosureArgs *args) {
-  MutableFst<Arc> *fst = std::get<0>(*args)->GetMutableFst<Arc>();
+void Closure(FstClosureArgs* args) {
+  MutableFst<Arc>* fst = std::get<0>(*args)->GetMutableFst<Arc>();
   Closure(fst, std::get<1>(*args));
 }
 
-void Closure(MutableFstClass *ofst, ClosureType closure_type);
+void Closure(MutableFstClass* ofst, ClosureType closure_type);
 
 }  // namespace script
 }  // namespace fst

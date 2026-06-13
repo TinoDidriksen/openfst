@@ -32,6 +32,7 @@
 #include <vector>
 
 #include <fst/log.h>
+#include <string_view>
 #include <fst/expanded-fst.h>
 #include <fst/fst.h>
 #include <fst/generic-register.h>
@@ -42,7 +43,6 @@
 #include <fst/vector-fst.h>
 #include <fst/script/arc-class.h>
 #include <fst/script/weight-class.h>
-#include <string_view>
 
 // Classes to support "boxing" all existing types of FST arcs in a single
 // FstClass which hides the arc types. This allows clients to load
@@ -60,43 +60,43 @@ namespace script {
 // FstClass serves as the base class for all interfaces.
 class FstClassBase {
  public:
-  virtual const std::string &ArcType() const = 0;
+  virtual const std::string& ArcType() const = 0;
   virtual WeightClass Final(int64_t) const = 0;
-  virtual const std::string &FstType() const = 0;
-  virtual const SymbolTable *InputSymbols() const = 0;
+  virtual const std::string& FstType() const = 0;
+  virtual const SymbolTable* InputSymbols() const = 0;
   virtual size_t NumArcs(int64_t) const = 0;
   virtual size_t NumInputEpsilons(int64_t) const = 0;
   virtual size_t NumOutputEpsilons(int64_t) const = 0;
   virtual std::optional<int64_t> NumStatesIfKnown() const = 0;
-  virtual const SymbolTable *OutputSymbols() const = 0;
+  virtual const SymbolTable* OutputSymbols() const = 0;
   virtual uint64_t Properties(uint64_t, bool) const = 0;
   virtual int64_t Start() const = 0;
-  virtual const std::string &WeightType() const = 0;
+  virtual const std::string& WeightType() const = 0;
   virtual bool ValidStateId(int64_t) const = 0;
-  virtual bool Write(const std::string &) const = 0;
-  virtual bool Write(std::ostream &, const std::string &) const = 0;
+  virtual bool Write(const std::string&) const = 0;
+  virtual bool Write(std::ostream&, const std::string&) const = 0;
   virtual ~FstClassBase() = default;
 };
 
 // Adds all the MutableFst methods.
 class FstClassImplBase : public FstClassBase {
  public:
-  virtual bool AddArc(int64_t, const ArcClass &) = 0;
+  virtual bool AddArc(int64_t, const ArcClass&) = 0;
   virtual int64_t AddState() = 0;
   virtual void AddStates(size_t) = 0;
-  virtual FstClassImplBase *Copy() = 0;
+  virtual FstClassImplBase* Copy() = 0;
   virtual bool DeleteArcs(int64_t, size_t) = 0;
   virtual bool DeleteArcs(int64_t) = 0;
-  virtual bool DeleteStates(const std::vector<int64_t> &) = 0;
+  virtual bool DeleteStates(const std::vector<int64_t>&) = 0;
   virtual void DeleteStates() = 0;
-  virtual SymbolTable *MutableInputSymbols() = 0;
-  virtual SymbolTable *MutableOutputSymbols() = 0;
+  virtual SymbolTable* MutableInputSymbols() = 0;
+  virtual SymbolTable* MutableOutputSymbols() = 0;
   virtual int64_t NumStates() const = 0;
   virtual bool ReserveArcs(int64_t, size_t) = 0;
   virtual void ReserveStates(int64_t) = 0;
-  virtual void SetInputSymbols(const SymbolTable *) = 0;
-  virtual bool SetFinal(int64_t, const WeightClass &) = 0;
-  virtual void SetOutputSymbols(const SymbolTable *) = 0;
+  virtual void SetInputSymbols(const SymbolTable*) = 0;
+  virtual bool SetFinal(int64_t, const WeightClass&) = 0;
+  virtual void SetOutputSymbols(const SymbolTable*) = 0;
   virtual void SetProperties(uint64_t, uint64_t) = 0;
   virtual bool SetStart(int64_t) = 0;
   ~FstClassImplBase() override = default;
@@ -113,63 +113,63 @@ class FstClassImpl : public FstClassImplBase {
   explicit FstClassImpl(std::unique_ptr<Fst<Arc>> impl)
       : impl_(std::move(impl)) {}
 
-  explicit FstClassImpl(const Fst<Arc> &impl) : impl_(impl.Copy()) {}
+  explicit FstClassImpl(const Fst<Arc>& impl) : impl_(impl.Copy()) {}
 
   // Warning: calling this method casts the FST to a mutable FST.
-  bool AddArc(int64_t s, const ArcClass &ac) final {
+  bool AddArc(int64_t s, const ArcClass& ac) final {
     if (!ValidStateId(s)) return false;
     // Note that we do not check that the destination state is valid, so users
     // can add arcs before they add the corresponding states. Verify can be
     // used to determine whether any arc has a nonexisting destination.
     Arc arc(ac.ilabel, ac.olabel, *ac.weight.GetWeight<typename Arc::Weight>(),
             ac.nextstate);
-    down_cast<MutableFst<Arc> *>(impl_.get())->AddArc(s, arc);
+    down_cast<MutableFst<Arc>*>(impl_.get())->AddArc(s, arc);
     return true;
   }
 
   // Warning: calling this method casts the FST to a mutable FST.
   int64_t AddState() final {
-    return down_cast<MutableFst<Arc> *>(impl_.get())->AddState();
+    return down_cast<MutableFst<Arc>*>(impl_.get())->AddState();
   }
 
   // Warning: calling this method casts the FST to a mutable FST.
   void AddStates(size_t n) final {
-    return down_cast<MutableFst<Arc> *>(impl_.get())->AddStates(n);
+    return down_cast<MutableFst<Arc>*>(impl_.get())->AddStates(n);
   }
 
-  const std::string &ArcType() const final { return Arc::Type(); }
+  const std::string& ArcType() const final { return Arc::Type(); }
 
-  FstClassImpl *Copy() final { return new FstClassImpl<Arc>(*impl_); }
+  FstClassImpl* Copy() final { return new FstClassImpl<Arc>(*impl_); }
 
   // Warning: calling this method casts the FST to a mutable FST.
   bool DeleteArcs(int64_t s, size_t n) final {
     if (!ValidStateId(s)) return false;
-    down_cast<MutableFst<Arc> *>(impl_.get())->DeleteArcs(s, n);
+    down_cast<MutableFst<Arc>*>(impl_.get())->DeleteArcs(s, n);
     return true;
   }
 
   // Warning: calling this method casts the FST to a mutable FST.
   bool DeleteArcs(int64_t s) final {
     if (!ValidStateId(s)) return false;
-    down_cast<MutableFst<Arc> *>(impl_.get())->DeleteArcs(s);
+    down_cast<MutableFst<Arc>*>(impl_.get())->DeleteArcs(s);
     return true;
   }
 
   // Warning: calling this method casts the FST to a mutable FST.
-  bool DeleteStates(const std::vector<int64_t> &dstates) final {
-    for (const auto &state : dstates)
+  bool DeleteStates(const std::vector<int64_t>& dstates) final {
+    for (const auto& state : dstates)
       if (!ValidStateId(state)) return false;
     // Warning: calling this method with any integers beyond the precision of
     // the underlying FST will result in truncation.
     std::vector<typename Arc::StateId> typed_dstates(dstates.size());
     std::copy(dstates.begin(), dstates.end(), typed_dstates.begin());
-    down_cast<MutableFst<Arc> *>(impl_.get())->DeleteStates(typed_dstates);
+    down_cast<MutableFst<Arc>*>(impl_.get())->DeleteStates(typed_dstates);
     return true;
   }
 
   // Warning: calling this method casts the FST to a mutable FST.
   void DeleteStates() final {
-    down_cast<MutableFst<Arc> *>(impl_.get())->DeleteStates();
+    down_cast<MutableFst<Arc>*>(impl_.get())->DeleteStates();
   }
 
   WeightClass Final(int64_t s) const final {
@@ -178,20 +178,22 @@ class FstClassImpl : public FstClassImplBase {
     return w;
   }
 
-  const std::string &FstType() const final { return impl_->Type(); }
+  const std::string& FstType() const final { return impl_->Type(); }
 
-  const SymbolTable *InputSymbols() const final {
+  const SymbolTable* InputSymbols() const final {
     return impl_->InputSymbols();
   }
 
   // Warning: calling this method casts the FST to a mutable FST.
-  SymbolTable *MutableInputSymbols() final {
-    return down_cast<MutableFst<Arc> *>(impl_.get())->MutableInputSymbols();
+  SymbolTable* MutableInputSymbols() final {
+    return down_cast<MutableFst<Arc>*>(impl_.get())
+        ->MutableInputSymbols();
   }
 
   // Warning: calling this method casts the FST to a mutable FST.
-  SymbolTable *MutableOutputSymbols() final {
-    return down_cast<MutableFst<Arc> *>(impl_.get())->MutableOutputSymbols();
+  SymbolTable* MutableOutputSymbols() final {
+    return down_cast<MutableFst<Arc>*>(impl_.get())
+        ->MutableOutputSymbols();
   }
 
   // Signals failure by returning size_t max.
@@ -214,7 +216,7 @@ class FstClassImpl : public FstClassImplBase {
 
   // Warning: calling this method casts the FST to a mutable FST.
   int64_t NumStates() const final {
-    return down_cast<MutableFst<Arc> *>(impl_.get())->NumStates();
+    return down_cast<MutableFst<Arc>*>(impl_.get())->NumStates();
   }
 
   std::optional<int64_t> NumStatesIfKnown() const final {
@@ -228,46 +230,46 @@ class FstClassImpl : public FstClassImplBase {
   // Warning: calling this method casts the FST to a mutable FST.
   bool ReserveArcs(int64_t s, size_t n) final {
     if (!ValidStateId(s)) return false;
-    down_cast<MutableFst<Arc> *>(impl_.get())->ReserveArcs(s, n);
+    down_cast<MutableFst<Arc>*>(impl_.get())->ReserveArcs(s, n);
     return true;
   }
 
   // Warning: calling this method casts the FST to a mutable FST.
   void ReserveStates(int64_t n) final {
-    down_cast<MutableFst<Arc> *>(impl_.get())->ReserveStates(n);
+    down_cast<MutableFst<Arc>*>(impl_.get())->ReserveStates(n);
   }
 
-  const SymbolTable *OutputSymbols() const final {
+  const SymbolTable* OutputSymbols() const final {
     return impl_->OutputSymbols();
   }
 
   // Warning: calling this method casts the FST to a mutable FST.
-  void SetInputSymbols(const SymbolTable *isyms) final {
-    down_cast<MutableFst<Arc> *>(impl_.get())->SetInputSymbols(isyms);
+  void SetInputSymbols(const SymbolTable* isyms) final {
+    down_cast<MutableFst<Arc>*>(impl_.get())->SetInputSymbols(isyms);
   }
 
   // Warning: calling this method casts the FST to a mutable FST.
-  bool SetFinal(int64_t s, const WeightClass &weight) final {
+  bool SetFinal(int64_t s, const WeightClass& weight) final {
     if (!ValidStateId(s)) return false;
-    down_cast<MutableFst<Arc> *>(impl_.get())
+    down_cast<MutableFst<Arc>*>(impl_.get())
         ->SetFinal(s, *weight.GetWeight<typename Arc::Weight>());
     return true;
   }
 
   // Warning: calling this method casts the FST to a mutable FST.
-  void SetOutputSymbols(const SymbolTable *osyms) final {
-    down_cast<MutableFst<Arc> *>(impl_.get())->SetOutputSymbols(osyms);
+  void SetOutputSymbols(const SymbolTable* osyms) final {
+    down_cast<MutableFst<Arc>*>(impl_.get())->SetOutputSymbols(osyms);
   }
 
   // Warning: calling this method casts the FST to a mutable FST.
   void SetProperties(uint64_t props, uint64_t mask) final {
-    down_cast<MutableFst<Arc> *>(impl_.get())->SetProperties(props, mask);
+    down_cast<MutableFst<Arc>*>(impl_.get())->SetProperties(props, mask);
   }
 
   // Warning: calling this method casts the FST to a mutable FST.
   bool SetStart(int64_t s) final {
     if (!ValidStateId(s)) return false;
-    down_cast<MutableFst<Arc> *>(impl_.get())->SetStart(s);
+    down_cast<MutableFst<Arc>*>(impl_.get())->SetStart(s);
     return true;
   }
 
@@ -287,20 +289,20 @@ class FstClassImpl : public FstClassImplBase {
     return true;
   }
 
-  const std::string &WeightType() const final { return Arc::Weight::Type(); }
+  const std::string& WeightType() const final { return Arc::Weight::Type(); }
 
-  bool Write(const std::string &source) const final {
+  bool Write(const std::string& source) const final {
     return impl_->Write(source);
   }
 
-  bool Write(std::ostream &ostr, const std::string &source) const final {
+  bool Write(std::ostream& ostr, const std::string& source) const final {
     const FstWriteOptions opts(source);
     return impl_->Write(ostr, opts);
   }
 
   ~FstClassImpl() override = default;
 
-  Fst<Arc> *GetImpl() const { return impl_.get(); }
+  Fst<Arc>* GetImpl() const { return impl_.get(); }
 
  private:
   std::unique_ptr<Fst<Arc>> impl_;
@@ -319,24 +321,24 @@ class FstClass : public FstClassBase {
       : impl_(std::make_unique<FstClassImpl<Arc>>(std::move(fst))) {}
 
   template <class Arc>
-  explicit FstClass(const Fst<Arc> &fst)
+  explicit FstClass(const Fst<Arc>& fst)
       : impl_(std::make_unique<FstClassImpl<Arc>>(fst)) {}
 
-  FstClass(const FstClass &other)
+  FstClass(const FstClass& other)
       : impl_(other.impl_ == nullptr ? nullptr : other.impl_->Copy()) {}
 
-  FstClass &operator=(const FstClass &other) {
+  FstClass& operator=(const FstClass& other) {
     impl_.reset(other.impl_ == nullptr ? nullptr : other.impl_->Copy());
     return *this;
   }
 
   WeightClass Final(int64_t s) const final { return impl_->Final(s); }
 
-  const std::string &ArcType() const final { return impl_->ArcType(); }
+  const std::string& ArcType() const final { return impl_->ArcType(); }
 
-  const std::string &FstType() const final { return impl_->FstType(); }
+  const std::string& FstType() const final { return impl_->FstType(); }
 
-  const SymbolTable *InputSymbols() const final {
+  const SymbolTable* InputSymbols() const final {
     return impl_->InputSymbols();
   }
 
@@ -354,7 +356,7 @@ class FstClass : public FstClassBase {
     return impl_->NumStatesIfKnown();
   }
 
-  const SymbolTable *OutputSymbols() const final {
+  const SymbolTable* OutputSymbols() const final {
     return impl_->OutputSymbols();
   }
 
@@ -364,29 +366,29 @@ class FstClass : public FstClassBase {
     return impl_->Properties(mask, test);
   }
 
-  static std::unique_ptr<FstClass> Read(
-      const std::string &source);
+  static  std::unique_ptr<FstClass> Read(
+      const std::string& source);
 
-  static std::unique_ptr<FstClass> Read(
-      std::istream &istrm, const std::string &source);
+  static  std::unique_ptr<FstClass> Read(
+      std::istream& istrm, const std::string& source);
 
   int64_t Start() const final { return impl_->Start(); }
 
   bool ValidStateId(int64_t s) const final { return impl_->ValidStateId(s); }
 
-  const std::string &WeightType() const final { return impl_->WeightType(); }
+  const std::string& WeightType() const final { return impl_->WeightType(); }
 
   // Helper that logs an ERROR if the weight type of an FST and a WeightClass
   // don't match.
 
-  bool WeightTypesMatch(const WeightClass &weight,
+  bool WeightTypesMatch(const WeightClass& weight,
                         std::string_view op_name) const;
 
-  bool Write(const std::string &source) const final {
+  bool Write(const std::string& source) const final {
     return impl_->Write(source);
   }
 
-  bool Write(std::ostream &ostr, const std::string &source) const final {
+  bool Write(std::ostream& ostr, const std::string& source) const final {
     return impl_->Write(ostr, source);
   }
 
@@ -395,7 +397,7 @@ class FstClass : public FstClassBase {
   // These methods are required by IO registration.
 
   template <class Arc>
-  static std::unique_ptr<FstClassImplBase> Convert(const FstClass &other) {
+  static std::unique_ptr<FstClassImplBase> Convert(const FstClass& other) {
     FSTERROR() << "Doesn't make sense to convert any class to type FstClass";
     return nullptr;
   }
@@ -408,24 +410,24 @@ class FstClass : public FstClassBase {
   }
 
   template <class Arc>
-  const Fst<Arc> *GetFst() const {
+  const Fst<Arc>* GetFst() const {
     if (Arc::Type() != ArcType()) {
       return nullptr;
     } else {
-      FstClassImpl<Arc> *typed_impl =
-          down_cast<FstClassImpl<Arc> *>(impl_.get());
+      FstClassImpl<Arc>* typed_impl =
+          down_cast<FstClassImpl<Arc>*>(impl_.get());
       return typed_impl->GetImpl();
     }
   }
 
   template <class Arc>
-  static std::unique_ptr<FstClass> Read(std::istream &stream,
-                                        const FstReadOptions &opts) {
+  static std::unique_ptr<FstClass> Read(std::istream& stream,
+                                        const FstReadOptions& opts) {
     if (!opts.header) {
       LOG(ERROR) << "FstClass::Read: Options header not specified";
       return nullptr;
     }
-    const FstHeader &hdr = *opts.header;
+    const FstHeader& hdr = *opts.header;
     if (hdr.Properties() & kMutable) {
       return ReadTypedFst<MutableFstClass, MutableFst<Arc>>(stream, opts);
     } else {
@@ -437,16 +439,16 @@ class FstClass : public FstClassBase {
   explicit FstClass(std::unique_ptr<FstClassImplBase> impl)
       : impl_(std::move(impl)) {}
 
-  const FstClassImplBase *GetImpl() const { return impl_.get(); }
+  const FstClassImplBase* GetImpl() const { return impl_.get(); }
 
-  FstClassImplBase *GetImpl() { return impl_.get(); }
+  FstClassImplBase* GetImpl() { return impl_.get(); }
 
   // Generic template method for reading an arc-templated FST of type
   // UnderlyingT, and returning it wrapped as FstClassT, with appropriate
   // error checking. Called from arc-templated Read() static methods.
   template <class FstClassT, class UnderlyingT>
-  static std::unique_ptr<FstClassT> ReadTypedFst(std::istream &stream,
-                                                 const FstReadOptions &opts) {
+  static std::unique_ptr<FstClassT> ReadTypedFst(std::istream& stream,
+                                                 const FstReadOptions& opts) {
     std::unique_ptr<UnderlyingT> u(UnderlyingT::Read(stream, opts));
     return u ? std::make_unique<FstClassT>(std::move(u)) : nullptr;
   }
@@ -459,7 +461,7 @@ class FstClass : public FstClassBase {
 
 class MutableFstClass : public FstClass {
  public:
-  bool AddArc(int64_t s, const ArcClass &ac) {
+  bool AddArc(int64_t s, const ArcClass& ac) {
     if (!WeightTypesMatch(ac.weight, "AddArc")) return false;
     return GetImpl()->AddArc(s, ac);
   }
@@ -472,17 +474,17 @@ class MutableFstClass : public FstClass {
 
   bool DeleteArcs(int64_t s) { return GetImpl()->DeleteArcs(s); }
 
-  bool DeleteStates(const std::vector<int64_t> &dstates) {
+  bool DeleteStates(const std::vector<int64_t>& dstates) {
     return GetImpl()->DeleteStates(dstates);
   }
 
   void DeleteStates() { GetImpl()->DeleteStates(); }
 
-  SymbolTable *MutableInputSymbols() {
+  SymbolTable* MutableInputSymbols() {
     return GetImpl()->MutableInputSymbols();
   }
 
-  SymbolTable *MutableOutputSymbols() {
+  SymbolTable* MutableOutputSymbols() {
     return GetImpl()->MutableOutputSymbols();
   }
 
@@ -492,19 +494,19 @@ class MutableFstClass : public FstClass {
 
   void ReserveStates(int64_t n) { GetImpl()->ReserveStates(n); }
 
-  static std::unique_ptr<MutableFstClass> Read(
-      const std::string &source, bool convert = false);
+  static  std::unique_ptr<MutableFstClass> Read(
+      const std::string& source, bool convert = false);
 
-  void SetInputSymbols(const SymbolTable *isyms) {
+  void SetInputSymbols(const SymbolTable* isyms) {
     GetImpl()->SetInputSymbols(isyms);
   }
 
-  bool SetFinal(int64_t s, const WeightClass &weight) {
+  bool SetFinal(int64_t s, const WeightClass& weight) {
     if (!WeightTypesMatch(weight, "SetFinal")) return false;
     return GetImpl()->SetFinal(s, weight);
   }
 
-  void SetOutputSymbols(const SymbolTable *osyms) {
+  void SetOutputSymbols(const SymbolTable* osyms) {
     GetImpl()->SetOutputSymbols(osyms);
   }
 
@@ -522,12 +524,12 @@ class MutableFstClass : public FstClass {
             fst::implicit_cast<std::unique_ptr<Fst<Arc>>>(std::move(fst))) {}
 
   template <class Arc>
-  explicit MutableFstClass(const MutableFst<Arc> &fst) : FstClass(fst) {}
+  explicit MutableFstClass(const MutableFst<Arc>& fst) : FstClass(fst) {}
 
   // These methods are required by IO registration.
 
   template <class Arc>
-  static std::unique_ptr<FstClassImplBase> Convert(const FstClass &other) {
+  static std::unique_ptr<FstClassImplBase> Convert(const FstClass& other) {
     FSTERROR() << "Doesn't make sense to convert any class to type "
                << "MutableFstClass";
     return nullptr;
@@ -541,15 +543,15 @@ class MutableFstClass : public FstClass {
   }
 
   template <class Arc>
-  MutableFst<Arc> *GetMutableFst() {
-    Fst<Arc> *fst = const_cast<Fst<Arc> *>(this->GetFst<Arc>());
-    MutableFst<Arc> *mfst = down_cast<MutableFst<Arc> *>(fst);
+  MutableFst<Arc>* GetMutableFst() {
+    Fst<Arc>* fst = const_cast<Fst<Arc>*>(this->GetFst<Arc>());
+    MutableFst<Arc>* mfst = down_cast<MutableFst<Arc>*>(fst);
     return mfst;
   }
 
   template <class Arc>
-  static std::unique_ptr<MutableFstClass> Read(std::istream &stream,
-                                               const FstReadOptions &opts) {
+  static std::unique_ptr<MutableFstClass> Read(std::istream& stream,
+                                               const FstReadOptions& opts) {
     std::unique_ptr<MutableFst<Arc>> mfst(MutableFst<Arc>::Read(stream, opts));
     return mfst ? std::make_unique<MutableFstClass>(std::move(mfst)) : nullptr;
   }
@@ -564,16 +566,16 @@ class VectorFstClass : public MutableFstClass {
   explicit VectorFstClass(std::unique_ptr<FstClassImplBase> impl)
       : MutableFstClass(std::move(impl)) {}
 
-  explicit VectorFstClass(const FstClass &other);
+  explicit VectorFstClass(const FstClass& other);
 
   explicit VectorFstClass(std::string_view arc_type);
 
-  static std::unique_ptr<VectorFstClass> Read(
-      const std::string &source);
+  static  std::unique_ptr<VectorFstClass> Read(
+      const std::string& source);
 
   template <class Arc>
-  static std::unique_ptr<VectorFstClass> Read(std::istream &stream,
-                                              const FstReadOptions &opts) {
+  static std::unique_ptr<VectorFstClass> Read(std::istream& stream,
+                                              const FstReadOptions& opts) {
     std::unique_ptr<VectorFst<Arc>> vfst(VectorFst<Arc>::Read(stream, opts));
     return vfst ? std::make_unique<VectorFstClass>(std::move(vfst)) : nullptr;
   }
@@ -586,10 +588,10 @@ class VectorFstClass : public MutableFstClass {
             std::move(fst))) {}
 
   template <class Arc>
-  explicit VectorFstClass(const VectorFst<Arc> &fst) : MutableFstClass(fst) {}
+  explicit VectorFstClass(const VectorFst<Arc>& fst) : MutableFstClass(fst) {}
 
   template <class Arc>
-  static std::unique_ptr<FstClassImplBase> Convert(const FstClass &other) {
+  static std::unique_ptr<FstClassImplBase> Convert(const FstClass& other) {
     return std::make_unique<FstClassImpl<Arc>>(
         std::make_unique<VectorFst<Arc>>(*other.GetFst<Arc>()));
   }
@@ -649,13 +651,13 @@ class FstClassIORegister
 // of FST class (e.g., a plain FstClass, or a MutableFstClass, etc.).
 template <class FstClassType>
 struct FstClassIORegistration {
-  using Reader = std::unique_ptr<FstClassType> (*)(std::istream &stream,
-                                                   const FstReadOptions &opts);
+  using Reader = std::unique_ptr<FstClassType> (*)(std::istream& stream,
+                                                   const FstReadOptions& opts);
 
   using Creator = std::unique_ptr<FstClassImplBase> (*)();
 
   using Converter =
-      std::unique_ptr<FstClassImplBase> (*)(const FstClass &other);
+      std::unique_ptr<FstClassImplBase> (*)(const FstClass& other);
 
   using Entry = FstClassRegEntry<Reader, Creator, Converter>;
 

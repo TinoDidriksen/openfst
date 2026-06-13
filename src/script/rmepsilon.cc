@@ -24,7 +24,7 @@
 namespace fst {
 namespace script {
 
-void RmEpsilon(MutableFstClass *fst, const RmEpsilonOptions &opts) {
+void RmEpsilon(MutableFstClass* fst, const RmEpsilonOptions& opts) {
   if (!fst->WeightTypesMatch(opts.weight_threshold, "RmEpsilon")) {
     fst->SetProperties(kError, kError);
     return;

@@ -23,7 +23,7 @@
 namespace fst {
 namespace script {
 
-bool Verify(const FstClass &fst) {
+bool Verify(const FstClass& fst) {
   FstVerifyArgs args(fst);
   Apply<Operation<FstVerifyArgs>>("Verify", fst.ArcType(), &args);
   return args.retval;

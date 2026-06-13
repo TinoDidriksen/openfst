@@ -25,11 +25,12 @@
 #include <cstddef>
 #include <cstdint>
 #include <memory>
+#include <optional>
 #include <string>
 #include <type_traits>
 #include <utility>
 
-#include <fst/log.h>
+#include <unordered_map>
 #include <fst/arc.h>
 #include <fst/cache.h>
 #include <fst/expanded-fst.h>
@@ -42,7 +43,6 @@
 #include <fst/symbol-table.h>
 #include <fst/util.h>
 #include <fst/weight.h>
-#include <unordered_map>
 
 namespace fst {
 
@@ -132,7 +132,7 @@ enum class PropagateKExpanded {
 // Maps an arc type A using a mapper function object C, passed
 // by pointer. This version modifies its Fst input.
 template <class A, class C>
-void ArcMap(MutableFst<A> *fst, C *mapper) {
+void ArcMap(MutableFst<A>* fst, C* mapper) {
   using FromArc = A;
   using ToArc = A;
   using Weight = typename FromArc::Weight;
@@ -155,7 +155,7 @@ void ArcMap(MutableFst<A> *fst, C *mapper) {
     const auto state = siter.Value();
     for (MutableArcIterator<MutableFst<FromArc>> aiter(fst, state);
          !aiter.Done(); aiter.Next()) {
-      const auto &arc = aiter.Value();
+      const auto& arc = aiter.Value();
       aiter.SetValue((*mapper)(arc));
     }
     switch (final_action) {
@@ -210,7 +210,7 @@ void ArcMap(MutableFst<A> *fst, C *mapper) {
 // Maps an arc type A using a mapper function object C, passed by value. This
 // version modifies its FST input.
 template <class A, class C>
-void ArcMap(MutableFst<A> *fst, C mapper) {
+void ArcMap(MutableFst<A>* fst, C mapper) {
   ArcMap(fst, &mapper);
 }
 
@@ -218,7 +218,7 @@ void ArcMap(MutableFst<A> *fst, C mapper) {
 // passed by pointer. This version writes the mapped input FST to an
 // output MutableFst.
 template <class A, class B, class C>
-void ArcMap(const Fst<A> &ifst, MutableFst<B> *ofst, C *mapper) {
+void ArcMap(const Fst<A>& ifst, MutableFst<B>* ofst, C* mapper) {
   using FromArc = A;
   using StateId = typename FromArc::StateId;
   ofst->DeleteStates();
@@ -306,7 +306,7 @@ void ArcMap(const Fst<A> &ifst, MutableFst<B> *ofst, C *mapper) {
 // object C, passed by value. This version writes the mapped input
 // Fst to an output MutableFst.
 template <class A, class B, class C>
-void ArcMap(const Fst<A> &ifst, MutableFst<B> *ofst, C mapper) {
+void ArcMap(const Fst<A>& ifst, MutableFst<B>* ofst, C mapper) {
   ArcMap(ifst, ofst, &mapper);
 }
 
@@ -315,7 +315,7 @@ struct ArcMapFstOptions : public CacheOptions {
   // cheap and therefore we save memory by not doing caching.
   ArcMapFstOptions() : CacheOptions(true, 0) {}
 
-  explicit ArcMapFstOptions(const CacheOptions &opts) : CacheOptions(opts) {}
+  explicit ArcMapFstOptions(const CacheOptions& opts) : CacheOptions(opts) {}
 };
 
 template <class A, class B, class C, class CacheStore,
@@ -388,8 +388,8 @@ class ArcMapFstImpl
   friend class StateIterator<
       ArcMapFst<A, B, C, CacheStore, PropagateKExpanded::kNo>>;
 
-  ArcMapFstImpl(const FromFst &fst, const C &mapper,
-                const ArcMapFstOptions &opts)
+  ArcMapFstImpl(const FromFst& fst, const C& mapper,
+                const ArcMapFstOptions& opts)
       : CacheImpl(opts),
         fst_(fst.Copy()),
         mapper_(new C(mapper)),
@@ -399,7 +399,7 @@ class ArcMapFstImpl
     Init();
   }
 
-  ArcMapFstImpl(const FromFst &fst, C *mapper, const ArcMapFstOptions &opts)
+  ArcMapFstImpl(const FromFst& fst, C* mapper, const ArcMapFstOptions& opts)
       : CacheImpl(opts),
         fst_(fst.Copy()),
         mapper_(mapper),
@@ -409,7 +409,7 @@ class ArcMapFstImpl
     Init();
   }
 
-  ArcMapFstImpl(const ArcMapFstImpl &impl)
+  ArcMapFstImpl(const ArcMapFstImpl& impl)
       : CacheImpl(impl),
         fst_(impl.fst_->Copy(true)),
         mapper_(new C(*impl.mapper_)),
@@ -502,7 +502,7 @@ class ArcMapFstImpl
     return FstImpl<Arc>::Properties(mask);
   }
 
-  void InitArcIterator(StateId s, ArcIteratorData<B> *data) {
+  void InitArcIterator(StateId s, ArcIteratorData<B>* data) {
     if (!HasArcs(s)) Expand(s);
     CacheImpl::InitArcIterator(s, data);
   }
@@ -593,7 +593,7 @@ class ArcMapFstImpl
   }
 
   std::unique_ptr<const FromFst> fst_;
-  C *mapper_;
+  C* mapper_;
   const bool own_mapper_;
   MapFinalAction final_action_;
   StateId superfinal_;
@@ -643,25 +643,25 @@ class ArcMapFst : public internal::ArcMapFstBase<A, B, C, CacheStore,
   friend class StateIterator<
       ArcMapFst<A, B, C, CacheStore, propagate_expanded_fst>>;
 
-  explicit ArcMapFst(const FromFst &fst, const C &mapper = C(),
-                     const ArcMapFstOptions &opts = ArcMapFstOptions())
+  explicit ArcMapFst(const FromFst& fst, const C& mapper = C(),
+                     const ArcMapFstOptions& opts = ArcMapFstOptions())
       : Base(std::make_shared<Impl>(fst, mapper, opts)) {}
 
-  ArcMapFst(const FromFst &fst, C *mapper,
-            const ArcMapFstOptions &opts = ArcMapFstOptions())
+  ArcMapFst(const FromFst& fst, C* mapper,
+            const ArcMapFstOptions& opts = ArcMapFstOptions())
       : Base(std::make_shared<Impl>(fst, mapper, opts)) {}
 
   // See Fst<>::Copy() for doc.
-  ArcMapFst(const ArcMapFst &fst, bool safe = false) : Base(fst, safe) {}
+  ArcMapFst(const ArcMapFst& fst, bool safe = false) : Base(fst, safe) {}
 
   // Get a copy of this ArcMapFst. See Fst<>::Copy() for further doc.
-  ArcMapFst *Copy(bool safe = false) const override {
+  ArcMapFst* Copy(bool safe = false) const override {
     return new ArcMapFst(*this, safe);
   }
 
-  inline void InitStateIterator(StateIteratorData<B> *data) const override;
+  inline void InitStateIterator(StateIteratorData<B>* data) const override;
 
-  void InitArcIterator(StateId s, ArcIteratorData<B> *data) const override {
+  void InitArcIterator(StateId s, ArcIteratorData<B>* data) const override {
     GetMutableImpl()->InitArcIterator(s, data);
   }
 
@@ -670,7 +670,7 @@ class ArcMapFst : public internal::ArcMapFstBase<A, B, C, CacheStore,
   using Base::GetMutableImpl;
 
  private:
-  ArcMapFst &operator=(const ArcMapFst &) = delete;
+  ArcMapFst& operator=(const ArcMapFst&) = delete;
 };
 
 // Specialization for ArcMapFst.
@@ -684,7 +684,7 @@ class StateIterator<ArcMapFst<A, B, C, CacheStore, propagate_expanded_fst>>
   using FST = ArcMapFst<A, B, C, CacheStore, propagate_expanded_fst>;
   using StateId = typename B::StateId;
 
-  explicit StateIterator(const FST &fst)
+  explicit StateIterator(const FST& fst)
       : impl_(fst.GetImpl()),
         siter_(*impl_->fst_),
         s_(0),
@@ -723,7 +723,7 @@ class StateIterator<ArcMapFst<A, B, C, CacheStore, propagate_expanded_fst>>
     }
   }
 
-  const typename FST::Impl *impl_;
+  const typename FST::Impl* impl_;
   StateIterator<typename FST::FromFst> siter_;
   StateId s_;
   bool superfinal_;  // True if there is a superfinal state and not done.
@@ -739,7 +739,7 @@ class ArcIterator<ArcMapFst<A, B, C, CacheStore, propagate_expanded_fst>>
   using StateId = typename A::StateId;
   using FST = ArcMapFst<A, B, C, CacheStore, propagate_expanded_fst>;
 
-  ArcIterator(const FST &fst, StateId s)
+  ArcIterator(const FST& fst, StateId s)
       : CacheArcIterator<FST>(fst.GetMutableImpl(), s) {
     if (!fst.GetImpl()->HasArcs(s)) fst.GetMutableImpl()->Expand(s);
   }
@@ -749,7 +749,7 @@ template <class A, class B, class C, class CacheStore,
           PropagateKExpanded propagate_expanded_fst>
 inline void
 ArcMapFst<A, B, C, CacheStore, propagate_expanded_fst>::InitStateIterator(
-    StateIteratorData<B> *data) const {
+    StateIteratorData<B>* data) const {
   data->base = std::make_unique<StateIterator<ArcMapFst>>(*this);
 }
 
@@ -761,7 +761,7 @@ ArcMapFst<A, B, C, CacheStore, propagate_expanded_fst>::InitStateIterator(
 // `Fst`
 
 template <class ArcMapper>
-ArcMapFst(const Fst<typename ArcMapper::FromArc> &, const ArcMapper &)
+ArcMapFst(const Fst<typename ArcMapper::FromArc>&, const ArcMapper&)
     -> ArcMapFst<typename ArcMapper::FromArc, typename ArcMapper::ToArc,
                  ArcMapper, DefaultCacheStore<typename ArcMapper::ToArc>,
                  PropagateKExpanded::kNo>;
@@ -769,14 +769,14 @@ template <class ArcMapper,
           typename = std::enable_if_t<
               internal::IsDefaultConstructibleExpandedNoSuperfinalArcMapper<
                   ArcMapper>::value>>
-ArcMapFst(const ExpandedFst<typename ArcMapper::FromArc> &, const ArcMapper &)
+ArcMapFst(const ExpandedFst<typename ArcMapper::FromArc>&, const ArcMapper&)
     -> ArcMapFst<typename ArcMapper::FromArc, typename ArcMapper::ToArc,
                  ArcMapper, DefaultCacheStore<typename ArcMapper::ToArc>,
                  PropagateKExpanded::kIfPossible>;
 
 // As above, but using the ArcMapFst(..., ArcMapper *) constructor.
 template <class ArcMapper>
-ArcMapFst(const Fst<typename ArcMapper::FromArc> &, ArcMapper *)
+ArcMapFst(const Fst<typename ArcMapper::FromArc>&, ArcMapper*)
     -> ArcMapFst<typename ArcMapper::FromArc, typename ArcMapper::ToArc,
                  ArcMapper, DefaultCacheStore<typename ArcMapper::ToArc>,
                  PropagateKExpanded::kNo>;
@@ -784,7 +784,7 @@ template <class ArcMapper,
           typename = std::enable_if_t<
               internal::IsDefaultConstructibleExpandedNoSuperfinalArcMapper<
                   ArcMapper>::value>>
-ArcMapFst(const ExpandedFst<typename ArcMapper::FromArc> &, ArcMapper *)
+ArcMapFst(const ExpandedFst<typename ArcMapper::FromArc>&, ArcMapper*)
     -> ArcMapFst<typename ArcMapper::FromArc, typename ArcMapper::ToArc,
                  ArcMapper, DefaultCacheStore<typename ArcMapper::ToArc>,
                  PropagateKExpanded::kIfPossible>;
@@ -798,7 +798,7 @@ class IdentityArcMapper {
   using FromArc = A;
   using ToArc = A;
 
-  constexpr ToArc operator()(const FromArc &arc) const { return arc; }
+  constexpr ToArc operator()(const FromArc& arc) const { return arc; }
 
   constexpr MapFinalAction FinalAction() const { return MAP_NO_SUPERFINAL; }
 
@@ -820,7 +820,7 @@ class InputEpsilonMapper {
   using FromArc = A;
   using ToArc = A;
 
-  constexpr ToArc operator()(const FromArc &arc) const {
+  constexpr ToArc operator()(const FromArc& arc) const {
     return ToArc(0, arc.olabel, arc.weight, arc.nextstate);
   }
 
@@ -846,7 +846,7 @@ class OutputEpsilonMapper {
   using FromArc = A;
   using ToArc = A;
 
-  constexpr ToArc operator()(const FromArc &arc) const {
+  constexpr ToArc operator()(const FromArc& arc) const {
     return ToArc(arc.ilabel, 0, arc.weight, arc.nextstate);
   }
 
@@ -879,7 +879,7 @@ class SuperFinalMapper {
   constexpr explicit SuperFinalMapper(Label final_label = 0)
       : final_label_(final_label) {}
 
-  ToArc operator()(const FromArc &arc) const {
+  ToArc operator()(const FromArc& arc) const {
     // Super-final arc.
     if (arc.nextstate == kNoStateId && arc.weight != Weight::Zero()) {
       return ToArc(final_label_, final_label_, arc.weight, kNoStateId);
@@ -931,10 +931,10 @@ class WeightConvertMapper {
   // constructible.
   constexpr WeightConvertMapper() = default;
 
-  constexpr explicit WeightConvertMapper(const Converter &c)
+  constexpr explicit WeightConvertMapper(const Converter& c)
       : convert_weight_(c) {}
 
-  constexpr ToArc operator()(const FromArc &arc) const {
+  constexpr ToArc operator()(const FromArc& arc) const {
     return ToArc(arc.ilabel, arc.olabel, convert_weight_(arc.weight),
                  arc.nextstate);
   }
@@ -958,8 +958,8 @@ class WeightConvertMapper {
   Converter convert_weight_;
 };
 
-// Non-precision-changing weight conversions; consider using more efficient
-// Cast method instead.
+// Non-precision-changing weight conversions. Prefer these to Cast, since
+// Cast between these types would be UB.
 
 using StdToLogMapper = WeightConvertMapper<StdArc, LogArc>;
 
@@ -986,7 +986,7 @@ class ToGallicMapper {
   using AW = typename FromArc::Weight;
   using GW = typename ToArc::Weight;
 
-  ToArc operator()(const FromArc &arc) const {
+  ToArc operator()(const FromArc& arc) const {
     // Super-final arc.
     if (arc.nextstate == kNoStateId && arc.weight != AW::Zero()) {
       return ToArc(0, 0, GW(SW::One(), arc.weight), kNoStateId);
@@ -1033,7 +1033,7 @@ class FromGallicMapper {
   explicit FromGallicMapper(Label superfinal_label = 0)
       : superfinal_label_(superfinal_label), error_(false) {}
 
-  ToArc operator()(const FromArc &arc) const {
+  ToArc operator()(const FromArc& arc) const {
     // 'Super-non-final' arc.
     if (arc.nextstate == kNoStateId && arc.weight == GW::Zero()) {
       return A(arc.ilabel, 0, AW::Zero(), kNoStateId);
@@ -1073,11 +1073,11 @@ class FromGallicMapper {
 
  private:
   template <GallicType GT>
-  static bool Extract(const GallicWeight<Label, AW, GT> &gallic_weight,
-                      typename A::Weight *weight, typename A::Label *label) {
+  static bool Extract(const GallicWeight<Label, AW, GT>& gallic_weight,
+                      typename A::Weight* weight, typename A::Label* label) {
     using GW = StringWeight<Label, GallicStringType(GT)>;
-    const GW &w1 = gallic_weight.Value1();
-    const AW &w2 = gallic_weight.Value2();
+    const GW& w1 = gallic_weight.Value1();
+    const AW& w2 = gallic_weight.Value2();
     typename GW::Iterator iter1(w1);
     const Label l = w1.Size() == 1 ? iter1.Value() : 0;
     if (l == kStringInfinity || l == kStringBad || w1.Size() > 1) return false;
@@ -1086,8 +1086,8 @@ class FromGallicMapper {
     return true;
   }
 
-  static bool Extract(const GallicWeight<Label, AW, GALLIC> &gallic_weight,
-                      typename A::Weight *weight, typename A::Label *label) {
+  static bool Extract(const GallicWeight<Label, AW, GALLIC>& gallic_weight,
+                      typename A::Weight* weight, typename A::Label* label) {
     if (gallic_weight.Size() > 1) return false;
     if (gallic_weight.Size() == 0) {
       *label = 0;
@@ -1114,7 +1114,7 @@ class GallicToNewSymbolsMapper {
   using GW = typename FromArc::Weight;
   using SW = StringWeight<Label, GallicStringType(G)>;
 
-  explicit GallicToNewSymbolsMapper(MutableFst<ToArc> *fst)
+  explicit GallicToNewSymbolsMapper(MutableFst<ToArc>* fst)
       : fst_(fst),
         lmax_(0),
         osymbols_(fst->OutputSymbols()),
@@ -1135,7 +1135,7 @@ class GallicToNewSymbolsMapper {
     }
   }
 
-  ToArc operator()(const FromArc &arc) {
+  ToArc operator()(const FromArc& arc) {
     // Super-non-final arc.
     if (arc.nextstate == kNoStateId && arc.weight == GW::Zero()) {
       return ToArc(arc.ilabel, 0, AW::Zero(), kNoStateId);
@@ -1190,17 +1190,17 @@ class GallicToNewSymbolsMapper {
  private:
   class StringKey {
    public:
-    size_t operator()(const SW &x) const { return x.Hash(); }
+    size_t operator()(const SW& x) const { return x.Hash(); }
   };
 
   using Map = std::unordered_map<SW, Label, StringKey>;
 
-  MutableFst<ToArc> *fst_;
+  MutableFst<ToArc>* fst_;
   Map map_;
   Label lmax_;
   StateId state_;
-  const SymbolTable *osymbols_;
-  SymbolTable *isymbols_;
+  const SymbolTable* osymbols_;
+  SymbolTable* isymbols_;
   mutable bool error_;
 };
 
@@ -1217,7 +1217,7 @@ class PlusMapper {
 
   constexpr explicit PlusMapper(Weight weight) : weight_(std::move(weight)) {}
 
-  ToArc operator()(const FromArc &arc) const {
+  ToArc operator()(const FromArc& arc) const {
     if (arc.weight == Weight::Zero()) return arc;
     return ToArc(arc.ilabel, arc.olabel, Plus(arc.weight, weight_),
                  arc.nextstate);
@@ -1251,7 +1251,7 @@ class TimesMapper {
 
   constexpr explicit TimesMapper(Weight weight) : weight_(std::move(weight)) {}
 
-  ToArc operator()(const FromArc &arc) const {
+  ToArc operator()(const FromArc& arc) const {
     if (arc.weight == Weight::Zero()) return arc;
     return ToArc(arc.ilabel, arc.olabel, Times(arc.weight, weight_),
                  arc.nextstate);
@@ -1289,7 +1289,7 @@ class PowerMapper {
 
   explicit PowerMapper(double power) : power_(power) {}
 
-  ToArc operator()(const FromArc &arc) const {
+  ToArc operator()(const FromArc& arc) const {
     return ToArc(arc.ilabel, arc.olabel, Power(arc.weight, power_),
                  arc.nextstate);
   }
@@ -1320,7 +1320,7 @@ class InvertWeightMapper {
   using ToArc = A;
   using Weight = typename FromArc::Weight;
 
-  ToArc operator()(const FromArc &arc) const {
+  ToArc operator()(const FromArc& arc) const {
     if (arc.weight == Weight::Zero()) return arc;
     return ToArc(arc.ilabel, arc.olabel, Divide(Weight::One(), arc.weight),
                  arc.nextstate);
@@ -1350,7 +1350,7 @@ class RmWeightMapper {
   using FromWeight = typename FromArc::Weight;
   using ToWeight = typename ToArc::Weight;
 
-  ToArc operator()(const FromArc &arc) const {
+  ToArc operator()(const FromArc& arc) const {
     return ToArc(
         arc.ilabel, arc.olabel,
         arc.weight != FromWeight::Zero() ? ToWeight::One() : ToWeight::Zero(),
@@ -1385,7 +1385,7 @@ class QuantizeMapper {
 
   explicit QuantizeMapper(float d) : delta_(d) {}
 
-  ToArc operator()(const FromArc &arc) const {
+  ToArc operator()(const FromArc& arc) const {
     return ToArc(arc.ilabel, arc.olabel, arc.weight.Quantize(delta_),
                  arc.nextstate);
   }
@@ -1429,7 +1429,7 @@ class ReverseWeightMapper {
       std::is_same_v<typename ToArc::StateId, typename FromArc::StateId>,
       "ToArc::StateId must be FromArc::StateId");
 
-  constexpr ToArc operator()(const FromArc &arc) const {
+  constexpr ToArc operator()(const FromArc& arc) const {
     return ToArc(arc.ilabel, arc.olabel, arc.weight.Reverse(), arc.nextstate);
   }
 

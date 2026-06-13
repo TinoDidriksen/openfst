@@ -15,12 +15,14 @@
 // See www.openfst.org for extensive documentation on this weighted
 // finite-state transducer library.
 
+#include <string>
+
 #include <fst/flags.h>
 
 DEFINE_string(closure_type, "star",
-              "Do not add the empty path (T+ instead of T*)?, one of: "
-              "\"star\", \"plus\"");
+          "Do not add the empty path (T+ instead of T*)?, one of: "
+          "\"star\", \"plus\"");
 
-int fstclosure_main(int argc, char **argv);
+int fstclosure_main(int argc, char** argv);
 
-int main(int argc, char **argv) { return fstclosure_main(argc, argv); }
+int main(int argc, char** argv) { return fstclosure_main(argc, argv); }

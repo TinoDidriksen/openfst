@@ -22,7 +22,6 @@
 #include <utility>
 #include <vector>
 
-#include <fst/log.h>
 #include <fst/arcfilter.h>
 #include <fst/fst.h>
 #include <fst/mutable-fst.h>
@@ -41,11 +40,11 @@ namespace script {
 
 struct RmEpsilonOptions : public ShortestDistanceOptions {
   const bool connect;
-  const WeightClass &weight_threshold;
+  const WeightClass& weight_threshold;
   const int64_t state_threshold;
 
   RmEpsilonOptions(QueueType queue_type, bool connect,
-                   const WeightClass &weight_threshold,
+                   const WeightClass& weight_threshold,
                    int64_t state_threshold = kNoStateId, float delta = kDelta)
       : ShortestDistanceOptions(queue_type, ArcFilterType::EPSILON, kNoStateId,
                                 delta),
@@ -59,9 +58,9 @@ namespace internal {
 // Code to implement switching on queue types.
 
 template <class Arc, class Queue>
-void RmEpsilon(MutableFst<Arc> *fst,
-               std::vector<typename Arc::Weight> *distance,
-               const RmEpsilonOptions &opts, Queue *queue) {
+void RmEpsilon(MutableFst<Arc>* fst,
+               std::vector<typename Arc::Weight>* distance,
+               const RmEpsilonOptions& opts, Queue* queue) {
   using Weight = typename Arc::Weight;
   const fst::RmEpsilonOptions<Arc, Queue> ropts(
       queue, opts.delta, opts.connect,
@@ -70,7 +69,7 @@ void RmEpsilon(MutableFst<Arc> *fst,
 }
 
 template <class Arc>
-void RmEpsilon(MutableFst<Arc> *fst, const RmEpsilonOptions &opts) {
+void RmEpsilon(MutableFst<Arc>* fst, const RmEpsilonOptions& opts) {
   using StateId = typename Arc::StateId;
   using Weight = typename Arc::Weight;
   std::vector<Weight> distance;
@@ -121,16 +120,16 @@ void RmEpsilon(MutableFst<Arc> *fst, const RmEpsilonOptions &opts) {
 
 }  // namespace internal
 
-using FstRmEpsilonArgs = std::pair<MutableFstClass *, const RmEpsilonOptions &>;
+using FstRmEpsilonArgs = std::pair<MutableFstClass*, const RmEpsilonOptions&>;
 
 template <class Arc>
-void RmEpsilon(FstRmEpsilonArgs *args) {
-  MutableFst<Arc> *fst = std::get<0>(*args)->GetMutableFst<Arc>();
-  const auto &opts = std::get<1>(*args);
+void RmEpsilon(FstRmEpsilonArgs* args) {
+  MutableFst<Arc>* fst = std::get<0>(*args)->GetMutableFst<Arc>();
+  const auto& opts = std::get<1>(*args);
   internal::RmEpsilon(fst, opts);
 }
 
-void RmEpsilon(MutableFstClass *fst, const RmEpsilonOptions &opts);
+void RmEpsilon(MutableFstClass* fst, const RmEpsilonOptions& opts);
 
 }  // namespace script
 }  // namespace fst

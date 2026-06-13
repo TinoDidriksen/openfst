@@ -17,13 +17,15 @@
 //
 // Reverses an MPDT.
 
+#include <string>
+
 #include <fst/flags.h>
 
 DEFINE_string(mpdt_parentheses, "",
-              "MPDT parenthesis label pairs with assignments.");
+          "MPDT parenthesis label pairs with assignments.");
 DEFINE_string(mpdt_new_parentheses, "",
-              "Output for reassigned parentheses and stacks");
+          "Output for reassigned parentheses and stacks");
 
-int mpdtreverse_main(int argc, char **argv);
+int mpdtreverse_main(int argc, char** argv);
 
-int main(int argc, char **argv) { return mpdtreverse_main(argc, argv); }
+int main(int argc, char** argv) { return mpdtreverse_main(argc, argv); }

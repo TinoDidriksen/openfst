@@ -32,16 +32,16 @@
 #include <fst/script/script-impl.h>
 
 DEFINE_string(delimiter, "|",
-              "Single non-white-space character delimiter inside sequences of "
-              "feature symbols and output symbols");
+          "Single non-white-space character delimiter inside sequences of "
+          "feature symbols and output symbols");
 DEFINE_string(empty_symbol, "<empty>",
-              "Special symbol that designates an empty sequence");
+          "Special symbol that designates an empty sequence");
 
 DEFINE_string(start_symbol, "<s>", "Start of sentence symbol");
 DEFINE_string(end_symbol, "</s>", "End of sentence symbol");
 
 DEFINE_bool(classifier, false,
-            "Treat input model as a classifier instead of a tagger");
+          "Treat input model as a classifier instead of a tagger");
 
 namespace fst {
 namespace script {
@@ -60,13 +60,13 @@ bool ValidateEmptySymbol() {
   return okay;
 }
 
-void LinearCompile(const std::string &arc_type,
-                   const std::string &epsilon_symbol,
-                   const std::string &unknown_symbol, const std::string &vocab,
-                   char **models, int models_len, const std::string &out,
-                   const std::string &save_isymbols,
-                   const std::string &save_fsymbols,
-                   const std::string &save_osymbols) {
+void LinearCompile(const std::string& arc_type,
+                   const std::string& epsilon_symbol,
+                   const std::string& unknown_symbol, const std::string& vocab,
+                   char** models, int models_len, const std::string& out,
+                   const std::string& save_isymbols,
+                   const std::string& save_fsymbols,
+                   const std::string& save_osymbols) {
   LinearCompileArgs args(epsilon_symbol, unknown_symbol, vocab, models,
                          models_len, out, save_isymbols, save_fsymbols,
                          save_osymbols);
@@ -75,18 +75,18 @@ void LinearCompile(const std::string &arc_type,
 
 REGISTER_FST_OPERATION_3ARCS(LinearCompileTpl, LinearCompileArgs);
 
-void SplitByWhitespace(const std::string &str, std::vector<std::string> *out) {
+void SplitByWhitespace(const std::string& str, std::vector<std::string>* out) {
   out->clear();
   std::istringstream strm(str);
   std::string buf;
   while (strm >> buf) out->push_back(buf);
 }
 
-int ScanNumClasses(char **models, int models_len) {
+int ScanNumClasses(char** models, int models_len) {
   std::set<std::string, std::less<>> preds;
   for (int i = 0; i < models_len; ++i) {
     std::ifstream in(models[i]);
-    if (!in) LOG(FATAL) << "Failed to open " << models[i];
+    if (!in) LOG(FATAL) << "Failed to open " << models[i];  // Crash OK.
     std::string line;
     std::getline(in, line);
     size_t num_line = 1;
@@ -95,8 +95,9 @@ int ScanNumClasses(char **models, int models_len) {
       std::vector<std::string> fields;
       SplitByWhitespace(line, &fields);
       if (fields.size() != 3)
-        LOG(FATAL) << "Wrong number of fields in source " << models[i]
-                   << ", line " << num_line;
+        LOG(FATAL)  // Crash OK.
+            << "Wrong number of fields in source " << models[i] << ", line "
+            << num_line;
       preds.insert(fields[1]);
     }
   }

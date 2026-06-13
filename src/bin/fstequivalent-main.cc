@@ -17,10 +17,12 @@
 //
 // Two DFAs are equivalent iff their exit status is zero.
 
+#include <cstdint>
 #include <cstring>
 #include <memory>
 #include <string>
 
+#include <fst/flags.h>
 #include <fst/flags.h>
 #include <fst/log.h>
 #include <fst/randgen.h>
@@ -37,7 +39,7 @@ DECLARE_int32(npath);
 DECLARE_uint64(seed);
 DECLARE_string(select);
 
-int fstequivalent_main(int argc, char **argv) {
+int fstequivalent_main(int argc, char** argv) {
   namespace s = fst::script;
   using fst::RandGenOptions;
   using fst::script::FstClass;

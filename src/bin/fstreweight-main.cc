@@ -22,6 +22,7 @@
 #include <vector>
 
 #include <fst/flags.h>
+#include <fst/flags.h>
 #include <fst/log.h>
 #include <fst/reweight.h>
 #include <fst/script/fst-class.h>
@@ -32,7 +33,7 @@
 
 DECLARE_string(reweight_type);
 
-int fstreweight_main(int argc, char **argv) {
+int fstreweight_main(int argc, char** argv) {
   namespace s = fst::script;
   using fst::ReweightType;
   using fst::script::MutableFstClass;

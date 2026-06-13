@@ -25,18 +25,16 @@
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
+#include <memory>
 #include <set>
 #include <utility>
 #include <vector>
 
-#include <fst/log.h>
-#include <fst/extensions/pdt/collection.h>
-#include <fst/extensions/pdt/pdt.h>
-#include <fst/dfs-visit.h>
-#include <fst/fst.h>
-#include <fst/util.h>
 #include <unordered_map>
 #include <unordered_set>
+#include <fst/extensions/pdt/collection.h>
+#include <fst/fst.h>
+#include <fst/util.h>
 
 namespace fst {
 namespace internal {
@@ -55,17 +53,17 @@ struct ParenState {
   explicit ParenState(Label paren_id = kNoLabel, StateId state_id = kNoStateId)
       : paren_id(paren_id), state_id(state_id) {}
 
-  bool operator==(const ParenState<Arc> &other) const {
+  bool operator==(const ParenState<Arc>& other) const {
     if (&other == this) return true;
     return other.paren_id == paren_id && other.state_id == state_id;
   }
 
-  bool operator!=(const ParenState<Arc> &other) const {
+  bool operator!=(const ParenState<Arc>& other) const {
     return !(other == *this);
   }
 
   struct Hash {
-    size_t operator()(const ParenState<Arc> &pstate) const {
+    size_t operator()(const ParenState<Arc>& pstate) const {
       static constexpr auto prime = 7853;
       return pstate.paren_id + pstate.state_id * prime;
     }
@@ -80,7 +78,7 @@ class SpanIterator {
   using ValueType = const V;
 
   SpanIterator() = default;
-  explicit SpanIterator(ValueType *begin, ValueType *end)
+  explicit SpanIterator(ValueType* begin, ValueType* end)
       : begin_(begin), end_(end), it_(begin) {}
 
   bool Done() const { return it_ == end_; }
@@ -89,9 +87,9 @@ class SpanIterator {
   void Reset() { it_ = begin_; }
 
  private:
-  ValueType *const begin_ = nullptr;
-  ValueType *const end_ = nullptr;
-  ValueType *it_ = nullptr;
+  ValueType* const begin_ = nullptr;
+  ValueType* const end_ = nullptr;
+  ValueType* it_ = nullptr;
 };
 
 // PdtParenReachable: Provides various parenthesis reachability information.
@@ -126,13 +124,13 @@ class PdtParenReachable {
 
   // Computes close (open) parenthesis reachability information for a PDT with
   // bounded stack.
-  PdtParenReachable(const Fst<Arc> &fst,
-                    const std::vector<std::pair<Label, Label>> &parens,
+  PdtParenReachable(const Fst<Arc>& fst,
+                    const std::vector<std::pair<Label, Label>>& parens,
                     bool close)
       : fst_(fst), parens_(parens), close_(close), error_(false) {
     paren_map_.reserve(2 * parens.size());
     for (size_t i = 0; i < parens.size(); ++i) {
-      const auto &pair = parens[i];
+      const auto& pair = parens[i];
       paren_map_[pair.first] = i;
       paren_map_[pair.second] = i;
     }
@@ -206,12 +204,12 @@ class PdtParenReachable {
   void ComputeStateSet(StateId s);
 
   // Gathers state set(s) from state.
-  void UpdateStateSet(StateId nextstate, std::set<Label> *paren_set,
-                      std::vector<std::set<StateId>> *state_sets) const;
+  void UpdateStateSet(StateId nextstate, std::set<Label>* paren_set,
+                      std::vector<std::set<StateId>>* state_sets) const;
 
-  const Fst<Arc> &fst_;
+  const Fst<Arc>& fst_;
   // Paren IDs to labels.
-  const std::vector<std::pair<Label, Label>> &parens_;
+  const std::vector<std::pair<Label, Label>>& parens_;
   // Close/open paren info?
   const bool close_;
   // Labels to paren IDs.
@@ -228,8 +226,8 @@ class PdtParenReachable {
   StateSetMap set_map_;
   bool error_;
 
-  PdtParenReachable(const PdtParenReachable &) = delete;
-  PdtParenReachable &operator=(const PdtParenReachable &) = delete;
+  PdtParenReachable(const PdtParenReachable&) = delete;
+  PdtParenReachable& operator=(const PdtParenReachable&) = delete;
 };
 
 // Gathers paren and state set information.
@@ -243,7 +241,7 @@ bool PdtParenReachable<Arc>::DFSearch(StateId s) {
   if (state_color_[s] == kGreyState) return false;
   state_color_[s] = kGreyState;
   for (ArcIterator<Fst<Arc>> aiter(fst_, s); !aiter.Done(); aiter.Next()) {
-    const auto &arc = aiter.Value();
+    const auto& arc = aiter.Value();
     const auto it = paren_map_.find(arc.ilabel);
     if (it != paren_map_.end()) {  // Paren?
       const auto paren_id = it->second;
@@ -280,7 +278,7 @@ void PdtParenReachable<Arc>::ComputeStateSet(StateId s) {
   std::set<Label> paren_set;
   std::vector<std::set<StateId>> state_sets(parens_.size());
   for (ArcIterator<Fst<Arc>> aiter(fst_, s); !aiter.Done(); aiter.Next()) {
-    const auto &arc = aiter.Value();
+    const auto& arc = aiter.Value();
     const auto it = paren_map_.find(arc.ilabel);
     if (it != paren_map_.end()) {  // Paren?
       const auto paren_id = it->second;
@@ -290,7 +288,7 @@ void PdtParenReachable<Arc>::ComputeStateSet(StateId s) {
           for (auto paren_arc_iter =
                    FindParenArcs(paren_id, set_iter.Element());
                !paren_arc_iter.Done(); paren_arc_iter.Next()) {
-            const auto &cparc = paren_arc_iter.Value();
+            const auto& cparc = paren_arc_iter.Value();
             UpdateStateSet(cparc.nextstate, &paren_set, &state_sets);
           }
         }
@@ -308,7 +306,7 @@ void PdtParenReachable<Arc>::ComputeStateSet(StateId s) {
   for (const Label paren_id : paren_set) {
     paren_multimap_[s].push_back(paren_id);
 
-    const std::set<StateId> &state_set = state_sets[paren_id];
+    const std::set<StateId>& state_set = state_sets[paren_id];
     state_vec.assign(state_set.begin(), state_set.end());
 
     const State paren_state(paren_id, s);
@@ -319,8 +317,8 @@ void PdtParenReachable<Arc>::ComputeStateSet(StateId s) {
 // Gathers state sets.
 template <class Arc>
 void PdtParenReachable<Arc>::UpdateStateSet(
-    StateId nextstate, std::set<Label> *paren_set,
-    std::vector<std::set<StateId>> *state_sets) const {
+    StateId nextstate, std::set<Label>* paren_set,
+    std::vector<std::set<StateId>>* state_sets) const {
   for (auto paren_iter = FindParens(nextstate); !paren_iter.Done();
        paren_iter.Next()) {
     const auto paren_id = paren_iter.Value();
@@ -406,8 +404,8 @@ class PdtBalanceData {
         const State key(paren_id, open_dest);
         open_paren_set_.erase(key);
         const auto close_paren_it = close_paren_map_.find(key);
-        CHECK(close_paren_it != close_paren_map_.end());
-        std::vector<StateId> &close_sources = close_paren_it->second;
+        CHECK(close_paren_it != close_paren_map_.end());  // Crash OK.
+        std::vector<StateId>& close_sources = close_paren_it->second;
         std::sort(close_sources.begin(), close_sources.end());
         auto unique_end =
             std::unique(close_sources.begin(), close_sources.end());
@@ -423,7 +421,7 @@ class PdtBalanceData {
 
   // Returns a new balance data object representing the reversed balance
   // information.
-  PdtBalanceData<Arc> *Reverse(StateId num_states, StateId num_split,
+  PdtBalanceData<Arc>* Reverse(StateId num_states, StateId num_split,
                                StateId state_id_shift) const;
 
  private:
@@ -445,16 +443,16 @@ class PdtBalanceData {
 // Return a new balance data object representing the reversed balance
 // information.
 template <class Arc>
-PdtBalanceData<Arc> *PdtBalanceData<Arc>::Reverse(
+PdtBalanceData<Arc>* PdtBalanceData<Arc>::Reverse(
     StateId num_states, StateId num_split, StateId state_id_shift) const {
-  auto bd = fst::make_unique_for_overwrite<PdtBalanceData<Arc>>();
+  auto bd = std::make_unique<PdtBalanceData<Arc>>();
   std::unordered_set<StateId> close_sources;
   const auto split_size = num_states / num_split;
   for (StateId i = 0; i < num_states; i += split_size) {
     close_sources.clear();
     for (auto it = close_source_map_.begin(); it != close_source_map_.end();
          ++it) {
-      const auto &okey = it->first;
+      const auto& okey = it->first;
       const auto open_dest = okey.state_id;
       const auto paren_id = okey.paren_id;
       for (auto set_iter = close_source_sets_.FindSet(it->second);

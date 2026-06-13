@@ -24,6 +24,7 @@
 #include <ostream>
 #include <string>
 
+#include <fst/flags.h>
 #include <fst/log.h>
 #include <fst/arc.h>
 #include <fst/const-fst.h>
@@ -47,11 +48,11 @@ class SigmaFstMatcherData {
           RewriteMode(FST_FLAGS_sigma_fst_rewrite_mode))
       : sigma_label_(sigma_label), rewrite_mode_(rewrite_mode) {}
 
-  SigmaFstMatcherData(const SigmaFstMatcherData &data)
+  SigmaFstMatcherData(const SigmaFstMatcherData& data)
       : sigma_label_(data.sigma_label_), rewrite_mode_(data.rewrite_mode_) {}
 
-  static SigmaFstMatcherData<Label> *Read(std::istream &istrm,
-                                          const FstReadOptions &read) {
+  static SigmaFstMatcherData<Label>* Read(std::istream& istrm,
+                                          const FstReadOptions& read) {
     auto data = std::make_unique<SigmaFstMatcherData<Label>>();
     ReadType(istrm, &data->sigma_label_);
     int32_t rewrite_mode;
@@ -60,7 +61,7 @@ class SigmaFstMatcherData {
     return data.release();
   }
 
-  bool Write(std::ostream &ostrm, const FstWriteOptions &opts) const {
+  bool Write(std::ostream& ostrm, const FstWriteOptions& opts) const {
     WriteType(ostrm, sigma_label_);
     WriteType(ostrm, static_cast<int32_t>(rewrite_mode_));
     return !ostrm ? false : true;
@@ -71,7 +72,7 @@ class SigmaFstMatcherData {
   MatcherRewriteMode RewriteMode() const { return rewrite_mode_; }
 
  private:
-  static MatcherRewriteMode RewriteMode(const std::string &mode) {
+  static MatcherRewriteMode RewriteMode(const std::string& mode) {
     if (mode == "auto") return MATCHER_REWRITE_AUTO;
     if (mode == "always") return MATCHER_REWRITE_ALWAYS;
     if (mode == "never") return MATCHER_REWRITE_NEVER;
@@ -105,7 +106,7 @@ class SigmaFstMatcher : public SigmaMatcher<M> {
 
   // This makes a copy of the FST.
   SigmaFstMatcher(
-      const FST &fst, MatchType match_type,
+      const FST& fst, MatchType match_type,
       std::shared_ptr<MatcherData> data = std::make_shared<MatcherData>())
       : SigmaMatcher<M>(
             fst, match_type,
@@ -116,7 +117,7 @@ class SigmaFstMatcher : public SigmaMatcher<M> {
 
   // This doesn't copy the FST.
   SigmaFstMatcher(
-      const FST *fst, MatchType match_type,
+      const FST* fst, MatchType match_type,
       std::shared_ptr<MatcherData> data = std::make_shared<MatcherData>())
       : SigmaMatcher<M>(
             fst, match_type,
@@ -126,14 +127,14 @@ class SigmaFstMatcher : public SigmaMatcher<M> {
         data_(data) {}
 
   // This makes a copy of the FST.
-  SigmaFstMatcher(const SigmaFstMatcher<M, flags> &matcher, bool safe = false)
+  SigmaFstMatcher(const SigmaFstMatcher<M, flags>& matcher, bool safe = false)
       : SigmaMatcher<M>(matcher, safe), data_(matcher.data_) {}
 
-  SigmaFstMatcher<M, flags> *Copy(bool safe = false) const override {
+  SigmaFstMatcher<M, flags>* Copy(bool safe = false) const override {
     return new SigmaFstMatcher<M, flags>(*this, safe);
   }
 
-  const MatcherData *GetData() const { return data_.get(); }
+  const MatcherData* GetData() const { return data_.get(); }
 
   std::shared_ptr<MatcherData> GetSharedData() const { return data_; }
 

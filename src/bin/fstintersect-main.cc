@@ -22,6 +22,7 @@
 #include <string>
 
 #include <fst/flags.h>
+#include <fst/flags.h>
 #include <fst/log.h>
 #include <fst/compose.h>
 #include <fst/intersect.h>
@@ -32,7 +33,7 @@
 DECLARE_string(compose_filter);
 DECLARE_bool(connect);
 
-int fstintersect_main(int argc, char **argv) {
+int fstintersect_main(int argc, char** argv) {
   namespace s = fst::script;
   using fst::ComposeFilter;
   using fst::IntersectOptions;

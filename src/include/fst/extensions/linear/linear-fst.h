@@ -37,6 +37,7 @@
 
 #include <fst/compat.h>
 #include <fst/log.h>
+#include <fst/log.h>
 #include <fst/extensions/linear/linear-fst-data.h>
 #include <fst/extensions/linear/trie.h>
 #include <fst/extensions/pdt/collection.h>
@@ -97,8 +98,8 @@ class LinearTaggerFstImpl : public CacheImpl<A> {
   //
   // TODO(wuke): when there is no constraint on output we can delay
   // less than `data->MaxFutureSize` positions.
-  LinearTaggerFstImpl(const LinearFstData<Arc> *data, const SymbolTable *isyms,
-                      const SymbolTable *osyms, CacheOptions opts)
+  LinearTaggerFstImpl(const LinearFstData<Arc>* data, const SymbolTable* isyms,
+                      const SymbolTable* osyms, CacheOptions opts)
       : CacheImpl<A>(opts), data_(data), delay_(data->MaxFutureSize()) {
     SetType("linear-tagger");
     SetProperties(kILabelSorted, kFstProperties);
@@ -108,7 +109,7 @@ class LinearTaggerFstImpl : public CacheImpl<A> {
   }
 
   // Copy by sharing the underlying data storage.
-  LinearTaggerFstImpl(const LinearTaggerFstImpl &impl)
+  LinearTaggerFstImpl(const LinearTaggerFstImpl& impl)
       : CacheImpl<A>(impl), data_(impl.data_), delay_(impl.delay_) {
     SetType("linear-tagger");
     SetProperties(impl.Properties(), kCopyProperties);
@@ -153,7 +154,7 @@ class LinearTaggerFstImpl : public CacheImpl<A> {
     return CacheImpl<A>::NumOutputEpsilons(s);
   }
 
-  void InitArcIterator(StateId s, ArcIteratorData<A> *data) {
+  void InitArcIterator(StateId s, ArcIteratorData<A>* data) {
     if (!HasArcs(s)) Expand(s);
     CacheImpl<A>::InitArcIterator(s, data);
   }
@@ -164,12 +165,12 @@ class LinearTaggerFstImpl : public CacheImpl<A> {
 
   // Appends to `arcs` all out-going arcs from state `s` that matches `label` as
   // the input label.
-  void MatchInput(StateId s, Label ilabel, std::vector<Arc> *arcs);
+  void MatchInput(StateId s, Label ilabel, std::vector<Arc>* arcs);
 
-  static LinearTaggerFstImpl *Read(std::istream &strm,
-                                   const FstReadOptions &opts);
+  static LinearTaggerFstImpl* Read(std::istream& strm,
+                                   const FstReadOptions& opts);
 
-  bool Write(std::ostream &strm, const FstWriteOptions &opts) const {
+  bool Write(std::ostream& strm, const FstWriteOptions& opts) const {
     FstHeader header;
     header.SetStart(kNoStateId);
     WriteHeader(strm, opts, kFileVersion, &header);
@@ -197,22 +198,22 @@ class LinearTaggerFstImpl : public CacheImpl<A> {
   //
   // - [internal] is the internal state tuple for `LinearFstData`
   typename std::vector<Label>::const_iterator BufferBegin(
-      const std::vector<Label> &state) const {
+      const std::vector<Label>& state) const {
     return state.begin();
   }
 
   typename std::vector<Label>::const_iterator BufferEnd(
-      const std::vector<Label> &state) const {
+      const std::vector<Label>& state) const {
     return state.begin() + delay_;
   }
 
   typename std::vector<Label>::const_iterator InternalBegin(
-      const std::vector<Label> &state) const {
+      const std::vector<Label>& state) const {
     return state.begin() + delay_;
   }
 
   typename std::vector<Label>::const_iterator InternalEnd(
-      const std::vector<Label> &state) const {
+      const std::vector<Label>& state) const {
     return state.end();
   }
 
@@ -246,13 +247,13 @@ class LinearTaggerFstImpl : public CacheImpl<A> {
 
   // Tests whether the given state tuple can be a final state. A state
   // is final iff there is no observed input in the buffer.
-  bool CanBeFinal(const std::vector<Label> &state) {
+  bool CanBeFinal(const std::vector<Label>& state) {
     return IsEmptyBuffer(BufferBegin(state), BufferEnd(state));
   }
 
   // Finds state corresponding to an n-gram. Creates new state if n-gram not
   // found.
-  StateId FindState(const std::vector<Label> &ngram) {
+  StateId FindState(const std::vector<Label>& ngram) {
     StateId sparse = ngrams_.FindId(ngram, true);
     StateId dense = condensed_.FindId(sparse, true);
     return dense;
@@ -260,7 +261,7 @@ class LinearTaggerFstImpl : public CacheImpl<A> {
 
   // Appends after `output` the state tuple corresponding to the state id. The
   // state id must exist.
-  void FillState(StateId s, std::vector<Label> *output) {
+  void FillState(StateId s, std::vector<Label>* output) {
     s = condensed_.FindEntry(s);
     for (NGramIterator it = ngrams_.FindSet(s); !it.Done(); it.Next()) {
       Label label = it.Element();
@@ -274,25 +275,25 @@ class LinearTaggerFstImpl : public CacheImpl<A> {
   // elements are the last `delay_ - 1` elements in the buffer of
   // `state`. The last (if any) element in `next_stub_` will be
   // `ilabel` after the call returns.
-  Label ShiftBuffer(const std::vector<Label> &state, Label ilabel,
-                    std::vector<Label> *next_stub_);
+  Label ShiftBuffer(const std::vector<Label>& state, Label ilabel,
+                    std::vector<Label>* next_stub_);
 
   // Builds an arc from state tuple `state` consuming `ilabel` and
   // `olabel`. `next_stub_` is the buffer filled in `ShiftBuffer`.
-  Arc MakeArc(const std::vector<Label> &state, Label ilabel, Label olabel,
-              std::vector<Label> *next_stub_);
+  Arc MakeArc(const std::vector<Label>& state, Label ilabel, Label olabel,
+              std::vector<Label>* next_stub_);
 
   // Expands arcs from state `s`, equivalent to state tuple `state`,
   // with input `ilabel`. `next_stub_` is the buffer filled in
   // `ShiftBuffer`.
-  void ExpandArcs(StateId s, const std::vector<Label> &state, Label ilabel,
-                  std::vector<Label> *next_stub_);
+  void ExpandArcs(StateId s, const std::vector<Label>& state, Label ilabel,
+                  std::vector<Label>* next_stub_);
 
   // Appends arcs from state `s`, equivalent to state tuple `state`,
   // with input `ilabel` to `arcs`. `next_stub_` is the buffer filled
   // in `ShiftBuffer`.
-  void AppendArcs(StateId s, const std::vector<Label> &state, Label ilabel,
-                  std::vector<Label> *next_stub_, std::vector<Arc> *arcs);
+  void AppendArcs(StateId s, const std::vector<Label>& state, Label ilabel,
+                  std::vector<Label>* next_stub_, std::vector<Arc>* arcs);
 
   std::shared_ptr<const LinearFstData<A>> data_;
   size_t delay_;
@@ -304,13 +305,13 @@ class LinearTaggerFstImpl : public CacheImpl<A> {
   std::vector<Label> state_stub_;
   std::vector<Label> next_stub_;
 
-  LinearTaggerFstImpl &operator=(const LinearTaggerFstImpl &) = delete;
+  LinearTaggerFstImpl& operator=(const LinearTaggerFstImpl&) = delete;
 };
 
 template <class A>
 inline typename A::Label LinearTaggerFstImpl<A>::ShiftBuffer(
-    const std::vector<Label> &state, Label ilabel,
-    std::vector<Label> *next_stub_) {
+    const std::vector<Label>& state, Label ilabel,
+    std::vector<Label>* next_stub_) {
   DCHECK(ilabel > 0 || ilabel == LinearFstData<A>::kEndOfSentence);
   if (delay_ == 0) {
     DCHECK_GT(ilabel, 0);
@@ -322,9 +323,9 @@ inline typename A::Label LinearTaggerFstImpl<A>::ShiftBuffer(
 }
 
 template <class A>
-inline A LinearTaggerFstImpl<A>::MakeArc(const std::vector<Label> &state,
+inline A LinearTaggerFstImpl<A>::MakeArc(const std::vector<Label>& state,
                                          Label ilabel, Label olabel,
-                                         std::vector<Label> *next_stub_) {
+                                         std::vector<Label>* next_stub_) {
   DCHECK(ilabel > 0 || ilabel == LinearFstData<A>::kEndOfSentence);
   DCHECK(olabel > 0 || olabel == LinearFstData<A>::kStartOfSentence);
   Weight weight(Weight::One());
@@ -342,9 +343,9 @@ inline A LinearTaggerFstImpl<A>::MakeArc(const std::vector<Label> &state,
 
 template <class A>
 inline void LinearTaggerFstImpl<A>::ExpandArcs(StateId s,
-                                               const std::vector<Label> &state,
+                                               const std::vector<Label>& state,
                                                Label ilabel,
-                                               std::vector<Label> *next_stub_) {
+                                               std::vector<Label>* next_stub_) {
   // Input label to constrain the output with, observed `delay_` steps
   // back. `ilabel` is the input label to be put on the arc, which
   // fires features.
@@ -367,10 +368,10 @@ inline void LinearTaggerFstImpl<A>::ExpandArcs(StateId s,
 // TODO(wuke): this has much in duplicate with `ExpandArcs()`
 template <class A>
 inline void LinearTaggerFstImpl<A>::AppendArcs(StateId /*s*/,
-                                               const std::vector<Label> &state,
+                                               const std::vector<Label>& state,
                                                Label ilabel,
-                                               std::vector<Label> *next_stub_,
-                                               std::vector<Arc> *arcs) {
+                                               std::vector<Label>* next_stub_,
+                                               std::vector<Arc>* arcs) {
   // Input label to constrain the output with, observed `delay_` steps
   // back. `ilabel` is the input label to be put on the arc, which
   // fires features.
@@ -422,7 +423,7 @@ void LinearTaggerFstImpl<A>::Expand(StateId s) {
 
 template <class A>
 void LinearTaggerFstImpl<A>::MatchInput(StateId s, Label ilabel,
-                                        std::vector<Arc> *arcs) {
+                                        std::vector<Arc>* arcs) {
   state_stub_.clear();
   FillState(s, &state_stub_);
 
@@ -448,8 +449,8 @@ void LinearTaggerFstImpl<A>::MatchInput(StateId s, Label ilabel,
 }
 
 template <class A>
-inline LinearTaggerFstImpl<A> *LinearTaggerFstImpl<A>::Read(
-    std::istream &strm, const FstReadOptions &opts) {
+inline LinearTaggerFstImpl<A>* LinearTaggerFstImpl<A>::Read(
+    std::istream& strm, const FstReadOptions& opts) {
   std::unique_ptr<LinearTaggerFstImpl<A>> impl(new LinearTaggerFstImpl<A>());
   FstHeader header;
   if (!impl->ReadHeader(strm, opts, kMinFileVersion, &header)) {
@@ -487,36 +488,37 @@ class LinearTaggerFst : public ImplToFst<internal::LinearTaggerFstImpl<A>> {
 
   LinearTaggerFst() : Base(std::make_shared<Impl>()) {}
 
-  explicit LinearTaggerFst(LinearFstData<A> *data,
-                           const SymbolTable *isyms = nullptr,
-                           const SymbolTable *osyms = nullptr,
+  explicit LinearTaggerFst(LinearFstData<A>* data,
+                           const SymbolTable* isyms = nullptr,
+                           const SymbolTable* osyms = nullptr,
                            CacheOptions opts = CacheOptions())
       : Base(std::make_shared<Impl>(data, isyms, osyms, opts)) {}
 
-  explicit LinearTaggerFst(const Fst<A> &fst) : Base(std::make_shared<Impl>()) {
-    LOG(FATAL) << "LinearTaggerFst: no constructor from arbitrary FST.";
+  explicit LinearTaggerFst(const Fst<A>& fst) : Base(std::make_shared<Impl>()) {
+    LOG(FATAL)  // Crash OK.
+        << "LinearTaggerFst: no constructor from arbitrary FST.";
   }
 
   // See Fst<>::Copy() for doc.
-  LinearTaggerFst(const LinearTaggerFst<A> &fst, bool safe = false)
+  LinearTaggerFst(const LinearTaggerFst<A>& fst, bool safe = false)
       : Base(fst, safe) {}
 
   // Get a copy of this LinearTaggerFst. See Fst<>::Copy() for further doc.
-  LinearTaggerFst<A> *Copy(bool safe = false) const override {
+  LinearTaggerFst<A>* Copy(bool safe = false) const override {
     return new LinearTaggerFst<A>(*this, safe);
   }
 
-  inline void InitStateIterator(StateIteratorData<A> *data) const override;
+  inline void InitStateIterator(StateIteratorData<A>* data) const override;
 
-  void InitArcIterator(StateId s, ArcIteratorData<A> *data) const override {
+  void InitArcIterator(StateId s, ArcIteratorData<A>* data) const override {
     GetMutableImpl()->InitArcIterator(s, data);
   }
 
-  MatcherBase<A> *InitMatcher(MatchType match_type) const override {
+  MatcherBase<A>* InitMatcher(MatchType match_type) const override {
     return new LinearFstMatcherTpl<LinearTaggerFst<A>>(this, match_type);
   }
 
-  static LinearTaggerFst<A> *Read(const std::string &source) {
+  static LinearTaggerFst<A>* Read(const std::string& source) {
     if (!source.empty()) {
       std::ifstream strm(source,
                               std::ios_base::in | std::ios_base::binary);
@@ -530,13 +532,13 @@ class LinearTaggerFst : public ImplToFst<internal::LinearTaggerFstImpl<A>> {
     }
   }
 
-  static LinearTaggerFst<A> *Read(std::istream &in,
-                                  const FstReadOptions &opts) {
-    auto *impl = Impl::Read(in, opts);
+  static LinearTaggerFst<A>* Read(std::istream& in,
+                                  const FstReadOptions& opts) {
+    auto* impl = Impl::Read(in, opts);
     return impl ? new LinearTaggerFst<A>(std::shared_ptr<Impl>(impl)) : nullptr;
   }
 
-  bool Write(const std::string &source) const override {
+  bool Write(const std::string& source) const override {
     if (!source.empty()) {
       std::ofstream strm(source,
                                std::ios_base::out | std::ios_base::binary);
@@ -550,7 +552,7 @@ class LinearTaggerFst : public ImplToFst<internal::LinearTaggerFstImpl<A>> {
     }
   }
 
-  bool Write(std::ostream &strm, const FstWriteOptions &opts) const override {
+  bool Write(std::ostream& strm, const FstWriteOptions& opts) const override {
     return GetImpl()->Write(strm, opts);
   }
 
@@ -560,7 +562,7 @@ class LinearTaggerFst : public ImplToFst<internal::LinearTaggerFstImpl<A>> {
 
   explicit LinearTaggerFst(std::shared_ptr<Impl> impl) : Base(impl) {}
 
-  void operator=(const LinearTaggerFst<A> &fst) = delete;
+  void operator=(const LinearTaggerFst<A>& fst) = delete;
 };
 
 // Specialization for LinearTaggerFst.
@@ -568,7 +570,7 @@ template <class Arc>
 class StateIterator<LinearTaggerFst<Arc>>
     : public CacheStateIterator<LinearTaggerFst<Arc>> {
  public:
-  explicit StateIterator(const LinearTaggerFst<Arc> &fst)
+  explicit StateIterator(const LinearTaggerFst<Arc>& fst)
       : CacheStateIterator<LinearTaggerFst<Arc>>(fst, fst.GetMutableImpl()) {}
 };
 
@@ -579,7 +581,7 @@ class ArcIterator<LinearTaggerFst<Arc>>
  public:
   using StateId = typename Arc::StateId;
 
-  ArcIterator(const LinearTaggerFst<Arc> &fst, StateId s)
+  ArcIterator(const LinearTaggerFst<Arc>& fst, StateId s)
       : CacheArcIterator<LinearTaggerFst<Arc>>(fst.GetMutableImpl(), s) {
     if (!fst.GetImpl()->HasArcs(s)) fst.GetMutableImpl()->Expand(s);
   }
@@ -587,7 +589,7 @@ class ArcIterator<LinearTaggerFst<Arc>>
 
 template <class Arc>
 inline void LinearTaggerFst<Arc>::InitStateIterator(
-    StateIteratorData<Arc> *data) const {
+    StateIteratorData<Arc>* data) const {
   data->base = std::make_unique<StateIterator<LinearTaggerFst<Arc>>>(*this);
 }
 
@@ -629,8 +631,8 @@ class LinearClassifierFstImpl : public CacheImpl<A> {
 
   // Constructs the FST with given data storage, number of classes and
   // symbol tables.
-  LinearClassifierFstImpl(const LinearFstData<Arc> *data, size_t num_classes,
-                          const SymbolTable *isyms, const SymbolTable *osyms,
+  LinearClassifierFstImpl(const LinearFstData<Arc>* data, size_t num_classes,
+                          const SymbolTable* isyms, const SymbolTable* osyms,
                           CacheOptions opts)
       : CacheImpl<A>(opts),
         data_(data),
@@ -644,7 +646,7 @@ class LinearClassifierFstImpl : public CacheImpl<A> {
   }
 
   // Copy by sharing the underlying data storage.
-  LinearClassifierFstImpl(const LinearClassifierFstImpl &impl)
+  LinearClassifierFstImpl(const LinearClassifierFstImpl& impl)
       : CacheImpl<A>(impl),
         data_(impl.data_),
         num_classes_(impl.num_classes_),
@@ -688,7 +690,7 @@ class LinearClassifierFstImpl : public CacheImpl<A> {
     return CacheImpl<A>::NumOutputEpsilons(s);
   }
 
-  void InitArcIterator(StateId s, ArcIteratorData<A> *data) {
+  void InitArcIterator(StateId s, ArcIteratorData<A>* data) {
     if (!HasArcs(s)) Expand(s);
     CacheImpl<A>::InitArcIterator(s, data);
   }
@@ -699,12 +701,12 @@ class LinearClassifierFstImpl : public CacheImpl<A> {
 
   // Appends to `arcs` all out-going arcs from state `s` that matches
   // `label` as the input label.
-  void MatchInput(StateId s, Label ilabel, std::vector<Arc> *arcs);
+  void MatchInput(StateId s, Label ilabel, std::vector<Arc>* arcs);
 
-  static LinearClassifierFstImpl<A> *Read(std::istream &strm,
-                                          const FstReadOptions &opts);
+  static LinearClassifierFstImpl<A>* Read(std::istream& strm,
+                                          const FstReadOptions& opts);
 
-  bool Write(std::ostream &strm, const FstWriteOptions &opts) const {
+  bool Write(std::ostream& strm, const FstWriteOptions& opts) const {
     FstHeader header;
     header.SetStart(kNoStateId);
     WriteHeader(strm, opts, kFileVersion, &header);
@@ -730,13 +732,13 @@ class LinearClassifierFstImpl : public CacheImpl<A> {
   //
   // - [internal] is the internal state tuple for `LinearFstData` of
   //   the given class; or kNoTrieNodeId's if in start state.
-  Label &Prediction(std::vector<Label> &state) { return state[0]; }
-  Label Prediction(const std::vector<Label> &state) const { return state[0]; }
+  Label& Prediction(std::vector<Label>& state) { return state[0]; }
+  Label Prediction(const std::vector<Label>& state) const { return state[0]; }
 
-  Label &InternalAt(std::vector<Label> &state, int index) {
+  Label& InternalAt(std::vector<Label>& state, int index) {
     return state[index + 1];
   }
-  Label InternalAt(const std::vector<Label> &state, int index) const {
+  Label InternalAt(const std::vector<Label>& state, int index) const {
     return state[index + 1];
   }
 
@@ -770,7 +772,7 @@ class LinearClassifierFstImpl : public CacheImpl<A> {
 
   // Finds out the final weight of the given state. A state is final
   // iff it is not the start.
-  Weight FinalWeight(const std::vector<Label> &state) const {
+  Weight FinalWeight(const std::vector<Label>& state) const {
     if (IsStartState(state)) {
       return Weight::Zero();
     }
@@ -789,7 +791,7 @@ class LinearClassifierFstImpl : public CacheImpl<A> {
 
   // Finds state corresponding to an n-gram. Creates new state if n-gram not
   // found.
-  StateId FindState(const std::vector<Label> &ngram) {
+  StateId FindState(const std::vector<Label>& ngram) {
     StateId sparse = ngrams_.FindId(ngram, true);
     StateId dense = condensed_.FindId(sparse, true);
     return dense;
@@ -797,7 +799,7 @@ class LinearClassifierFstImpl : public CacheImpl<A> {
 
   // Appends after `output` the state tuple corresponding to the state id. The
   // state id must exist.
-  void FillState(StateId s, std::vector<Label> *output) {
+  void FillState(StateId s, std::vector<Label>* output) {
     s = condensed_.FindEntry(s);
     for (NGramIterator it = ngrams_.FindSet(s); !it.Done(); it.Next()) {
       output->emplace_back(it.Element());
@@ -817,7 +819,7 @@ class LinearClassifierFstImpl : public CacheImpl<A> {
   std::vector<Label> state_stub_;
   std::vector<Label> next_stub_;
 
-  void operator=(const LinearClassifierFstImpl<A> &) = delete;
+  void operator=(const LinearClassifierFstImpl<A>&) = delete;
 };
 
 template <class A>
@@ -857,7 +859,7 @@ void LinearClassifierFstImpl<A>::Expand(StateId s) {
 
 template <class A>
 void LinearClassifierFstImpl<A>::MatchInput(StateId s, Label ilabel,
-                                            std::vector<Arc> *arcs) {
+                                            std::vector<Arc>* arcs) {
   state_stub_.clear();
   FillState(s, &state_stub_);
   next_stub_.clear();
@@ -885,8 +887,8 @@ void LinearClassifierFstImpl<A>::MatchInput(StateId s, Label ilabel,
 }
 
 template <class A>
-inline LinearClassifierFstImpl<A> *LinearClassifierFstImpl<A>::Read(
-    std::istream &strm, const FstReadOptions &opts) {
+inline LinearClassifierFstImpl<A>* LinearClassifierFstImpl<A>::Read(
+    std::istream& strm, const FstReadOptions& opts) {
   std::unique_ptr<LinearClassifierFstImpl<A>> impl(
       new LinearClassifierFstImpl<A>());
   FstHeader header;
@@ -937,37 +939,38 @@ class LinearClassifierFst
 
   LinearClassifierFst() : Base(std::make_shared<Impl>()) {}
 
-  explicit LinearClassifierFst(LinearFstData<A> *data, size_t num_classes,
-                               const SymbolTable *isyms = nullptr,
-                               const SymbolTable *osyms = nullptr,
+  explicit LinearClassifierFst(LinearFstData<A>* data, size_t num_classes,
+                               const SymbolTable* isyms = nullptr,
+                               const SymbolTable* osyms = nullptr,
                                CacheOptions opts = CacheOptions())
       : Base(std::make_shared<Impl>(data, num_classes, isyms, osyms, opts)) {}
 
-  explicit LinearClassifierFst(const Fst<A> &fst)
+  explicit LinearClassifierFst(const Fst<A>& fst)
       : Base(std::make_shared<Impl>()) {
-    LOG(FATAL) << "LinearClassifierFst: no constructor from arbitrary FST.";
+    LOG(FATAL)  // Crash OK.
+        << "LinearClassifierFst: no constructor from arbitrary FST.";
   }
 
   // See Fst<>::Copy() for doc.
-  LinearClassifierFst(const LinearClassifierFst<A> &fst, bool safe = false)
+  LinearClassifierFst(const LinearClassifierFst<A>& fst, bool safe = false)
       : Base(fst, safe) {}
 
   // Get a copy of this LinearClassifierFst. See Fst<>::Copy() for further doc.
-  LinearClassifierFst<A> *Copy(bool safe = false) const override {
+  LinearClassifierFst<A>* Copy(bool safe = false) const override {
     return new LinearClassifierFst<A>(*this, safe);
   }
 
-  inline void InitStateIterator(StateIteratorData<A> *data) const override;
+  inline void InitStateIterator(StateIteratorData<A>* data) const override;
 
-  void InitArcIterator(StateId s, ArcIteratorData<A> *data) const override {
+  void InitArcIterator(StateId s, ArcIteratorData<A>* data) const override {
     GetMutableImpl()->InitArcIterator(s, data);
   }
 
-  MatcherBase<A> *InitMatcher(MatchType match_type) const override {
+  MatcherBase<A>* InitMatcher(MatchType match_type) const override {
     return new LinearFstMatcherTpl<LinearClassifierFst<A>>(this, match_type);
   }
 
-  static LinearClassifierFst<A> *Read(const std::string &source) {
+  static LinearClassifierFst<A>* Read(const std::string& source) {
     if (!source.empty()) {
       std::ifstream strm(source,
                               std::ios_base::in | std::ios_base::binary);
@@ -981,19 +984,19 @@ class LinearClassifierFst
     }
   }
 
-  static LinearClassifierFst<A> *Read(std::istream &in,
-                                      const FstReadOptions &opts) {
-    auto *impl = Impl::Read(in, opts);
+  static LinearClassifierFst<A>* Read(std::istream& in,
+                                      const FstReadOptions& opts) {
+    auto* impl = Impl::Read(in, opts);
     return impl ? new LinearClassifierFst<A>(std::shared_ptr<Impl>(impl))
                 : nullptr;
   }
 
-  bool Write(const std::string &source) const override {
+  bool Write(const std::string& source) const override {
     if (!source.empty()) {
       std::ofstream strm(source,
                                std::ios_base::out | std::ios_base::binary);
       if (!strm) {
-        LOG(ERROR) << "ProdLmFst::Write: Can't open file: " << source;
+        LOG(ERROR) << "LinearClassifierFst::Write: Can't open file: " << source;
         return false;
       }
       return Write(strm, FstWriteOptions(source));
@@ -1002,7 +1005,7 @@ class LinearClassifierFst
     }
   }
 
-  bool Write(std::ostream &strm, const FstWriteOptions &opts) const override {
+  bool Write(std::ostream& strm, const FstWriteOptions& opts) const override {
     return GetImpl()->Write(strm, opts);
   }
 
@@ -1012,7 +1015,7 @@ class LinearClassifierFst
 
   explicit LinearClassifierFst(std::shared_ptr<Impl> impl) : Base(impl) {}
 
-  void operator=(const LinearClassifierFst<A> &fst) = delete;
+  void operator=(const LinearClassifierFst<A>& fst) = delete;
 };
 
 // Specialization for LinearClassifierFst.
@@ -1020,7 +1023,7 @@ template <class Arc>
 class StateIterator<LinearClassifierFst<Arc>>
     : public CacheStateIterator<LinearClassifierFst<Arc>> {
  public:
-  explicit StateIterator(const LinearClassifierFst<Arc> &fst)
+  explicit StateIterator(const LinearClassifierFst<Arc>& fst)
       : CacheStateIterator<LinearClassifierFst<Arc>>(fst,
                                                      fst.GetMutableImpl()) {}
 };
@@ -1032,7 +1035,7 @@ class ArcIterator<LinearClassifierFst<Arc>>
  public:
   using StateId = typename Arc::StateId;
 
-  ArcIterator(const LinearClassifierFst<Arc> &fst, StateId s)
+  ArcIterator(const LinearClassifierFst<Arc>& fst, StateId s)
       : CacheArcIterator<LinearClassifierFst<Arc>>(fst.GetMutableImpl(), s) {
     if (!fst.GetImpl()->HasArcs(s)) fst.GetMutableImpl()->Expand(s);
   }
@@ -1040,7 +1043,7 @@ class ArcIterator<LinearClassifierFst<Arc>>
 
 template <class Arc>
 inline void LinearClassifierFst<Arc>::InitStateIterator(
-    StateIteratorData<Arc> *data) const {
+    StateIteratorData<Arc>* data) const {
   data->base = std::make_unique<StateIterator<LinearClassifierFst<Arc>>>(*this);
 }
 
@@ -1058,7 +1061,7 @@ class LinearFstMatcherTpl : public MatcherBase<typename F::Arc> {
   typedef F FST;
 
   // This makes a copy of the FST.
-  LinearFstMatcherTpl(const FST &fst, MatchType match_type)
+  LinearFstMatcherTpl(const FST& fst, MatchType match_type)
       : owned_fst_(fst.Copy()),
         fst_(*owned_fst_),
         match_type_(match_type),
@@ -1080,7 +1083,7 @@ class LinearFstMatcherTpl : public MatcherBase<typename F::Arc> {
   }
 
   // This doesn't copy the FST.
-  LinearFstMatcherTpl(const FST *fst, MatchType match_type)
+  LinearFstMatcherTpl(const FST* fst, MatchType match_type)
       : fst_(*fst),
         match_type_(match_type),
         s_(kNoStateId),
@@ -1101,7 +1104,7 @@ class LinearFstMatcherTpl : public MatcherBase<typename F::Arc> {
   }
 
   // This makes a copy of the FST.
-  LinearFstMatcherTpl(const LinearFstMatcherTpl<F> &matcher, bool safe = false)
+  LinearFstMatcherTpl(const LinearFstMatcherTpl<F>& matcher, bool safe = false)
       : owned_fst_(matcher.fst_.Copy(safe)),
         fst_(*owned_fst_),
         match_type_(matcher.match_type_),
@@ -1111,7 +1114,7 @@ class LinearFstMatcherTpl : public MatcherBase<typename F::Arc> {
         cur_arc_(0),
         error_(matcher.error_) {}
 
-  LinearFstMatcherTpl<F> *Copy(bool safe = false) const override {
+  LinearFstMatcherTpl<F>* Copy(bool safe = false) const override {
     return new LinearFstMatcherTpl<F>(*this, safe);
   }
 
@@ -1148,7 +1151,7 @@ class LinearFstMatcherTpl : public MatcherBase<typename F::Arc> {
     return !(current_loop_ || cur_arc_ < arcs_.size());
   }
 
-  const Arc &Value() const final {
+  const Arc& Value() const final {
     return current_loop_ ? loop_ : arcs_[cur_arc_];
   }
 
@@ -1161,7 +1164,7 @@ class LinearFstMatcherTpl : public MatcherBase<typename F::Arc> {
 
   ssize_t Priority(StateId s) final { return kRequirePriority; }
 
-  const FST &GetFst() const override { return fst_; }
+  const FST& GetFst() const override { return fst_; }
 
   uint64_t Properties(uint64_t props) const override {
     if (error_) props |= kError;
@@ -1172,7 +1175,7 @@ class LinearFstMatcherTpl : public MatcherBase<typename F::Arc> {
 
  private:
   std::unique_ptr<const FST> owned_fst_;
-  const FST &fst_;
+  const FST& fst_;
   MatchType match_type_;  // Type of match to perform.
   StateId s_;             // Current state.
   bool current_loop_;     // Current arc is the implicit loop.

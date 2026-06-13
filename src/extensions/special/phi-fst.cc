@@ -17,18 +17,21 @@
 
 #include <fst/extensions/special/phi-fst.h>
 
+#include <cstdint>
+#include <string>
+
 #include <fst/flags.h>
 #include <fst/arc.h>
 #include <fst/register.h>
 
 DEFINE_int64(phi_fst_phi_label, 0,
-             "Label of transitions to be interpreted as phi ('failure') "
-             "transitions");
+          "Label of transitions to be interpreted as phi ('failure') "
+          "transitions");
 DEFINE_bool(phi_fst_phi_loop, true,
-            "When true, a phi self loop consumes a symbol");
+          "When true, a phi self loop consumes a symbol");
 DEFINE_string(phi_fst_rewrite_mode, "auto",
-              "Rewrite both sides when matching? One of:"
-              " \"auto\" (rewrite iff acceptor), \"always\", \"never\"");
+          "Rewrite both sides when matching? One of:"
+          " \"auto\" (rewrite iff acceptor), \"always\", \"never\"");
 
 namespace fst {
 

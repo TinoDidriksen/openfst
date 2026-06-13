@@ -32,14 +32,14 @@ namespace fst {
 namespace script {
 
 using FstRandGenArgs =
-    std::tuple<const FstClass &, MutableFstClass *,
-               const RandGenOptions<RandArcSelection> &, uint64_t>;
+    std::tuple<const FstClass&, MutableFstClass*,
+               const RandGenOptions<RandArcSelection>&, uint64_t>;
 
 template <class Arc>
-void RandGen(FstRandGenArgs *args) {
-  const Fst<Arc> &ifst = *std::get<0>(*args).GetFst<Arc>();
-  MutableFst<Arc> *ofst = std::get<1>(*args)->GetMutableFst<Arc>();
-  const auto &opts = std::get<2>(*args);
+void RandGen(FstRandGenArgs* args) {
+  const Fst<Arc>& ifst = *std::get<0>(*args).GetFst<Arc>();
+  MutableFst<Arc>* ofst = std::get<1>(*args)->GetMutableFst<Arc>();
+  const auto& opts = std::get<2>(*args);
   const uint64_t seed = std::get<3>(*args);
   switch (opts.selector) {
     case RandArcSelection::UNIFORM: {
@@ -69,8 +69,8 @@ void RandGen(FstRandGenArgs *args) {
   }
 }
 
-void RandGen(const FstClass &ifst, MutableFstClass *ofst,
-             const RandGenOptions<RandArcSelection> &opts =
+void RandGen(const FstClass& ifst, MutableFstClass* ofst,
+             const RandGenOptions<RandArcSelection>& opts =
                  RandGenOptions<RandArcSelection>(RandArcSelection::UNIFORM),
              uint64_t seed = std::random_device()());
 

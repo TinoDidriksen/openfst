@@ -26,15 +26,15 @@
 namespace fst {
 namespace script {
 
-using FstVerifyArgs = WithReturnValue<bool, const FstClass &>;
+using FstVerifyArgs = WithReturnValue<bool, const FstClass&>;
 
 template <class Arc>
-void Verify(FstVerifyArgs *args) {
-  const Fst<Arc> &fst = *args->args.GetFst<Arc>();
+void Verify(FstVerifyArgs* args) {
+  const Fst<Arc>& fst = *args->args.GetFst<Arc>();
   args->retval = Verify(fst);
 }
 
-bool Verify(const FstClass &fst);
+bool Verify(const FstClass& fst);
 
 }  // namespace script
 }  // namespace fst

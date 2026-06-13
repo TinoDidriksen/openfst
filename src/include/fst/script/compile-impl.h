@@ -29,14 +29,13 @@
 #include <string>
 #include <vector>
 
-#include <fst/log.h>
-#include <fst/fst.h>
+#include <unordered_map>
+#include <fst/flags.h>
+#include <string_view>
 #include <fst/properties.h>
 #include <fst/symbol-table.h>
 #include <fst/util.h>
 #include <fst/vector-fst.h>
-#include <unordered_map>
-#include <string_view>
 
 DECLARE_string(fst_field_separator);
 
@@ -56,9 +55,9 @@ class FstCompiler {
   // symbol tables. This is only useful if you set the (i/o)keep flag to attach
   // the final symbol table, or use the accessors. (The input symbol tables are
   // const and therefore not changed.)
-  FstCompiler(std::istream &istrm, std::string_view source,
-              const SymbolTable *isyms, const SymbolTable *osyms,
-              const SymbolTable *ssyms, bool accep, bool ikeep, bool okeep,
+  FstCompiler(std::istream& istrm, std::string_view source,
+              const SymbolTable* isyms, const SymbolTable* osyms,
+              const SymbolTable* ssyms, bool accep, bool ikeep, bool okeep,
               bool nkeep) {
     std::unique_ptr<SymbolTable> misyms(isyms ? isyms->Copy() : nullptr);
     std::unique_ptr<SymbolTable> mosyms(osyms ? osyms->Copy() : nullptr);
@@ -67,15 +66,15 @@ class FstCompiler {
          okeep, nkeep, false);
   }
 
-  FstCompiler(std::istream &istrm, std::string_view source, SymbolTable *isyms,
-              SymbolTable *osyms, SymbolTable *ssyms, bool accep, bool ikeep,
+  FstCompiler(std::istream& istrm, std::string_view source, SymbolTable* isyms,
+              SymbolTable* osyms, SymbolTable* ssyms, bool accep, bool ikeep,
               bool okeep, bool nkeep, bool add_symbols) {
     Init(istrm, source, isyms, osyms, ssyms, accep, ikeep, okeep, nkeep,
          add_symbols);
   }
 
-  void Init(std::istream &istrm, std::string_view source, SymbolTable *isyms,
-            SymbolTable *osyms, SymbolTable *ssyms, bool accep, bool ikeep,
+  void Init(std::istream& istrm, std::string_view source, SymbolTable* isyms,
+            SymbolTable* osyms, SymbolTable* ssyms, bool accep, bool ikeep,
             bool okeep, bool nkeep, bool add_symbols) {
     nline_ = 0;
     source_ = std::string(source);
@@ -148,13 +147,13 @@ class FstCompiler {
     if (okeep) fst_.SetOutputSymbols(osyms);
   }
 
-  const VectorFst<Arc> &Fst() const { return fst_; }
+  const VectorFst<Arc>& Fst() const { return fst_; }
 
  private:
   // Maximum line length in text file.
   static constexpr int kLineLen = 8096;
 
-  StateId StrToId(std::string_view s, SymbolTable *syms,
+  StateId StrToId(std::string_view s, SymbolTable* syms,
                   std::string_view name) const {
     StateId n = 0;
     if (syms) {
@@ -220,16 +219,16 @@ class FstCompiler {
   mutable VectorFst<Arc> fst_;
   size_t nline_;
   std::string source_;  // Text FST source name.
-  SymbolTable *isyms_;  // ilabel symbol table (not owned).
-  SymbolTable *osyms_;  // olabel symbol table (not owned).
-  SymbolTable *ssyms_;  // slabel symbol table (not owned).
+  SymbolTable* isyms_;  // ilabel symbol table (not owned).
+  SymbolTable* osyms_;  // olabel symbol table (not owned).
+  SymbolTable* ssyms_;  // slabel symbol table (not owned).
   std::unordered_map<StateId, StateId> states_;  // State ID map.
   StateId nstates_;                               // Number of seen states.
   bool keep_state_numbering_;
-  bool add_symbols_;            // Add to symbol tables on-the fly.
+  bool add_symbols_;  // Add to symbol tables on-the fly.
 
-  FstCompiler(const FstCompiler &) = delete;
-  FstCompiler &operator=(const FstCompiler &) = delete;
+  FstCompiler(const FstCompiler&) = delete;
+  FstCompiler& operator=(const FstCompiler&) = delete;
 };
 
 }  // namespace fst

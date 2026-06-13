@@ -20,6 +20,6 @@
 
 DEFINE_double(delta, fst::kDelta, "Comparison/quantization delta");
 
-int fstequal_main(int argc, char **argv);
+int fstequal_main(int argc, char** argv);
 
-int main(int argc, char **argv) { return fstequal_main(argc, argv); }
+int main(int argc, char** argv) { return fstequal_main(argc, argv); }

@@ -24,10 +24,7 @@
 
 #include <fst/arc-map.h>
 #include <fst/arc.h>
-#include <fst/cache.h>
-#include <fst/float-weight.h>
 #include <fst/fst.h>
-#include <fst/impl-to-fst.h>
 #include <fst/mutable-fst.h>
 #include <fst/properties.h>
 
@@ -35,9 +32,9 @@ namespace fst {
 
 // This specifies whether to project on input or output.
 enum class ProjectType { INPUT = 1, OUTPUT = 2 };
-OPENFST_DEPRECATED("Use `ProjectType::INPUT` instead.")
+[[deprecated("Use `ProjectType::INPUT` instead.")]]
 inline constexpr ProjectType PROJECT_INPUT = ProjectType::INPUT;
-OPENFST_DEPRECATED("Use `ProjectType::OUTPUT` instead.")
+[[deprecated("Use `ProjectType::OUTPUT` instead.")]]
 inline constexpr ProjectType PROJECT_OUTPUT = ProjectType::OUTPUT;
 
 // Mapper to implement projection per arc.
@@ -50,7 +47,7 @@ class ProjectMapper {
   constexpr explicit ProjectMapper(ProjectType project_type)
       : project_type_(project_type) {}
 
-  ToArc operator()(const FromArc &arc) const {
+  ToArc operator()(const FromArc& arc) const {
     const auto label =
         project_type_ == ProjectType::INPUT ? arc.ilabel : arc.olabel;
     return ToArc(label, label, arc.weight, arc.nextstate);
@@ -86,7 +83,7 @@ class ProjectMapper {
 //
 // where V is the number of states and E is the number of arcs.
 template <class Arc>
-inline void Project(const Fst<Arc> &ifst, MutableFst<Arc> *ofst,
+inline void Project(const Fst<Arc>& ifst, MutableFst<Arc>* ofst,
                     ProjectType project_type) {
   ArcMap(ifst, ofst, ProjectMapper<Arc>(project_type));
   switch (project_type) {
@@ -101,7 +98,7 @@ inline void Project(const Fst<Arc> &ifst, MutableFst<Arc> *ofst,
 
 // Destructive variant of the above.
 template <class Arc>
-inline void Project(MutableFst<Arc> *fst, ProjectType project_type) {
+inline void Project(MutableFst<Arc>* fst, ProjectType project_type) {
   ArcMap(fst, ProjectMapper<Arc>(project_type));
   switch (project_type) {
     case ProjectType::INPUT:
@@ -134,7 +131,7 @@ class ProjectFst : public ArcMapFst<A, A, ProjectMapper<A>> {
 
   using typename Base::Impl;
 
-  ProjectFst(const Fst<A> &fst, ProjectType project_type)
+  ProjectFst(const Fst<A>& fst, ProjectType project_type)
       : Base(fst, ProjectMapper<A>(project_type)) {
     if (project_type == ProjectType::INPUT) {
       GetMutableImpl()->SetOutputSymbols(fst.InputSymbols());
@@ -145,10 +142,10 @@ class ProjectFst : public ArcMapFst<A, A, ProjectMapper<A>> {
   }
 
   // See Fst<>::Copy() for doc.
-  ProjectFst(const ProjectFst &fst, bool safe = false) : Base(fst, safe) {}
+  ProjectFst(const ProjectFst& fst, bool safe = false) : Base(fst, safe) {}
 
   // Gets a copy of this ProjectFst. See Fst<>::Copy() for further doc.
-  ProjectFst *Copy(bool safe = false) const override {
+  ProjectFst* Copy(bool safe = false) const override {
     return new ProjectFst(*this, safe);
   }
 
@@ -161,7 +158,7 @@ template <class A>
 class StateIterator<ProjectFst<A>>
     : public StateIterator<ArcMapFst<A, A, ProjectMapper<A>>> {
  public:
-  explicit StateIterator(const ProjectFst<A> &fst)
+  explicit StateIterator(const ProjectFst<A>& fst)
       : StateIterator<ArcMapFst<A, A, ProjectMapper<A>>>(fst) {}
 };
 
@@ -172,7 +169,7 @@ class ArcIterator<ProjectFst<A>>
  public:
   using StateId = typename A::StateId;
 
-  ArcIterator(const ProjectFst<A> &fst, StateId s)
+  ArcIterator(const ProjectFst<A>& fst, StateId s)
       : ArcIterator<ArcMapFst<A, A, ProjectMapper<A>>>(fst, s) {}
 };
 

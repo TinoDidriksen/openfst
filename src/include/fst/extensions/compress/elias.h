@@ -30,18 +30,18 @@ template <class Var>
 class Elias {
  public:
   // A subroutine for Delta encoding.
-  static void GammaEncode(const Var &input, std::vector<bool> *code);
+  static void GammaEncode(const Var& input, std::vector<bool>* code);
 
   // Elias Delta encoding for a single integer.
-  static void DeltaEncode(const Var &input, std::vector<bool> *code);
+  static void DeltaEncode(const Var& input, std::vector<bool>* code);
 
   // Batch decoding of a set of integers.
-  static void BatchDecode(const std::vector<bool> &input,
-                          std::vector<Var> *output);
+  static void BatchDecode(const std::vector<bool>& input,
+                          std::vector<Var>* output);
 };
 
 template <class Var>
-void Elias<Var>::GammaEncode(const Var &input, std::vector<bool> *code) {
+void Elias<Var>::GammaEncode(const Var& input, std::vector<bool>* code) {
   Var input_copy = input;
   std::stack<bool> reverse_code;
   while (input_copy > 0) {
@@ -56,7 +56,7 @@ void Elias<Var>::GammaEncode(const Var &input, std::vector<bool> *code) {
 }
 
 template <class Var>
-void Elias<Var>::DeltaEncode(const Var &input, std::vector<bool> *code) {
+void Elias<Var>::DeltaEncode(const Var& input, std::vector<bool>* code) {
   Var input_copy = input + 1;
   std::stack<bool> reverse_remainder;
   Var auxvar = 0;
@@ -74,15 +74,13 @@ void Elias<Var>::DeltaEncode(const Var &input, std::vector<bool> *code) {
 }
 
 template <class Var>
-void Elias<Var>::BatchDecode(const std::vector<bool> &input,
-                             std::vector<Var> *output) {
+void Elias<Var>::BatchDecode(const std::vector<bool>& input,
+                             std::vector<Var>* output) {
   Var lead_zeros = 0;
-  Var remainder_bits = 0;
   Var current_word = 1;
   Var value = 1;
   for (auto it = input.cbegin(); it != input.cend();) {
     lead_zeros = 0;
-    remainder_bits = 0;
     current_word = 1;
     value = 1;
     while (!*it) {

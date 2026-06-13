@@ -17,15 +17,17 @@
 //
 // Returns the shortest path in a (bounded-stack) PDT.
 
+#include <string>
+
 #include <fst/flags.h>
 
 DEFINE_bool(keep_parentheses, false, "Keep PDT parentheses in result?");
 DEFINE_string(queue_type, "fifo",
-              "Queue type: one of: "
-              "\"fifo\", \"lifo\", \"state\"");
+          "Queue type: one of: "
+          "\"fifo\", \"lifo\", \"state\"");
 DEFINE_bool(path_gc, true, "Garbage collect shortest path data?");
 DEFINE_string(pdt_parentheses, "", "PDT parenthesis label pairs");
 
-int pdtshortestpath_main(int argc, char **argv);
+int pdtshortestpath_main(int argc, char** argv);
 
-int main(int argc, char **argv) { return pdtshortestpath_main(argc, argv); }
+int main(int argc, char** argv) { return pdtshortestpath_main(argc, argv); }
